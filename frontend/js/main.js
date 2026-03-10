@@ -1,7 +1,7 @@
 const loginBtn = document.getElementById('login-btn');
 const errorMsg = document.getElementById('error-msg');
 
-loginBtn.addEventListener('click', () => {
+loginBtn.addEventListener('click', async () => {
   const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value.trim();
 
@@ -10,6 +10,26 @@ loginBtn.addEventListener('click', () => {
     return;
   }
 
-  // バックエンドAPI接続後に実装
-  errorMsg.textContent = '現在バックエンド未接続です';
+  try {
+    const response = await fetch('http://127.0.0.1:8000/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      errorMsg.textContent = data.detail || 'ログインに失敗しました';
+      return;
+    }
+
+    // JWTトークンを保存してダッシュボードへ
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('role', data.role);
+    window.location.href = 'dashboard.html';
+
+  } catch (e) {
+    errorMsg.textContent = 'サーバーに接続できません';
+  }
 });
