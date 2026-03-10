@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダッシュボード</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">汎用アプリ</div>
+      <nav>
+        <ul>
+          <li class="active"><a href="dashboard.html">ダッシュボード</a></li>
+          <li><a href="#">データ管理</a></li>
+          <li><a href="#">ユーザー管理</a></li>
+          <li><a href="#">設定</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <h2>ダッシュボード</h2>
+        <span id="current-user">管理者</span>
+      </header>
+      <section class="cards">
+        <div class="card">
+          <p>総ユーザー数</p>
+          <h3>---</h3>
+        </div>
+        <div class="card">
+          <p>本日のアクセス</p>
+          <h3>---</h3>
+        </div>
+        <div class="card">
+          <p>未処理の申請</p>
+          <h3>---</h3>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
