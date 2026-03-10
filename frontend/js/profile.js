@@ -1,21 +1,10 @@
-const API = 'http://127.0.0.1:8000';
 const token = localStorage.getItem('access_token');
 
-if (!token) {
-  window.location.href = 'index.html';
-}
+document.getElementById('logout-btn').addEventListener('click', logout);
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('role');
-  window.location.href = 'index.html';
-});
-
-async function loadProfile() {
-  const res = await fetch(`${API}/users/me`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const user = await res.json();
+async function init() {
+  const user = await checkAuth(false);
+  if (!user) return;
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('profile-username').textContent = user.username;
   document.getElementById('profile-role').textContent = user.role === 'admin' ? '管理者' : '一般ユーザー';
@@ -63,4 +52,4 @@ document.getElementById('change-password-btn').addEventListener('click', async (
   }
 });
 
-loadProfile();
+init();

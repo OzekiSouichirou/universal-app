@@ -1,18 +1,13 @@
-const API = 'http://127.0.0.1:8000';
 const token = localStorage.getItem('access_token');
-const role = localStorage.getItem('role');
 
-if (!token) {
-  window.location.href = 'index.html';
-}
+document.getElementById('logout-btn').addEventListener('click', logout);
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('role');
-  window.location.href = 'index.html';
-});
+async function init() {
+  const user = await checkAuth(true);
+  if (!user) return;
 
-async function loadDashboard() {
+  document.getElementById('current-user').textContent = user.username;
+
   const res = await fetch(`${API}/users/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
@@ -23,4 +18,4 @@ async function loadDashboard() {
   document.getElementById('total-members').textContent = users.filter(u => u.role === 'user').length;
 }
 
-loadDashboard();
+init();

@@ -1,18 +1,13 @@
-const API = 'http://127.0.0.1:8000';
 const token = localStorage.getItem('access_token');
-const role = localStorage.getItem('role');
 
-if (!token || role !== 'admin') {
-  window.location.href = 'index.html';
+document.getElementById('logout-btn').addEventListener('click', logout);
+
+async function init() {
+  const user = await checkAuth(true);
+  if (!user) return;
+  document.getElementById('current-user').textContent = user.username;
+  fetchLogs();
 }
-
-document.getElementById('current-user').textContent = '管理者';
-
-document.getElementById('logout-btn').addEventListener('click', () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('role');
-  window.location.href = 'index.html';
-});
 
 async function fetchLogs() {
   const res = await fetch(`${API}/logs/`, {
@@ -39,4 +34,4 @@ async function fetchLogs() {
   });
 }
 
-fetchLogs();
+init();
