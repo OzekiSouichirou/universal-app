@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ユーザー管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">汎用アプリ</div>
+      <nav>
+        <ul>
+          <li><a href="dashboard.html">ダッシュボード</a></li>
+          <li class="active"><a href="users.html">ユーザー管理</a></li>
+          <li><a href="#">設定</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <h2>ユーザー管理</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+        <div class="toolbar">
+          <button id="add-user-btn" class="btn-primary">＋ ユーザー追加</button>
+        </div>
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>ユーザー名</th>
+              <th>権限</th>
+              <th>作成日</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="user-list"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="modal-title">ユーザー追加</h3>
+      <input type="text" id="new-username" placeholder="ユーザー名">
+      <input type="password" id="new-password" placeholder="パスワード">
+      <select id="new-role">
+        <option value="user">一般ユーザー</option>
+        <option value="admin">管理者</option>
+      </select>
+      <div class="modal-buttons">
+        <button id="modal-submit" class="btn-primary">作成</button>
+        <button id="modal-cancel" class="btn-secondary">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/users.js"></script>
+</body>
+</html>
