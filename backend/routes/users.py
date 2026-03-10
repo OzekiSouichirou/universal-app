@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from models.database import get_db, User
+from models.database import get_db, User, Log
 from auth.auth import decode_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -52,6 +52,7 @@ def create_user(body: UserCreate, db: Session = Depends(get_db), admin: User = D
     hashed = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     user = User(username=body.username, hashed_password=hashed, role=body.role)
     db.add(user)
+    db.add(Log(username=admin.username, action="ユーザー追加", detail=f"{body.username}（{body.role}）"))
     db.commit()
     return {"message": "ユーザーを作成しました"}
 
@@ -62,6 +63,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db), admin: User = Depen
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
     if user.role == "admin" and user.username == "admin":
         raise HTTPException(status_code=400, detail="メイン管理者は削除できません")
+    db.add(Log(username=admin.username, action="ユーザー削除", detail=user.username))
     db.delete(user)
     db.commit()
     return {"message": "ユーザーを削除しました"}
@@ -71,6 +73,7 @@ def update_role(user_id: int, body: RoleUpdate, db: Session = Depends(get_db), a
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    db.add(Log(username=admin.username, action="権限変更", detail=f"{user.username} → {body.role}"))
     user.role = body.role
     db.commit()
     return {"message": "権限を変更しました"}
@@ -84,5 +87,6 @@ def change_password(body: PasswordUpdate, db: Session = Depends(get_db), current
     if not bcrypt.checkpw(body.current_password.encode("utf-8"), current_user.hashed_password.encode("utf-8")):
         raise HTTPException(status_code=400, detail="現在のパスワードが違います")
     current_user.hashed_password = bcrypt.hashpw(body.new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    db.add(Log(username=current_user.username, action="パスワード変更"))
     db.commit()
     return {"message": "パスワードを変更しました"}
