@@ -24,10 +24,15 @@ loginBtn.addEventListener('click', async () => {
       return;
     }
 
-    // JWTトークンを保存してダッシュボードへ
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('role', data.role);
-    window.location.href = 'dashboard.html';
+
+    // 権限によって遷移先を振り分け
+    if (data.role === 'admin') {
+      window.location.href = 'dashboard.html';
+    } else {
+      window.location.href = 'home.html';
+    }
 
   } catch (e) {
     errorMsg.textContent = 'サーバーに接続できません';
