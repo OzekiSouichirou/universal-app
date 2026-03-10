@@ -4,10 +4,11 @@ from models.database import Base, engine
 from auth.routes import router as auth_router
 from routes.users import router as users_router
 from routes.logs import router as logs_router
+from routes.notices import router as notices_router
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="汎用アプリ API", version="0.3.0")
+app = FastAPI(title="汎用アプリ API", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +20,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(logs_router, prefix="/logs", tags=["logs"])
+app.include_router(notices_router, prefix="/notices", tags=["notices"])
 
 @app.get("/")
 def root():

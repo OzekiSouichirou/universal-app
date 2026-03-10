@@ -1,6 +1,5 @@
 const API = 'http://127.0.0.1:8000';
 const token = localStorage.getItem('access_token');
-const role = localStorage.getItem('role');
 
 if (!token) {
   window.location.href = 'index.html';
@@ -21,4 +20,26 @@ async function loadUser() {
   document.getElementById('welcome-msg').textContent = `ようこそ、${user.username} さん`;
 }
 
+async function loadNotices() {
+  const res = await fetch(`${API}/notices/`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const notices = await res.json();
+  const list = document.getElementById('notice-list');
+  list.innerHTML = '';
+
+  if (notices.length === 0) {
+    list.innerHTML = '<li class="notice-item">現在お知らせはありません</li>';
+    return;
+  }
+
+  notices.forEach(n => {
+    const li = document.createElement('li');
+    li.className = 'notice-item';
+    li.textContent = n.title;
+    list.appendChild(li);
+  });
+}
+
 loadUser();
+loadNotices();

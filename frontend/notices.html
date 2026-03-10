@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お知らせ管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">汎用アプリ</div>
+      <nav>
+        <ul>
+          <li><a href="dashboard.html">ダッシュボード</a></li>
+          <li><a href="users.html">ユーザー管理</a></li>
+          <li><a href="logs.html">ログ確認</a></li>
+          <li class="active"><a href="notices.html">お知らせ管理</a></li>
+          <li><a href="#">設定</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <h2>お知らせ管理</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+        <div class="toolbar">
+          <button id="add-notice-btn" class="btn-primary">＋ お知らせ追加</button>
+        </div>
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>タイトル</th>
+              <th>状態</th>
+              <th>作成日</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="notice-list"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="modal-title">お知らせ追加</h3>
+      <input type="text" id="notice-title" placeholder="タイトル">
+      <textarea id="notice-content" placeholder="内容" rows="4"></textarea>
+      <div class="modal-buttons">
+        <button id="modal-submit" class="btn-primary">保存</button>
+        <button id="modal-cancel" class="btn-secondary">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/notices.js"></script>
+</body>
+</html>
