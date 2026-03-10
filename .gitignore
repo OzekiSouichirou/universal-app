@@ -33,3 +33,5 @@ desktop.ini
 *.log
 *.tmp
 *.cache
+*.db
+*.sqlite3
