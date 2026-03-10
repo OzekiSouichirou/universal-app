@@ -1,9 +1,6 @@
 import bcrypt
 from database import Base, engine, SessionLocal, User
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
 def init():
     Base.metadata.create_all(bind=engine)
 
@@ -11,9 +8,11 @@ def init():
     existing = db.query(User).filter(User.username == "admin").first()
 
     if not existing:
+        password = "admin1234".encode("utf-8")
+        hashed = bcrypt.hashpw(password, bcrypt.gensalt())
         admin = User(
             username="admin",
-            hashed_password=hash_password("admin1234"),
+            hashed_password=hashed.decode("utf-8"),
             role="admin"
         )
         db.add(admin)
