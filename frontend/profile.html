@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロフィール</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">汎用アプリ</div>
+      <nav>
+        <ul>
+          <li><a href="home.html">ホーム</a></li>
+          <li class="active"><a href="profile.html">プロフィール</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <h2>プロフィール</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+        <div class="profile-box">
+          <h3>アカウント情報</h3>
+          <div class="profile-item">
+            <span class="profile-label">ユーザー名</span>
+            <span id="profile-username">---</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">権限</span>
+            <span id="profile-role">---</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">作成日</span>
+            <span id="profile-created">---</span>
+          </div>
+        </div>
+        <div class="profile-box">
+          <h3>パスワード変更</h3>
+          <input type="password" id="current-password" placeholder="現在のパスワード">
+          <input type="password" id="new-password" placeholder="新しいパスワード">
+          <input type="password" id="confirm-password" placeholder="新しいパスワード（確認）">
+          <button id="change-password-btn" class="btn-primary">変更する</button>
+          <p id="password-msg"></p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="js/profile.js"></script>
+</body>
+</html>

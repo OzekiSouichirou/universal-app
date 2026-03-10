@@ -339,3 +339,92 @@ body {
   gap: 8px;
   justify-content: flex-end;
 }
+
+.welcome-box {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.welcome-box h3 {
+  color: #e6edf3;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.welcome-box p {
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.notice-area {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.notice-area h4 {
+  color: #e6edf3;
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.notice-item {
+  color: #8b949e;
+  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid #21262d;
+  list-style: none;
+}
+
+.profile-box {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-box h3 {
+  color: #e6edf3;
+  font-size: 15px;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 12px;
+}
+
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.profile-label {
+  color: #8b949e;
+  width: 100px;
+}
+
+.profile-box input {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #c9d1d9;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.profile-box input:focus {
+  border-color: #58a6ff;
+}
+
+#password-msg {
+  font-size: 12px;
+  min-height: 16px;
+}

@@ -1,0 +1,66 @@
+const API = 'http://127.0.0.1:8000';
+const token = localStorage.getItem('access_token');
+
+if (!token) {
+  window.location.href = 'index.html';
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('role');
+  window.location.href = 'index.html';
+});
+
+async function loadProfile() {
+  const res = await fetch(`${API}/users/me`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const user = await res.json();
+  document.getElementById('current-user').textContent = user.username;
+  document.getElementById('profile-username').textContent = user.username;
+  document.getElementById('profile-role').textContent = user.role === 'admin' ? '管理者' : '一般ユーザー';
+  document.getElementById('profile-created').textContent = new Date(user.created_at).toLocaleDateString('ja-JP');
+}
+
+document.getElementById('change-password-btn').addEventListener('click', async () => {
+  const current = document.getElementById('current-password').value.trim();
+  const newPass = document.getElementById('new-password').value.trim();
+  const confirm = document.getElementById('confirm-password').value.trim();
+  const msg = document.getElementById('password-msg');
+
+  if (!current || !newPass || !confirm) {
+    msg.style.color = '#f85149';
+    msg.textContent = 'すべての項目を入力してください';
+    return;
+  }
+
+  if (newPass !== confirm) {
+    msg.style.color = '#f85149';
+    msg.textContent = '新しいパスワードが一致しません';
+    return;
+  }
+
+  const res = await fetch(`${API}/users/me/password`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ current_password: current, new_password: newPass })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    msg.style.color = '#3fb950';
+    msg.textContent = 'パスワードを変更しました';
+    document.getElementById('current-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+  } else {
+    msg.style.color = '#f85149';
+    msg.textContent = data.detail;
+  }
+});
+
+loadProfile();

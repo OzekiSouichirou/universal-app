@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ホーム</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">汎用アプリ</div>
+      <nav>
+        <ul>
+          <li class="active"><a href="home.html">ホーム</a></li>
+          <li><a href="profile.html">プロフィール</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <h2>ホーム</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+        <div class="welcome-box">
+          <h3 id="welcome-msg">ようこそ</h3>
+          <p>汎用アプリへログインしました。</p>
+        </div>
+        <div class="notice-area">
+          <h4>お知らせ</h4>
+          <ul id="notice-list">
+            <li class="notice-item">現在お知らせはありません</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="js/home.js"></script>
+</body>
+</html>
