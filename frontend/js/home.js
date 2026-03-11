@@ -11,24 +11,21 @@ async function init() {
 }
 
 async function fetchNotices() {
+  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
   const res = await fetch(`${API}/notices/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const notices = await res.json();
-  const list = document.getElementById('notice-list');
-  list.innerHTML = '';
-
+  const data = await res.json();
+  const notices = Array.isArray(data) ? data : [];
+  const container = document.getElementById('notices-container');
   if (notices.length === 0) {
-    list.innerHTML = '<li class="notice-item">現在お知らせはありません</li>';
+    container.innerHTML = '<p>現在お知らせはありません</p>';
     return;
   }
-
-  notices.forEach(n => {
-    const li = document.createElement('li');
-    li.className = 'notice-item';
-    li.textContent = n.title;
-    list.appendChild(li);
-  });
+  container.innerHTML = notices.map(n => `
+    <div class="notice-item">
+      <h4>${n.title}</h4>
+      <p>${n.content}</p>
+    </div>
+  `).join('');
 }
-
-init();
