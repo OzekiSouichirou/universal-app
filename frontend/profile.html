@@ -9,7 +9,7 @@
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <div class="sidebar-title">Polonix</div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a></div>
       <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
@@ -48,6 +48,11 @@
           <input type="password" id="confirm-password" placeholder="新しいパスワード（確認）">
           <button id="change-password-btn" class="btn-primary">変更する</button>
           <p id="password-msg"></p>
+        </div>
+        <div class="profile-box danger-box">
+          <h3>アカウント削除</h3>
+          <p class="danger-text">この操作は取り消せません。アカウントと全データが削除されます。</p>
+          <button id="delete-account-btn" class="btn-danger-lg">アカウントを削除する</button>
         </div>
       </section>
     </main>

@@ -8,6 +8,7 @@ const errorMsg = document.getElementById('error-msg');
 loginBtn.addEventListener('click', async () => {
   const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value.trim();
+  const remember = document.getElementById('remember').checked;
 
   if (!username || !password) {
     errorMsg.textContent = 'ユーザー名とパスワードを入力してください';
@@ -18,7 +19,7 @@ loginBtn.addEventListener('click', async () => {
     const response = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, remember })
     });
 
     const data = await response.json();
@@ -28,8 +29,13 @@ loginBtn.addEventListener('click', async () => {
       return;
     }
 
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('role', data.role);
+    if (remember) {
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('role', data.role);
+    } else {
+      sessionStorage.setItem('access_token', data.access_token);
+      sessionStorage.setItem('role', data.role);
+    }
 
     if (data.role === 'admin') {
       window.location.href = 'dashboard.html';

@@ -1,4 +1,4 @@
-const token = localStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -49,6 +49,27 @@ document.getElementById('change-password-btn').addEventListener('click', async (
   } else {
     msg.style.color = '#f85149';
     msg.textContent = data.detail;
+  }
+});
+
+document.getElementById('delete-account-btn').addEventListener('click', async () => {
+  const first = confirm('本当にアカウントを削除しますか？\nこの操作は取り消せません。');
+  if (!first) return;
+
+  const second = confirm('最終確認です。\nアカウントと全データが完全に削除されます。\n本当によろしいですか？');
+  if (!second) return;
+
+  const res = await fetch(`${API}/users/me`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  if (res.ok) {
+    alert('アカウントを削除しました。ご利用ありがとうございました。');
+    logout();
+  } else {
+    const data = await res.json();
+    alert(data.detail);
   }
 });
 

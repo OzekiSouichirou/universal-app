@@ -585,3 +585,60 @@ body {
     padding: 4px 8px;
   }
 }
+
+.remember-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remember-box input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #238636;
+  cursor: pointer;
+}
+
+.remember-box label {
+  font-size: 13px;
+  color: #8b949e;
+  cursor: pointer;
+}
+
+.sidebar-title a {
+  color: #e6edf3;
+  text-decoration: none;
+}
+
+.sidebar-title a:hover {
+  color: #58a6ff;
+}
+
+.danger-box {
+  border-color: #f8514933;
+}
+
+.danger-box h3 {
+  color: #f85149;
+}
+
+.danger-text {
+  font-size: 13px;
+  color: #8b949e;
+}
+
+.btn-danger-lg {
+  background-color: transparent;
+  color: #f85149;
+  border: 1px solid #f85149;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.btn-danger-lg:hover {
+  background-color: #f8514920;
+}

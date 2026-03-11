@@ -3,7 +3,7 @@ const API = window.location.hostname === 'localhost' || window.location.hostname
   : 'https://polonix-api.onrender.com';
 
 async function checkAuth(requireAdmin = false) {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
   if (!token) {
     window.location.href = 'index.html';
@@ -18,6 +18,8 @@ async function checkAuth(requireAdmin = false) {
     if (res.status === 401) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('role');
+      sessionStorage.removeItem('access_token');
+      sessionStorage.removeItem('role');
       window.location.href = 'index.html';
       return null;
     }
@@ -40,5 +42,7 @@ async function checkAuth(requireAdmin = false) {
 function logout() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('role');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('role');
   window.location.href = 'index.html';
 }

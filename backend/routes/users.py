@@ -90,3 +90,10 @@ def change_password(body: PasswordUpdate, db: Session = Depends(get_db), current
     db.add(Log(username=current_user.username, action="パスワード変更"))
     db.commit()
     return {"message": "パスワードを変更しました"}
+
+@router.delete("/me")
+def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db.add(Log(username=current_user.username, action="アカウント削除"))
+    db.delete(current_user)
+    db.commit()
+    return {"message": "アカウントを削除しました"}

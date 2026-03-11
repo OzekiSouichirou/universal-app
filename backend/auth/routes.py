@@ -13,6 +13,7 @@ router = APIRouter()
 class LoginRequest(BaseModel):
     username: str
     password: str
+    remember: bool = False
 
 class RegisterRequest(BaseModel):
     username: str
@@ -29,7 +30,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     db.add(Log(username=user.username, action="ログイン成功"))
     db.commit()
-    token = create_access_token({"sub": user.username, "role": user.role})
+    token = create_access_token({"sub": user.username, "role": user.role}, remember=request.remember)
     return {"access_token": token, "token_type": "bearer", "role": user.role}
 
 @router.post("/register")
