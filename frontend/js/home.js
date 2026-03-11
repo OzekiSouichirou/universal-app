@@ -3,7 +3,7 @@ async function init() {
   if (!user) return;
 
   document.getElementById('current-user').textContent = user.username;
-  document.getElementById('welcome-name').textContent = user.username;
+  document.getElementById('welcome-msg').textContent = `ようこそ、${user.username} さん`;
 
   const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
@@ -13,19 +13,21 @@ async function init() {
 
   const data = await res.json();
   const notices = Array.isArray(data) ? data : [];
-  const container = document.getElementById('notices-container');
+  const list = document.getElementById('notice-list');
 
   if (notices.length === 0) {
-    container.innerHTML = '<p>現在お知らせはありません</p>';
+    list.innerHTML = '<li class="notice-item">現在お知らせはありません</li>';
     return;
   }
 
-  container.innerHTML = notices.map(n => `
-    <div class="notice-item">
-      <h4>${n.title}</h4>
+  list.innerHTML = notices.map(n => `
+    <li class="notice-item">
+      <strong>${n.title}</strong>
       <p>${n.content}</p>
-    </div>
+    </li>
   `).join('');
 }
+
+document.getElementById('logout-btn').addEventListener('click', logout);
 
 init();

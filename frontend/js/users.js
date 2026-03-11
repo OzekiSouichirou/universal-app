@@ -1,4 +1,4 @@
-const token = localStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -13,8 +13,13 @@ async function fetchUsers() {
   const res = await fetch(`${API}/users/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const users = await res.json();
-  const tbody = document.getElementById('user-list');
+  const data = await res.json();
+  const users = Array.isArray(data) ? data : [];
+  renderUsers(users);
+}
+
+function renderUsers(users) {
+  const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '';
 
   users.forEach(u => {
