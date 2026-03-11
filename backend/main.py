@@ -48,5 +48,6 @@ app.include_router(notices_router, prefix="/notices", tags=["notices"])
 app.include_router(posts_router, prefix="/posts", tags=["posts"])
 
 @app.get("/")
+@app.head("/")
 def root():
     return {"status": "ok", "message": "Polonix API is running"}
