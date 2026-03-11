@@ -1,3 +1,7 @@
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000'
+  : 'https://polonix-api.onrender.com';
+
 const loginBtn = document.getElementById('login-btn');
 const errorMsg = document.getElementById('error-msg');
 
@@ -11,7 +15,7 @@ loginBtn.addEventListener('click', async () => {
   }
 
   try {
-    const response = await fetch('http://127.0.0.1:8000/auth/login', {
+    const response = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -27,7 +31,6 @@ loginBtn.addEventListener('click', async () => {
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('role', data.role);
 
-    // 権限によって遷移先を振り分け
     if (data.role === 'admin') {
       window.location.href = 'dashboard.html';
     } else {

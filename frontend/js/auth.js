@@ -1,4 +1,6 @@
-const API = 'http://127.0.0.1:8000';
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000'
+  : 'https://polonix-api.onrender.com';
 
 async function checkAuth(requireAdmin = false) {
   const token = localStorage.getItem('access_token');
@@ -14,7 +16,6 @@ async function checkAuth(requireAdmin = false) {
     });
 
     if (res.status === 401) {
-      // トークン期限切れ
       localStorage.removeItem('access_token');
       localStorage.removeItem('role');
       window.location.href = 'index.html';
