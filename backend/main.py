@@ -8,7 +8,7 @@ from routes.notices import router as notices_router
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="汎用アプリ API", version="0.4.0")
+app = FastAPI(title="Polonix API", version="0.1.0-beta")
 
 app.add_middleware(
     CORSMiddleware,
