@@ -1,3 +1,7 @@
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000'
+  : 'https://polonix-api.onrender.com';
+
 const registerBtn = document.getElementById('register-btn');
 const errorMsg = document.getElementById('error-msg');
 
@@ -19,7 +23,7 @@ registerBtn.addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch('http://127.0.0.1:8000/auth/register', {
+    const res = await fetch(`${API}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -44,7 +48,3 @@ registerBtn.addEventListener('click', async () => {
     errorMsg.textContent = 'サーバーに接続できません';
   }
 });
-
-const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://127.0.0.1:8000'
-  : 'https://polonix-api.onrender.com';
