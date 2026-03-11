@@ -8,7 +8,7 @@ async function init() {
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('profile-username').textContent = user.username;
   document.getElementById('profile-role').textContent = user.role === 'admin' ? '管理者' : '一般ユーザー';
-  document.getElementById('profile-created').textContent = new Date(user.created_at).toLocaleDateString('ja-JP');
+  document.getElementById('profile-created').textContent = new Date(user.created_at + 'Z').toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'});
 }
 
 document.getElementById('change-password-btn').addEventListener('click', async () => {

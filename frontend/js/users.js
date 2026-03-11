@@ -33,7 +33,7 @@ function renderUsers(users) {
           <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>管理者</option>
         </select>
       </td>
-      <td>${new Date(u.created_at).toLocaleDateString('ja-JP')}</td>
+      <td>${new Date(u.created_at + 'Z').toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'})}</td>
       <td><button class="btn-danger" data-id="${u.id}">削除</button></td>
     `;
     tbody.appendChild(tr);

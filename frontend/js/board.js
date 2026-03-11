@@ -39,7 +39,7 @@ function renderPosts(posts) {
     <div class="post-card" id="post-${p.id}">
       <div class="post-header">
         <span class="post-username">${p.username}</span>
-        <span class="post-date">${new Date(p.created_at).toLocaleString('ja-JP')}</span>
+        <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
       <div class="post-content">${escapeHtml(p.content)}</div>
       <div class="post-footer">

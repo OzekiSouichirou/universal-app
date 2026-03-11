@@ -26,7 +26,7 @@ async function fetchLogs() {
   logs.forEach(l => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${new Date(l.created_at).toLocaleString('ja-JP')}</td>
+      <td>${new Date(l.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</td>
       <td>${l.username}</td>
       <td>${l.action}</td>
       <td>${l.detail || '---'}</td>
