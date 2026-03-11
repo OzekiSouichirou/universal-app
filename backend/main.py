@@ -8,6 +8,7 @@ from auth.routes import router as auth_router
 from routes.users import router as users_router
 from routes.logs import router as logs_router
 from routes.notices import router as notices_router
+from routes.posts import router as posts_router
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -44,6 +45,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(logs_router, prefix="/logs", tags=["logs"])
 app.include_router(notices_router, prefix="/notices", tags=["notices"])
+app.include_router(posts_router, prefix="/posts", tags=["posts"])
 
 @app.get("/")
 def root():

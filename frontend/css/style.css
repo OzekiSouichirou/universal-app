@@ -642,3 +642,130 @@ body {
 .btn-danger-lg:hover {
   background-color: #f8514920;
 }
+
+.post-form {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.post-form textarea {
+  width: 100%;
+  min-height: 100px;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 14px;
+  padding: 10px;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+.post-form textarea:focus {
+  outline: none;
+  border-color: #238636;
+}
+
+.post-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+#char-count {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.post-card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.post-card:hover {
+  border-color: #58a6ff;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.post-username {
+  font-weight: bold;
+  color: #58a6ff;
+  font-size: 14px;
+}
+
+.post-date {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.post-content {
+  font-size: 14px;
+  color: #e6edf3;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  word-break: break-word;
+}
+
+.post-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.like-btn {
+  background-color: transparent;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #8b949e;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.like-btn:hover {
+  border-color: #f85149;
+  color: #f85149;
+}
+
+.like-btn.liked {
+  border-color: #f85149;
+  color: #f85149;
+  background-color: #f8514915;
+}
+
+.delete-post-btn {
+  background-color: transparent;
+  border: 1px solid #f85149;
+  border-radius: 6px;
+  color: #f85149;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-post-btn:hover {
+  background-color: #f8514920;
+}
+
+.no-posts {
+  text-align: center;
+  color: #8b949e;
+  padding: 40px;
+}

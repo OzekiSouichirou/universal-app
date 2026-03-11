@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polonix - ホーム</title>
+  <title>Polonix - 掲示板</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -12,8 +12,8 @@
       <div class="sidebar-title"><a href="home.html">Polonix</a></div>
       <nav>
         <ul>
-          <li class="active"><a href="home.html">ホーム</a></li>
-          <li><a href="board.html">掲示板</a></li>
+          <li><a href="home.html">ホーム</a></li>
+          <li class="active"><a href="board.html">掲示板</a></li>
           <li><a href="profile.html">プロフィール</a></li>
         </ul>
       </nav>
@@ -23,24 +23,23 @@
     </aside>
     <main class="main-content">
       <header class="top-bar">
-        <h2>ホーム</h2>
+        <h2>掲示板</h2>
         <span id="current-user"></span>
       </header>
       <section class="content-area">
-        <div class="welcome-box">
-          <h3 id="welcome-msg">ようこそ</h3>
-          <p>Polonix へログインしました。</p>
+        <div class="post-form">
+          <textarea id="post-content" placeholder="投稿内容を入力（500文字以内）" maxlength="500"></textarea>
+          <div class="post-form-footer">
+            <span id="char-count">0 / 500</span>
+            <button id="post-btn" class="btn-primary">投稿する</button>
+          </div>
+          <p id="post-msg"></p>
         </div>
-        <div class="notice-area">
-          <h4>お知らせ</h4>
-          <ul id="notice-list">
-            <li class="notice-item">現在お知らせはありません</li>
-          </ul>
-        </div>
+        <div id="post-list"></div>
       </section>
     </main>
   </div>
   <script src="js/auth.js"></script>
-  <script src="js/home.js"></script>
+  <script src="js/board.js"></script>
 </body>
 </html>
