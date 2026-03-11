@@ -19,7 +19,7 @@ async function fetchUsers() {
 }
 
 function renderUsers(users) {
-  const tbody = document.getElementById('user-table-body');
+  const tbody = document.getElementById('user-list');
   tbody.innerHTML = '';
 
   users.forEach(u => {
