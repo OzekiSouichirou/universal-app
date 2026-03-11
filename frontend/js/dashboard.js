@@ -14,8 +14,8 @@ async function init() {
   const users = Array.isArray(data) ? data : [];
 
   document.getElementById('total-users').textContent = users.length;
-  document.getElementById('admin-users').textContent = users.filter(u => u.role === 'admin').length;
-  document.getElementById('normal-users').textContent = users.filter(u => u.role === 'user').length;
+  document.getElementById('total-admins').textContent = users.filter(u => u.role === 'admin').length;
+  document.getElementById('total-members').textContent = users.filter(u => u.role === 'user').length;
 }
 
 init();
