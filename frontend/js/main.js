@@ -11,9 +11,15 @@ loginBtn.addEventListener('click', async () => {
   const remember = document.getElementById('remember').checked;
 
   if (!username || !password) {
+    errorMsg.style.color = '#f85149';
     errorMsg.textContent = 'ユーザー名とパスワードを入力してください';
     return;
   }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = '接続中...';
+  errorMsg.style.color = '#8b949e';
+  errorMsg.textContent = 'サーバーに接続しています。初回は時間がかかる場合があります...';
 
   try {
     const response = await fetch(`${API}/auth/login`, {
@@ -25,7 +31,10 @@ loginBtn.addEventListener('click', async () => {
     const data = await response.json();
 
     if (!response.ok) {
+      errorMsg.style.color = '#f85149';
       errorMsg.textContent = data.detail || 'ログインに失敗しました';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'ログイン';
       return;
     }
 
@@ -44,6 +53,9 @@ loginBtn.addEventListener('click', async () => {
     }
 
   } catch (e) {
-    errorMsg.textContent = 'サーバーに接続できません';
+    errorMsg.style.color = '#f85149';
+    errorMsg.textContent = 'サーバーに接続できません。しばらく待ってから再試行してください。';
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'ログイン';
   }
 });
