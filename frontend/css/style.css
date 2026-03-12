@@ -1436,3 +1436,219 @@ body {
     font-size: 20px;
   }
 }
+
+/* ============================================================
+   通知・画像添付（v0.4.0）
+   ============================================================ */
+
+/* top-bar右側グループ */
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 通知ベル */
+.notif-wrap {
+  position: relative;
+}
+
+.notif-bell {
+  background: transparent;
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  color: var(--text-2);
+  font-size: 16px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background-color var(--t), color var(--t);
+  position: relative;
+  line-height: 1;
+}
+
+.notif-bell:hover {
+  background-color: var(--surface-2);
+  color: var(--text);
+}
+
+/* 未読バッジ */
+.notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  pointer-events: none;
+}
+
+/* 通知パネル */
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  background-color: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  z-index: 200;
+  overflow: hidden;
+  animation: modalIn 0.15s ease;
+}
+
+.notif-panel.hidden {
+  display: none;
+}
+
+.notif-panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.notif-list {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color var(--t);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-item:hover {
+  background-color: var(--surface-2);
+}
+
+.notif-item.unread {
+  background-color: rgba(91,110,245,0.06);
+}
+
+.notif-item.unread:hover {
+  background-color: rgba(91,110,245,0.1);
+}
+
+.notif-type {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.notif-type.like { color: var(--red); }
+.notif-type.comment { color: var(--accent-2); }
+
+.notif-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.notif-time {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.notif-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+/* 画像プレビュー */
+.image-preview-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.image-preview-wrap img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: var(--r);
+  border: 1px solid var(--border-2);
+  display: block;
+  object-fit: cover;
+}
+
+.image-remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--red);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: opacity var(--t);
+}
+
+.image-remove-btn:hover {
+  opacity: 0.8;
+}
+
+/* 投稿内の画像 */
+.post-image {
+  margin: 10px 0;
+  border-radius: var(--r);
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.post-image img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: opacity var(--t);
+}
+
+.post-image img:hover {
+  opacity: 0.9;
+}
+
+/* 画像添付ボタン */
+.btn-icon {
+  padding: 8px 12px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* モバイル通知パネル調整 */
+@media (max-width: 480px) {
+  .notif-panel {
+    width: calc(100vw - 32px);
+    right: -10px;
+  }
+}

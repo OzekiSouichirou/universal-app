@@ -24,16 +24,32 @@
     </aside>
     <main class="main-content">
       <header class="top-bar">
-      <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
         <h2>掲示板</h2>
-        <span id="current-user"></span>
+        <div class="top-bar-right">
+          <div class="notif-wrap">
+            <button class="notif-bell" id="notif-bell" aria-label="通知">🔔<span class="notif-badge" id="notif-badge" style="display:none;"></span></button>
+            <div class="notif-panel hidden" id="notif-panel">
+              <div class="notif-panel-header">
+                <span>通知</span>
+              </div>
+              <div class="notif-list" id="notif-list"></div>
+            </div>
+          </div>
+          <span id="current-user"></span>
+        </div>
       </header>
       <section class="content-area">
         <div class="post-form">
           <textarea id="post-content" placeholder="投稿内容を入力（500文字以内）" maxlength="500"></textarea>
+          <div id="image-preview"></div>
           <div class="post-form-footer">
             <span id="char-count">0 / 500</span>
-            <button id="post-btn" class="btn-primary">投稿する</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button id="image-attach-btn" class="btn-secondary btn-icon" title="画像を添付">🖼</button>
+              <input type="file" id="image-input" accept="image/*" style="display:none;">
+              <button id="post-btn" class="btn-primary">投稿する</button>
+            </div>
           </div>
           <p id="post-msg"></p>
         </div>
@@ -42,6 +58,6 @@
     </main>
   </div>
   <script src="js/auth.js"></script>
-  <script src="js/board.js?v=3"></script>
+  <script src="js/board.js?v=4"></script>
 </body>
 </html>
