@@ -1,4 +1,4 @@
-import bcrypt
+﻿import bcrypt
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -93,6 +93,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         "username": current_user.username,
         "role": current_user.role,
         "avatar": current_user.avatar,
+        "user_id": current_user.user_id,
         "created_at": current_user.created_at
     }
 
