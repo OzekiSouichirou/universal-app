@@ -19,7 +19,7 @@ async function fetchLogs() {
   tbody.innerHTML = '';
 
   if (logs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#8b949e;">ログはありません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#7a87aa;">ログはありません</td></tr>';
     return;
   }
 

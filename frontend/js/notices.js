@@ -19,7 +19,7 @@ async function fetchNotices() {
   tbody.innerHTML = '';
 
   if (notices.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8b949e;">お知らせはありません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#7a87aa;">お知らせはありません</td></tr>';
     return;
   }
 

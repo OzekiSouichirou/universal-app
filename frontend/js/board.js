@@ -95,7 +95,7 @@ document.getElementById('post-btn').addEventListener('click', async () => {
   const msg = document.getElementById('post-msg');
 
   if (!content) {
-    msg.style.color = '#f85149';
+    msg.style.color = '#f0476c';
     msg.textContent = '内容を入力してください';
     return;
   }
@@ -116,7 +116,7 @@ document.getElementById('post-btn').addEventListener('click', async () => {
     fetchPosts();
   } else {
     const data = await res.json();
-    msg.style.color = '#f85149';
+    msg.style.color = '#f0476c';
     msg.textContent = data.detail;
   }
 });

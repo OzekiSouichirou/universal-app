@@ -18,13 +18,13 @@ document.getElementById('change-password-btn').addEventListener('click', async (
   const msg = document.getElementById('password-msg');
 
   if (!current || !newPass || !confirm) {
-    msg.style.color = '#f85149';
+    msg.style.color = '#f0476c';
     msg.textContent = 'すべての項目を入力してください';
     return;
   }
 
   if (newPass !== confirm) {
-    msg.style.color = '#f85149';
+    msg.style.color = '#f0476c';
     msg.textContent = '新しいパスワードが一致しません';
     return;
   }
@@ -41,13 +41,13 @@ document.getElementById('change-password-btn').addEventListener('click', async (
   const data = await res.json();
 
   if (res.ok) {
-    msg.style.color = '#3fb950';
+    msg.style.color = '#3ecf8e';
     msg.textContent = 'パスワードを変更しました';
     document.getElementById('current-password').value = '';
     document.getElementById('new-password').value = '';
     document.getElementById('confirm-password').value = '';
   } else {
-    msg.style.color = '#f85149';
+    msg.style.color = '#f0476c';
     msg.textContent = data.detail;
   }
 });
