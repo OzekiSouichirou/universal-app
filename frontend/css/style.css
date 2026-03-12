@@ -150,11 +150,21 @@ body {
 }
 
 .sidebar-title {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   padding: 0 20px 20px;
   border-bottom: 1px solid var(--border);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-version {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: 0.5px;
 }
 
 .sidebar-title a {
