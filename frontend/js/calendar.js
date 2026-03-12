@@ -24,6 +24,18 @@ async function init() {
   renderCalendar();
   renderDayEvents(selectedDate);
   checkReminders();
+
+  document.getElementById('prev-month').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  });
+
+  document.getElementById('next-month').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
+  });
 }
 
 function toDateStr(d) {
@@ -300,18 +312,6 @@ document.getElementById('ev-delete-btn').addEventListener('click', async () => {
     renderCalendar();
     renderDayEvents(selectedDate);
   }
-});
-
-document.getElementById('prev-month').addEventListener('click', () => {
-  currentMonth--;
-  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-  renderCalendar();
-});
-
-document.getElementById('next-month').addEventListener('click', () => {
-  currentMonth++;
-  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-  renderCalendar();
 });
 
 function checkReminders() {
