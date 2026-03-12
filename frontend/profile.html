@@ -8,7 +8,8 @@
 </head>
 <body>
   <div class="layout">
-    <aside class="sidebar">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.3.0-beta</span></div>
       <nav>
         <ul>
@@ -23,6 +24,7 @@
     </aside>
     <main class="main-content">
       <header class="top-bar">
+      <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
         <h2>プロフィール</h2>
         <span id="current-user"></span>
       </header>

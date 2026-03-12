@@ -1,4 +1,4 @@
-const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+﻿const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://127.0.0.1:8000'
   : 'https://polonix-api-sod4.onrender.com';
 
@@ -46,3 +46,30 @@ function logout() {
   sessionStorage.removeItem('role');
   window.location.href = 'index.html';
 }
+// ハンバーガーメニュー制御
+document.addEventListener('DOMContentLoaded', () => {
+  const hamburger = document.getElementById('hamburger-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!hamburger || !sidebar || !overlay) return;
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+
+  sidebar.querySelectorAll('nav a').forEach(a => {
+    a.addEventListener('click', closeSidebar);
+  });
+});

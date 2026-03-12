@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
 :root {
   --bg:        #07090f;
@@ -1130,4 +1130,309 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ============================================================
+   モバイル対応強化（v0.3.1）
+   ============================================================ */
+
+/* ハンバーガーボタン（スマホのみ表示） */
+.hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  color: var(--text-2);
+  padding: 6px 10px;
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color var(--t), color var(--t);
+}
+.hamburger:hover {
+  background-color: var(--surface-2);
+  color: var(--text);
+}
+
+/* サイドバーオーバーレイ */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 49;
+}
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* テーブルのスクロール対応 */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+
+  /* ===== レイアウト ===== */
+  .layout {
+    flex-direction: row;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ===== サイドバー：ドロワー化 ===== */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 240px;
+    height: 100vh;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+    padding: 24px 0;
+    overflow-y: auto;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* サイドバー内ナビを縦に戻す */
+  .sidebar nav ul {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sidebar nav ul li a {
+    padding: 9px 12px;
+  }
+  .sidebar-footer button {
+    width: 100%;
+    padding: 9px;
+  }
+
+  /* ===== メインコンテンツ：全幅 ===== */
+  .main-content {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* ===== top-bar：ハンバーガー追加 ===== */
+  .top-bar {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  .top-bar h2 {
+    font-size: 15px;
+    flex: 1;
+  }
+  .top-bar span {
+    font-size: 11px;
+    padding: 3px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+  .hamburger {
+    display: block;
+    order: -1;
+  }
+
+  /* ===== コンテンツエリア ===== */
+  .content-area {
+    padding: 14px;
+  }
+
+  /* ===== カード（ダッシュボード） ===== */
+  .cards {
+    flex-direction: column;
+    padding: 14px;
+    gap: 10px;
+  }
+  .card {
+    width: 100%;
+  }
+  .card h3 {
+    font-size: 24px;
+  }
+
+  /* ===== 掲示板：投稿フォーム ===== */
+  .post-form {
+    padding: 14px;
+  }
+  .post-form textarea {
+    min-height: 80px;
+    font-size: 15px;
+  }
+  .post-form-footer {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  /* ===== 掲示板：投稿カード ===== */
+  .post-card {
+    padding: 14px 16px;
+  }
+  .post-header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .post-user-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .post-username {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .post-date {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .post-content {
+    font-size: 14px;
+  }
+  .post-footer {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* ===== コメントフォーム ===== */
+  .comment-form {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .comment-input {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  /* ===== テーブル ===== */
+  .user-table {
+    min-width: 560px;
+  }
+  .user-table th,
+  .user-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* ===== プロフィール ===== */
+  .profile-box {
+    padding: 16px;
+  }
+  .profile-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .profile-label {
+    width: auto;
+  }
+  .avatar-section {
+    padding-bottom: 14px;
+  }
+  .avatar-preview {
+    width: 76px;
+    height: 76px;
+    font-size: 28px;
+  }
+
+  /* ===== モーダル ===== */
+  .modal-box {
+    width: calc(100% - 32px);
+    max-width: 400px;
+    padding: 24px 18px;
+  }
+
+  /* ===== ログイン・登録 ===== */
+  .login-box {
+    width: calc(100% - 32px);
+    max-width: 400px;
+    padding: 32px 20px;
+  }
+
+  /* ===== お知らせ・ウェルカムボックス ===== */
+  .welcome-box {
+    padding: 20px;
+  }
+  .welcome-box h3 {
+    font-size: 16px;
+  }
+  .notice-area {
+    padding: 16px;
+  }
+
+  /* ===== toolbar ===== */
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  /* テーブルはカード表示に切り替え */
+  .user-table thead {
+    display: none;
+  }
+  .user-table,
+  .user-table tbody,
+  .user-table tr,
+  .user-table td {
+    display: block;
+    width: 100%;
+  }
+  .user-table tr {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    min-width: 0;
+  }
+  .user-table td {
+    border: none;
+    padding: 4px 0;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-table td::before {
+    content: attr(data-label);
+    color: var(--text-2);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    min-width: 64px;
+  }
+
+  /* 掲示板の文字サイズ調整 */
+  .post-content {
+    font-size: 13.5px;
+  }
+  .comment-content {
+    font-size: 13px;
+  }
+
+  /* top-barのユーザー名を短縮 */
+  .top-bar span {
+    max-width: 90px;
+  }
+
+  /* ログインボックス */
+  .login-box {
+    padding: 28px 16px;
+    gap: 12px;
+  }
+  .login-box h1 {
+    font-size: 20px;
+  }
 }

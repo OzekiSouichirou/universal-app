@@ -33,22 +33,22 @@ function renderUsers(users) {
   users.forEach(u => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${u.id}</td>
-      <td>
+      <td data-label="ID">${u.id}</td>
+      <td data-label="ユーザー名">
         <div style="display:flex;align-items:center;gap:8px;">
           ${avatarHtml(u.username, u.avatar)}
           ${u.username}
         </div>
       </td>
-      <td style="color:var(--text-2);font-family:monospace;">${u.user_id || '---'}</td>
-      <td>
+      <td data-label="固有ID" style="color:var(--text-2);font-family:monospace;">${u.user_id || '---'}</td>
+      <td data-label="権限">
         <select class="role-select" data-id="${u.id}">
           <option value="user" ${u.role === 'user' ? 'selected' : ''}>一般ユーザー</option>
           <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>管理者</option>
         </select>
       </td>
-      <td>${new Date(u.created_at + 'Z').toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'})}</td>
-      <td><button class="btn-danger" data-id="${u.id}">削除</button></td>
+      <td data-label="作成日">${new Date(u.created_at + 'Z').toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'})}</td>
+      <td data-label="操作"><button class="btn-danger" data-id="${u.id}">削除</button></td>
     `;
     tbody.appendChild(tr);
   });
