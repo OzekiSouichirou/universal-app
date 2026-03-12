@@ -1,4 +1,4 @@
-﻿from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text
+﻿from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -16,13 +16,7 @@ if not DATABASE_URL:
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=300,
-)
+engine = create_engine(DATABASE_URL, pool_size=5, max_overflow=10, pool_pre_ping=True, pool_recycle=300)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -84,6 +78,39 @@ class Notification(Base):
     from_username = Column(String, nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class CalendarEvent(Base):
+    __tablename__ = "calendar_events"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, index=True)
+    title = Column(String, nullable=False)
+    memo = Column(Text, nullable=True)
+    date = Column(String, nullable=False)
+    type = Column(String, default="memo")
+    is_done = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Timetable(Base):
+    __tablename__ = "timetable"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, index=True)
+    day = Column(Integer, nullable=False)
+    period = Column(Integer, nullable=False)
+    subject = Column(String, nullable=False)
+    room = Column(String, nullable=True)
+    teacher = Column(String, nullable=True)
+    memo = Column(Text, nullable=True)
+    color = Column(String, default="#5b6ef5")
+
+class UserXP(Base):
+    __tablename__ = "user_xp"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)
+    xp = Column(Integer, default=0)
+    level = Column(Integer, default=1)
+    streak = Column(Integer, default=0)
+    last_login = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():
     db = SessionLocal()

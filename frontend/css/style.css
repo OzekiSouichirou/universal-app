@@ -1652,3 +1652,482 @@ body {
     right: -10px;
   }
 }
+
+/* ===================== CALENDAR ===================== */
+.cal-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cal-nav-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.cal-nav-btn:hover { background: var(--border); }
+
+.cal-month-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-day-name {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 4px 0;
+}
+.cal-day-name.sun { color: var(--red); }
+.cal-day-name.sat { color: var(--blue); }
+
+.cal-cell {
+  min-height: 52px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cal-cell:hover { background: var(--surface-2); }
+.cal-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+.cal-cell.today .cal-date-num {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cal-cell.selected { border-color: var(--accent); background: var(--glow); }
+.cal-cell.sun .cal-date-num { color: var(--red); }
+.cal-cell.sat .cal-date-num { color: var(--blue); }
+
+.cal-date-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.cal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.cal-dot.done { opacity: 0.3; }
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.type-memo    { background: var(--text-2); }
+.type-schedule { background: var(--accent); }
+.type-exam    { background: #f5a623; }
+.type-deadline { background: var(--red); }
+.type-event   { background: var(--green); }
+
+/* XP Card */
+.xp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.xp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.xp-level {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+.xp-streak {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.xp-bar-wrap {
+  background: var(--surface-2);
+  border-radius: 99px;
+  height: 6px;
+  overflow: hidden;
+}
+.xp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+.xp-label {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 5px;
+  text-align: right;
+}
+.xp-toast {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  animation: fadeUp 0.3s ease forwards;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Exam Countdown */
+.exam-box {
+  background: var(--surface);
+  border: 1px solid #f5a62355;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.exam-box-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f5a623;
+  margin-bottom: 8px;
+}
+.exam-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.exam-item:last-child { border-bottom: none; }
+.exam-name { color: var(--text); }
+.exam-days { color: var(--text-2); font-weight: 600; }
+.exam-days.urgent { color: var(--red); }
+
+/* Today Events */
+.today-events {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 0 0 10px;
+}
+.no-events {
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}
+.event-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.event-item.type-exam    { border-left-color: #f5a623; }
+.event-item.type-deadline { border-left-color: var(--red); }
+.event-item.type-event   { border-left-color: var(--green); }
+.event-item.type-memo    { border-left-color: var(--text-3); }
+.event-item.done         { opacity: 0.5; }
+
+.event-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.event-type-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.event-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.event-memo {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+}
+.event-actions {
+  display: flex;
+  gap: 6px;
+}
+.ev-done-btn, .ev-edit-btn {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ev-done-btn:hover { background: var(--green); color: #fff; border-color: var(--green); }
+.ev-done-btn.is-done { background: var(--green); color: #fff; border-color: var(--green); }
+.ev-edit-btn:hover { background: var(--border); }
+
+.cal-add-btn {
+  width: 100%;
+  margin-top: 10px;
+  font-size: 13px;
+  padding: 8px;
+}
+
+/* Remind Modal */
+.remind-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
+}
+.remind-item:last-child { border-bottom: none; }
+
+/* Calendar responsive */
+@media (max-width: 768px) {
+  .cal-layout { grid-template-columns: 1fr; }
+  .cal-right { order: -1; display: flex; gap: 10px; flex-wrap: wrap; }
+  .xp-card, .exam-box, .today-events { flex: 1 1 240px; margin-bottom: 0; }
+}
+
+/* ===================== TIMETABLE ===================== */
+.tt-today-banner {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: none;
+}
+.tt-today-label {
+  font-weight: 700;
+  color: var(--accent-2);
+  margin-right: 10px;
+}
+
+.tt-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+.tt-table th {
+  padding: 8px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.tt-period-col {
+  width: 44px;
+  font-size: 12px !important;
+  color: var(--text-3) !important;
+}
+.tt-cell {
+  height: 72px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+  vertical-align: top;
+}
+.tt-cell.empty {
+  text-align: center;
+  vertical-align: middle;
+}
+.tt-cell:hover { background: var(--surface-2); }
+.tt-empty-plus {
+  color: var(--text-3);
+  font-size: 18px;
+  line-height: 1;
+}
+.tt-subject {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tt-sub-info {
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+.tt-color-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tt-color-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.tt-color-btn:hover { transform: scale(1.2); }
+.tt-color-btn.selected { border-color: #fff; transform: scale(1.15); }
+
+/* Modal共通 */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal.hidden { display: none; }
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modal-box h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+.modal-box input,
+.modal-box select,
+.modal-box textarea {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg-sub);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.modal-box input:focus,
+.modal-box select:focus,
+.modal-box textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn-secondary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-secondary:hover { background: var(--border); }

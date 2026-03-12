@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - 時間割</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.5.0-beta</span></div>
+      <nav>
+        <ul>
+          <li><a href="home.html">ホーム</a></li>
+          <li><a href="board.html">掲示板</a></li>
+          <li><a href="calendar.html">カレンダー</a></li>
+          <li class="active"><a href="timetable.html">時間割</a></li>
+          <li><a href="profile.html">プロフィール</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <h2>時間割</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+        <div class="tt-today-banner" id="tt-today-banner"></div>
+        <div class="table-scroll">
+          <table class="tt-table" id="tt-table">
+            <thead>
+              <tr>
+                <th class="tt-period-col"></th>
+                <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
+              </tr>
+            </thead>
+            <tbody id="tt-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="tt-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="tt-modal-title">授業を登録</h3>
+      <input type="text" id="tt-subject" placeholder="科目名（必須）" maxlength="30">
+      <input type="text" id="tt-room" placeholder="教室（例：A棟301）" maxlength="20">
+      <input type="text" id="tt-teacher" placeholder="教員名" maxlength="20">
+      <textarea id="tt-memo" placeholder="メモ" rows="2"></textarea>
+      <div class="tt-color-row">
+        <span style="font-size:13px;color:var(--text-2);">カラー</span>
+        <div class="tt-color-options" id="tt-color-options"></div>
+      </div>
+      <div class="modal-buttons">
+        <button id="tt-save-btn" class="btn-primary">保存</button>
+        <button id="tt-cancel-btn" class="btn-secondary">キャンセル</button>
+        <button id="tt-delete-btn" class="btn-danger" style="display:none;">削除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/timetable.js?v=1"></script>
+</body>
+</html>

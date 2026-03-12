@@ -1,4 +1,4 @@
-import os
+﻿import os
 import bcrypt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +9,8 @@ from routes.users import router as users_router
 from routes.logs import router as logs_router
 from routes.notices import router as notices_router
 from routes.posts import router as posts_router
+from routes.calendar import router as calendar_router
+from routes.timetable import router as timetable_router
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,7 +30,7 @@ def init_admin():
 
 init_admin()
 
-app = FastAPI(title="Polonix API", version="0.2.0-beta", docs_url=None, redoc_url=None)
+app = FastAPI(title="Polonix API", version="0.5.0-beta", docs_url=None, redoc_url=None)
 
 origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
@@ -41,11 +43,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(users_router, prefix="/users", tags=["users"])
-app.include_router(logs_router, prefix="/logs", tags=["logs"])
-app.include_router(notices_router, prefix="/notices", tags=["notices"])
-app.include_router(posts_router, prefix="/posts", tags=["posts"])
+app.include_router(auth_router,      prefix="/auth",      tags=["auth"])
+app.include_router(users_router,     prefix="/users",     tags=["users"])
+app.include_router(logs_router,      prefix="/logs",      tags=["logs"])
+app.include_router(notices_router,   prefix="/notices",   tags=["notices"])
+app.include_router(posts_router,     prefix="/posts",     tags=["posts"])
+app.include_router(calendar_router,  prefix="/calendar",  tags=["calendar"])
+app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
 
 @app.get("/")
 @app.head("/")
