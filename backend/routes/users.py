@@ -42,10 +42,15 @@ class PasswordUpdate(BaseModel):
 class AvatarUpdate(BaseModel):
     avatar: str
 
+@router.get("/avatars")
+def get_avatars(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    users = db.query(User).all()
+    return {u.username: u.avatar for u in users}
+
 @router.get("/")
 def get_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     users = db.query(User).all()
-    return [{"id": u.id, "username": u.username, "role": u.role, "created_at": u.created_at} for u in users]
+    return [{"id": u.id, "username": u.username, "role": u.role, "avatar": u.avatar, "created_at": u.created_at} for u in users]
 
 @router.post("/")
 def create_user(body: UserCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
