@@ -29,6 +29,18 @@
       <section class="content-area">
         <div class="profile-box">
           <h3>アカウント情報</h3>
+          <div class="avatar-section">
+            <div class="avatar-preview" id="avatar-preview">
+              <span id="avatar-initial"></span>
+              <img id="avatar-img" src="" alt="" style="display:none;">
+            </div>
+            <div class="avatar-actions">
+              <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/gif,image/heic,image/heif" style="display:none;">
+              <button id="avatar-upload-btn" class="btn-secondary">画像を変更</button>
+              <button id="avatar-delete-btn" class="btn-danger" style="display:none;">削除</button>
+            </div>
+            <p id="avatar-msg"></p>
+          </div>
           <div class="profile-item">
             <span class="profile-label">ユーザー名</span>
             <span id="profile-username">---</span>

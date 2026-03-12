@@ -39,6 +39,9 @@ class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
 
+class AvatarUpdate(BaseModel):
+    avatar: str
+
 @router.get("/")
 def get_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     users = db.query(User).all()
@@ -80,7 +83,13 @@ def update_role(user_id: int, body: RoleUpdate, db: Session = Depends(get_db), a
 
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "username": current_user.username, "role": current_user.role, "created_at": current_user.created_at}
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "role": current_user.role,
+        "avatar": current_user.avatar,
+        "created_at": current_user.created_at
+    }
 
 @router.patch("/me/password")
 def change_password(body: PasswordUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -90,6 +99,24 @@ def change_password(body: PasswordUpdate, db: Session = Depends(get_db), current
     db.add(Log(username=current_user.username, action="パスワード変更"))
     db.commit()
     return {"message": "パスワードを変更しました"}
+
+@router.patch("/me/avatar")
+def update_avatar(body: AvatarUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not body.avatar.startswith("data:image/"):
+        raise HTTPException(status_code=400, detail="無効な画像データです")
+    if len(body.avatar) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="画像サイズが大きすぎます（上限1MB）")
+    current_user.avatar = body.avatar
+    db.add(Log(username=current_user.username, action="アバター更新"))
+    db.commit()
+    return {"message": "アバターを更新しました"}
+
+@router.delete("/me/avatar")
+def delete_avatar(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    current_user.avatar = None
+    db.add(Log(username=current_user.username, action="アバター削除"))
+    db.commit()
+    return {"message": "アバターを削除しました"}
 
 @router.delete("/me")
 def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
