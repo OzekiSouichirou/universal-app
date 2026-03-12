@@ -2,6 +2,14 @@ const token = localStorage.getItem('access_token') || sessionStorage.getItem('ac
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
+function avatarHtml(username, avatar) {
+  const initial = username.charAt(0).toUpperCase();
+  if (avatar) {
+    return `<div class="post-avatar"><img src="${avatar}" alt="${initial}"></div>`;
+  }
+  return `<div class="post-avatar">${initial}</div>`;
+}
+
 async function init() {
   const user = await checkAuth(true);
   if (!user) return;
@@ -26,7 +34,12 @@ function renderUsers(users) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${u.id}</td>
-      <td>${u.username}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${avatarHtml(u.username, u.avatar)}
+          ${u.username}
+        </div>
+      </td>
       <td>
         <select class="role-select" data-id="${u.id}">
           <option value="user" ${u.role === 'user' ? 'selected' : ''}>一般ユーザー</option>

@@ -1,5 +1,6 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let currentUser = null;
+let avatars = {};
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -10,11 +11,24 @@ textarea.addEventListener('input', () => {
   charCount.textContent = `${textarea.value.length} / 500`;
 });
 
+function avatarHtml(username) {
+  const av = avatars[username];
+  const initial = username.charAt(0).toUpperCase();
+  if (av) {
+    return `<div class="post-avatar"><img src="${av}" alt="${initial}"></div>`;
+  }
+  return `<div class="post-avatar">${initial}</div>`;
+}
+
 async function init() {
   const user = await checkAuth(false);
   if (!user) return;
   currentUser = user;
   document.getElementById('current-user').textContent = user.username;
+  const avRes = await fetch(`${API}/users/avatars`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  avatars = await avRes.json();
   fetchPosts();
 }
 
@@ -38,7 +52,10 @@ function renderPosts(posts) {
   list.innerHTML = posts.map(p => `
     <div class="post-card" id="post-${p.id}">
       <div class="post-header">
-        <span class="post-username">${p.username}</span>
+        <div class="post-user-info">
+          ${avatarHtml(p.username)}
+          <span class="post-username">${p.username}</span>
+        </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
       <div class="post-content">${escapeHtml(p.content)}</div>
@@ -141,6 +158,7 @@ async function fetchComments(postId) {
   list.innerHTML = comments.map(c => `
     <div class="comment-item" id="comment-${c.id}">
       <div class="comment-header">
+        ${avatarHtml(c.username)}
         <span class="comment-username">${c.username}</span>
         <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
         ${c.username === currentUser.username || currentUser.role === 'admin' ? `
