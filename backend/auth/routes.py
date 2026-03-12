@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import sys
 import os
+import random
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.database import get_db, User, Log
 from auth.auth import verify_password, create_access_token
@@ -18,6 +19,12 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     username: str
     password: str
+
+def generate_user_id(db: Session) -> str:
+    while True:
+        uid = "#" + str(random.randint(0, 99999999)).zfill(8)
+        if not db.query(User).filter(User.user_id == uid).first():
+            return uid
 
 @router.post("/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
@@ -45,7 +52,8 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="既に使われているユーザー名です")
 
     hashed = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    user = User(username=request.username, hashed_password=hashed, role="user")
+    uid = generate_user_id(db)
+    user = User(username=request.username, hashed_password=hashed, role="user", user_id=uid)
     db.add(user)
     db.add(Log(username=request.username, action="新規登録"))
     db.commit()

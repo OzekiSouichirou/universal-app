@@ -7,6 +7,7 @@ async function init() {
   if (!user) return;
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('profile-username').textContent = user.username;
+  document.getElementById('profile-user-id').textContent = user.user_id || '未設定';
   document.getElementById('profile-role').textContent = user.role === 'admin' ? '管理者' : '一般ユーザー';
   document.getElementById('profile-created').textContent = new Date(user.created_at + 'Z').toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'});
   document.getElementById('avatar-initial').textContent = user.username.charAt(0).toUpperCase();

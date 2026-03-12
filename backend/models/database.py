@@ -33,6 +33,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="user")
     avatar = Column(Text, nullable=True)
+    user_id = Column(String, unique=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Log(Base):
