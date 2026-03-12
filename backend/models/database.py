@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text
+﻿from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -57,6 +57,7 @@ class Post(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, nullable=False)
     content = Column(String, nullable=False)
+    image = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Like(Base):
@@ -72,6 +73,16 @@ class Comment(Base):
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
     username = Column(String, nullable=False)
     content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, index=True)
+    type = Column(String, nullable=False)
+    post_id = Column(Integer, nullable=False)
+    from_username = Column(String, nullable=False)
+    is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():
