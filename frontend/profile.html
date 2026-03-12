@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.3.0-beta</span></div>
       <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
@@ -46,6 +46,10 @@
             <span id="profile-username">---</span>
           </div>
           <div class="profile-item">
+            <span class="profile-label">固有ID</span>
+            <span id="profile-user-id" style="color:var(--text-2);font-family:monospace;">---</span>
+          </div>
+          <div class="profile-item">
             <span class="profile-label">権限</span>
             <span id="profile-role">---</span>
           </div>
@@ -71,6 +75,6 @@
     </main>
   </div>
   <script src="js/auth.js"></script>
-  <script src="js/profile.js?v=2"></script>
+  <script src="js/profile.js?v=3"></script>
 </body>
 </html>
