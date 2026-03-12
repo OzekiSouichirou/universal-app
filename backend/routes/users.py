@@ -42,49 +42,12 @@ class PasswordUpdate(BaseModel):
 class AvatarUpdate(BaseModel):
     avatar: str
 
+# /me系を先に定義（/{user_id}より前に置かないとルート衝突する）
+
 @router.get("/avatars")
 def get_avatars(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     users = db.query(User).all()
     return {u.username: u.avatar for u in users}
-
-@router.get("/")
-def get_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    users = db.query(User).all()
-    return [{"id": u.id, "username": u.username, "role": u.role, "avatar": u.avatar, "user_id": u.user_id, "created_at": u.created_at} for u in users]
-
-@router.post("/")
-def create_user(body: UserCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    existing = db.query(User).filter(User.username == body.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="既に存在するユーザー名です")
-    hashed = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    user = User(username=body.username, hashed_password=hashed, role=body.role)
-    db.add(user)
-    db.add(Log(username=admin.username, action="ユーザー追加", detail=f"{body.username}（{body.role}）"))
-    db.commit()
-    return {"message": "ユーザーを作成しました"}
-
-@router.delete("/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-    if user.role == "admin" and user.username == "admin":
-        raise HTTPException(status_code=400, detail="メイン管理者は削除できません")
-    db.add(Log(username=admin.username, action="ユーザー削除", detail=user.username))
-    db.delete(user)
-    db.commit()
-    return {"message": "ユーザーを削除しました"}
-
-@router.patch("/{user_id}/role")
-def update_role(user_id: int, body: RoleUpdate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-    db.add(Log(username=admin.username, action="権限変更", detail=f"{user.username} → {body.role}"))
-    user.role = body.role
-    db.commit()
-    return {"message": "権限を変更しました"}
 
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_user)):
@@ -130,3 +93,44 @@ def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     db.delete(current_user)
     db.commit()
     return {"message": "アカウントを削除しました"}
+
+# /{user_id}系は後に定義
+
+@router.get("/")
+def get_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    users = db.query(User).all()
+    return [{"id": u.id, "username": u.username, "role": u.role, "avatar": u.avatar, "user_id": u.user_id, "created_at": u.created_at} for u in users]
+
+@router.post("/")
+def create_user(body: UserCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    existing = db.query(User).filter(User.username == body.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="既に存在するユーザー名です")
+    hashed = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    user = User(username=body.username, hashed_password=hashed, role=body.role)
+    db.add(user)
+    db.add(Log(username=admin.username, action="ユーザー追加", detail=f"{body.username}（{body.role}）"))
+    db.commit()
+    return {"message": "ユーザーを作成しました"}
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    if user.role == "admin" and user.username == "admin":
+        raise HTTPException(status_code=400, detail="メイン管理者は削除できません")
+    db.add(Log(username=admin.username, action="ユーザー削除", detail=user.username))
+    db.delete(user)
+    db.commit()
+    return {"message": "ユーザーを削除しました"}
+
+@router.patch("/{user_id}/role")
+def update_role(user_id: int, body: RoleUpdate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    db.add(Log(username=admin.username, action="権限変更", detail=f"{user.username} → {body.role}"))
+    user.role = body.role
+    db.commit()
+    return {"message": "権限を変更しました"}
