@@ -50,7 +50,7 @@ def get_avatars(db: Session = Depends(get_db), current_user: User = Depends(get_
 @router.get("/")
 def get_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     users = db.query(User).all()
-    return [{"id": u.id, "username": u.username, "role": u.role, "avatar": u.avatar, "created_at": u.created_at} for u in users]
+    return [{"id": u.id, "username": u.username, "role": u.role, "avatar": u.avatar, "user_id": u.user_id, "created_at": u.created_at} for u in users]
 
 @router.post("/")
 def create_user(body: UserCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
