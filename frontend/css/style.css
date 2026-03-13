@@ -2263,3 +2263,39 @@ body {
   .db-card-wide { grid-column: span 1; }
   .db-stat-row { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ホームグリッド */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.home-xp-bar-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.home-xp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.home-xp-header span:first-child {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+#home-xp-label {
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .home-grid { grid-template-columns: 1fr; }
+}

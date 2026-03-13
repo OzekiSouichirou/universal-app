@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix - ホーム</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.5.0-beta</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.6.0-beta</span></div>
       <nav>
         <ul>
           <li class="active"><a href="home.html">ホーム</a></li>
@@ -26,25 +27,60 @@
     </aside>
     <main class="main-content">
       <header class="top-bar">
-      <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
         <h2>ホーム</h2>
         <span id="current-user"></span>
       </header>
-      <section class="content-area">
+      <section class="content-area db-layout">
+
         <div class="welcome-box">
           <h3 id="welcome-msg">ようこそ</h3>
           <p>Polonix へログインしました。</p>
         </div>
+
+        <div class="db-stat-row" id="home-stat-cards"></div>
+
+        <div class="home-xp-bar-wrap" id="home-xp-wrap">
+          <div class="home-xp-header">
+            <span id="home-xp-level">Lv.1</span>
+            <span id="home-xp-streak">🔥 0日連続</span>
+            <span id="home-xp-label">0 / 100 XP</span>
+          </div>
+          <div class="xp-bar-wrap">
+            <div class="xp-bar" id="home-xp-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="home-grid">
+          <div class="db-card">
+            <div class="db-card-title">📈 自分の投稿推移（過去7日）</div>
+            <canvas id="home-chart-trend" height="120"></canvas>
+          </div>
+          <div class="db-card">
+            <div class="db-card-title">🏆 XPランキング</div>
+            <canvas id="home-chart-xp" height="160"></canvas>
+          </div>
+          <div class="db-card">
+            <div class="db-card-title">📅 今日・明日の予定</div>
+            <div id="home-today-events" class="db-list"></div>
+          </div>
+          <div class="db-card">
+            <div class="db-card-title">📚 今日の時間割</div>
+            <div id="home-today-tt" class="db-list"></div>
+          </div>
+        </div>
+
         <div class="notice-area">
           <h4>お知らせ</h4>
           <ul id="notice-list">
             <li class="notice-item">現在お知らせはありません</li>
           </ul>
         </div>
+
       </section>
     </main>
   </div>
   <script src="js/auth.js"></script>
-  <script src="js/home.js"></script>
+  <script src="js/home.js?v=2"></script>
 </body>
 </html>
