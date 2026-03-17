@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - ご意見箱管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title"><a href="dashboard.html">Polonix</a><span class="sidebar-version">v0.7.0-beta</span></div>
+      <nav>
+        <ul>
+          <li><a href="dashboard.html">ダッシュボード</a></li>
+          <li><a href="users.html">ユーザー管理</a></li>
+          <li><a href="notices.html">お知らせ管理</a></li>
+          <li><a href="logs.html">ログ確認</a></li>
+          <li class="active"><a href="feedback-admin.html">ご意見箱</a></li>
+          <li><a href="admin-settings.html">設定</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <h2>ご意見箱管理</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+        <div class="fb-filter-row">
+          <button class="fb-filter-btn active" data-status="all">すべて</button>
+          <button class="fb-filter-btn" data-status="open">未対応</button>
+          <button class="fb-filter-btn" data-status="in_progress">対応中</button>
+          <button class="fb-filter-btn" data-status="done">完了</button>
+        </div>
+        <div id="fb-admin-list"></div>
+      </section>
+    </main>
+  </div>
+  <script src="js/auth.js"></script>
+  <script src="js/feedback-admin.js?v=1"></script>
+</body>
+</html>

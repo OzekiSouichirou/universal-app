@@ -12,6 +12,7 @@ from routes.posts import router as posts_router
 from routes.calendar import router as calendar_router
 from routes.timetable import router as timetable_router
 from routes.stats import router as stats_router
+from routes.feedback import router as feedback_router
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -52,6 +53,7 @@ app.include_router(posts_router,     prefix="/posts",     tags=["posts"])
 app.include_router(calendar_router,  prefix="/calendar",  tags=["calendar"])
 app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
+app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
 @app.get("/")
 @app.head("/")

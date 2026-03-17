@@ -112,6 +112,17 @@ class UserXP(Base):
     last_login = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
+class Feedback(Base):
+    __tablename__ = "feedback"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, index=True)
+    type = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    is_anonymous = Column(Boolean, default=False)
+    status = Column(String, default="open")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 def get_db():
     db = SessionLocal()
     try:
