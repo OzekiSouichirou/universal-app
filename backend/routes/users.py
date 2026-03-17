@@ -1,4 +1,4 @@
-﻿import bcrypt
+import bcrypt
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -89,7 +89,32 @@ def delete_avatar(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 @router.delete("/me")
 def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    db.add(Log(username=current_user.username, action="アカウント削除"))
+    from models.database import Post, Like, Comment, Notification, CalendarEvent, Timetable, UserXP, Feedback
+    uname = current_user.username
+
+    # 自分の投稿に紐づくいいね・コメント・通知を削除
+    my_post_ids = [p.id for p in db.query(Post.id).filter(Post.username == uname).all()]
+    if my_post_ids:
+        db.query(Like).filter(Like.post_id.in_(my_post_ids)).delete(synchronize_session=False)
+        db.query(Comment).filter(Comment.post_id.in_(my_post_ids)).delete(synchronize_session=False)
+        db.query(Notification).filter(Notification.post_id.in_(my_post_ids)).delete(synchronize_session=False)
+
+    # 自分がしたいいね・コメント・通知を削除
+    db.query(Like).filter(Like.username == uname).delete()
+    db.query(Comment).filter(Comment.username == uname).delete()
+    db.query(Notification).filter(Notification.username == uname).delete()
+    db.query(Notification).filter(Notification.from_username == uname).delete()
+
+    # 自分の投稿を削除
+    db.query(Post).filter(Post.username == uname).delete()
+
+    # カレンダー・時間割・XP・フィードバックを削除
+    db.query(CalendarEvent).filter(CalendarEvent.username == uname).delete()
+    db.query(Timetable).filter(Timetable.username == uname).delete()
+    db.query(UserXP).filter(UserXP.username == uname).delete()
+    db.query(Feedback).filter(Feedback.username == uname).delete()
+
+    db.add(Log(username=uname, action="アカウント削除"))
     db.delete(current_user)
     db.commit()
     return {"message": "アカウントを削除しました"}
@@ -115,12 +140,33 @@ def create_user(body: UserCreate, db: Session = Depends(get_db), admin: User = D
 
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    from models.database import Post, Like, Comment, Notification, CalendarEvent, Timetable, UserXP, Feedback
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
     if user.role == "admin" and user.username == "admin":
         raise HTTPException(status_code=400, detail="メイン管理者は削除できません")
-    db.add(Log(username=admin.username, action="ユーザー削除", detail=user.username))
+
+    uname = user.username
+
+    # 自分の投稿に紐づくいいね・コメント・通知を削除
+    my_post_ids = [p.id for p in db.query(Post.id).filter(Post.username == uname).all()]
+    if my_post_ids:
+        db.query(Like).filter(Like.post_id.in_(my_post_ids)).delete(synchronize_session=False)
+        db.query(Comment).filter(Comment.post_id.in_(my_post_ids)).delete(synchronize_session=False)
+        db.query(Notification).filter(Notification.post_id.in_(my_post_ids)).delete(synchronize_session=False)
+
+    db.query(Like).filter(Like.username == uname).delete()
+    db.query(Comment).filter(Comment.username == uname).delete()
+    db.query(Notification).filter(Notification.username == uname).delete()
+    db.query(Notification).filter(Notification.from_username == uname).delete()
+    db.query(Post).filter(Post.username == uname).delete()
+    db.query(CalendarEvent).filter(CalendarEvent.username == uname).delete()
+    db.query(Timetable).filter(Timetable.username == uname).delete()
+    db.query(UserXP).filter(UserXP.username == uname).delete()
+    db.query(Feedback).filter(Feedback.username == uname).delete()
+
+    db.add(Log(username=admin.username, action="ユーザー削除", detail=uname))
     db.delete(user)
     db.commit()
     return {"message": "ユーザーを削除しました"}

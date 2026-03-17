@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from models.database import get_db, User, Post, Like, Comment, UserXP
@@ -36,8 +36,11 @@ def get_admin_stats(db: Session = Depends(get_db), current_user: User = Depends(
         ).scalar()
         hourly.append({"hour": h, "count": count})
 
-    # XPランキング上位5
-    xp_ranking = db.query(UserXP).order_by(UserXP.xp.desc()).limit(5).all()
+    # XPランキング上位5（存在するユーザーのみ）
+    existing_usernames = db.query(User.username).subquery()
+    xp_ranking = db.query(UserXP).filter(
+        UserXP.username.in_(existing_usernames)
+    ).order_by(UserXP.xp.desc()).limit(5).all()
 
     return {
         "total_users": total_users,
@@ -72,8 +75,11 @@ def get_my_stats(db: Session = Depends(get_db), current_user: User = Depends(get
         ).scalar()
         post_trend.append({"date": d.strftime("%m/%d"), "count": count})
 
-    # XPランキング上位5
-    xp_ranking = db.query(UserXP).order_by(UserXP.xp.desc()).limit(5).all()
+    # XPランキング上位5（存在するユーザーのみ）
+    existing_usernames = db.query(User.username).subquery()
+    xp_ranking = db.query(UserXP).filter(
+        UserXP.username.in_(existing_usernames)
+    ).order_by(UserXP.xp.desc()).limit(5).all()
 
     return {
         "my_posts": my_posts,
