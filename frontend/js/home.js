@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let chartTrend = null, chartXP = null;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
