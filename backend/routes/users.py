@@ -290,36 +290,44 @@ class ProfileUpdate(BaseModel):
 
 @router.patch("/me/profile")
 def update_profile(body: ProfileUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import text
     if len(body.bio) > 200:
         raise HTTPException(status_code=400, detail="自己紹介文は200文字以内にしてください")
 
-    # setattr経由で新カラムに安全に書き込む
-    fields = {
-        "bio": body.bio,
-        "selected_title": body.selected_title,
-        "selected_title_a": body.selected_title_a,
-        "selected_title_b": body.selected_title_b,
-        "selected_badges": body.selected_badges,
-    }
-    for field, value in fields.items():
-        try:
-            setattr(current_user, field, value)
-        except Exception as e:
-            print(f"profile update skip {field}: {e}")
-
+    # 生SQLで直接UPDATE（SQLAlchemyキャッシュ問題を完全回避）
     try:
-        db.add(current_user)
+        db.execute(text("""
+            UPDATE users
+            SET bio = :bio,
+                selected_title = :selected_title,
+                selected_title_a = :selected_title_a,
+                selected_title_b = :selected_title_b,
+                selected_badges = :selected_badges
+            WHERE id = :user_id
+        """), {
+            "bio": body.bio,
+            "selected_title": body.selected_title,
+            "selected_title_a": body.selected_title_a,
+            "selected_title_b": body.selected_title_b,
+            "selected_badges": body.selected_badges,
+            "user_id": current_user.id,
+        })
         db.commit()
-        db.refresh(current_user)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"保存に失敗しました: {e}")
 
+    # 保存後の値を生SQLで取得して返す
+    row = db.execute(
+        text("SELECT selected_title, selected_title_a, selected_title_b FROM users WHERE id = :id"),
+        {"id": current_user.id}
+    ).fetchone()
+
     return {
         "message": "プロフィールを更新しました",
-        "selected_title": getattr(current_user, "selected_title", "") or "",
-        "selected_title_a": getattr(current_user, "selected_title_a", "") or "",
-        "selected_title_b": getattr(current_user, "selected_title_b", "") or "",
+        "selected_title": (row.selected_title or "") if row else "",
+        "selected_title_a": (row.selected_title_a or "") if row else "",
+        "selected_title_b": (row.selected_title_b or "") if row else "",
     }
 
 @router.get("/profile/{username}")

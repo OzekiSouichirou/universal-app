@@ -291,7 +291,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 18px 28px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
   background-color: var(--bg-sub);
   position: sticky;
   top: 0;
@@ -3228,13 +3228,6 @@ body {
   margin-bottom: 16px;
   position: relative;
   overflow: hidden;
-}
-.fortune-box::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #3a2fd4, #c4386b, #e8649a, #f4a8c8);
 }
 .fortune-inner {
   display: flex;
