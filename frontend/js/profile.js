@@ -303,13 +303,19 @@ document.getElementById('save-profile-btn').addEventListener('click', async () =
   });
 
   if (res.ok) {
+    const saved = await res.json();
+    // 保存成功後にselectedTitleA/Bをレスポンスで更新
+    if (saved.selected_title_a !== undefined) selectedTitleA = saved.selected_title_a;
+    if (saved.selected_title_b !== undefined) selectedTitleB = saved.selected_title_b;
     msg.style.color = '#3ecf8e';
     msg.textContent = '✓ プロフィールを保存しました';
+    renderEquipGrid();
+    renderPreview();
     setTimeout(() => msg.textContent = '', 3000);
   } else {
     const data = await res.json();
     msg.style.color = '#f0476c';
-    msg.textContent = data.detail;
+    msg.textContent = data.detail || '保存に失敗しました';
   }
 });
 
