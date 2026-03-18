@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let currentUser = null;
 let avatars = {};
 let selectedImage = null;
@@ -197,7 +197,7 @@ function renderPosts(posts) {
       <div class="post-header">
         <div class="post-user-info">
           ${avatarHtml(p.username)}
-          <span class="post-username">${p.username}</span>
+          <span class="post-username user-link" data-user="${p.username}" style="cursor:pointer;">${p.username}</span>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
@@ -275,6 +275,12 @@ function renderPosts(posts) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) document.getElementById(`post-${id}`).remove();
+    });
+  });
+
+  document.querySelectorAll('.user-link').forEach(el => {
+    el.addEventListener('click', () => {
+      window.location.href = `user-profile.html?u=${encodeURIComponent(el.dataset.user)}`;
     });
   });
 }

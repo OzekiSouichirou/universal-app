@@ -11,7 +11,7 @@
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.8.0-β</span></div>
-              <nav>
+      <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
           <li><a href="board.html">掲示板</a></li>
@@ -72,6 +72,36 @@
           <button id="change-password-btn" class="btn-primary">変更する</button>
           <p id="password-msg"></p>
         </div>
+        <!-- 自己紹介文 -->
+        <div class="profile-box">
+          <h3>✏️ 自己紹介</h3>
+          <textarea id="bio-input" placeholder="自己紹介文を入力（200文字以内）" maxlength="200" rows="3" style="width:100%;background:var(--bg-sub);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical;outline:none;"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span id="bio-count" style="font-size:11px;color:var(--text-3);">0 / 200</span>
+          </div>
+        </div>
+
+        <!-- 称号・バッジ装備 -->
+        <div class="profile-box">
+          <h3>🏅 称号・バッジ装備</h3>
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:12px;">ガチャで獲得した称号・バッジを装備できます。称号は1つ、バッジは最大3つまで。</p>
+
+          <div class="equip-section">
+            <div class="equip-label">👑 称号（1つ選択）</div>
+            <div id="title-list" class="equip-grid"></div>
+          </div>
+
+          <div class="equip-section" style="margin-top:16px;">
+            <div class="equip-label">🏅 バッジ（最大3つ選択）</div>
+            <div id="badge-list" class="equip-grid"></div>
+          </div>
+
+          <div class="equip-preview" id="equip-preview"></div>
+
+          <button class="btn-primary" id="save-profile-btn" style="width:100%;margin-top:12px;">プロフィールを保存</button>
+          <p id="profile-save-msg" style="font-size:12px;min-height:16px;text-align:center;margin-top:4px;"></p>
+        </div>
+
         <div class="profile-box danger-box">
           <h3>アカウント削除</h3>
           <p class="danger-text">この操作は取り消せません。アカウントと全データが削除されます。</p>

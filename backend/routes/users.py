@@ -57,6 +57,9 @@ def get_me(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
         "avatar": current_user.avatar,
         "user_id": current_user.user_id,
+        "bio": current_user.bio or "",
+        "selected_title": current_user.selected_title or "",
+        "selected_badges": current_user.selected_badges or "[]",
         "created_at": current_user.created_at
     }
 
@@ -134,8 +137,6 @@ def update_role(user_id: int, body: RoleUpdate, db: Session = Depends(get_db), a
     user.role = body.role
     db.commit()
     return {"message": "権限を変更しました"}
-
-
 @router.post("/admin/cleanup-orphan-data")
 def cleanup_orphan_data(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     """存在しないユーザーの孤立データを全削除する（管理者専用）"""
@@ -179,80 +180,135 @@ def cleanup_orphan_data(db: Session = Depends(get_db), admin: User = Depends(req
     return {"message": "クリーンアップ完了", "deleted": deleted}
 
 
-# ===== XP管理API（管理者専用）=====
-from models.database import UserXP
-
-class XPOperation(BaseModel):
-    username: str          # "__all__" で全ユーザー
-    operation: str         # "add" | "sub" | "set"
+# ===================== XP管理（管理者） =====================
+class XPManage(BaseModel):
+    username: str
     amount: int
     reason: str = ""
 
-@router.get("/xp-ranking")
-def get_xp_ranking(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    """全ユーザーのXP一覧（ランキング順）"""
+@router.get("/xp/list")
+def get_xp_list(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """全ユーザーのXP一覧（管理者専用）"""
+    from models.database import UserXP
     users = db.query(User).all()
+    xp_rows = {x.username: x for x in db.query(UserXP).all()}
     result = []
     for u in users:
-        xp_row = db.query(UserXP).filter(UserXP.username == u.username).first()
+        xp = xp_rows.get(u.username)
         result.append({
             "id": u.id,
             "username": u.username,
-            "xp": xp_row.xp if xp_row else 0,
-            "level": xp_row.level if xp_row else 1,
-            "streak": xp_row.streak if xp_row else 0,
+            "role": u.role,
+            "xp": xp.xp if xp else 0,
+            "level": xp.level if xp else 1,
+            "streak": xp.streak if xp else 0,
         })
-    result.sort(key=lambda x: x["xp"], reverse=True)
-    return result
+    return sorted(result, key=lambda x: x["xp"], reverse=True)
 
-LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
+@router.post("/xp/grant")
+def grant_xp(body: XPManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """XPを配布する（管理者専用）"""
+    from models.database import UserXP
+    from calendar import calc_level
+    target = db.query(User).filter(User.username == body.username).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="配布量は1以上にしてください")
 
-def calc_level(xp: int) -> int:
+    xp_row = db.query(UserXP).filter(UserXP.username == body.username).first()
+    if not xp_row:
+        xp_row = UserXP(username=body.username, xp=0, level=1, streak=0)
+        db.add(xp_row)
+    xp_row.xp += body.amount
+    # レベル再計算
+    LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
     for i in range(len(LEVEL_THRESHOLDS) - 1, -1, -1):
-        if xp >= LEVEL_THRESHOLDS[i]:
-            return i + 1
-    return 1
-
-@router.post("/xp-manage")
-def manage_xp(body: XPOperation, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    """XP配布・没収・設定（管理者専用）"""
-    if body.operation not in ("add", "sub", "set"):
-        raise HTTPException(status_code=400, detail="operationはadd/sub/setのいずれか")
-    if body.amount < 0:
-        raise HTTPException(status_code=400, detail="amountは0以上")
-
-    # 対象ユーザーを取得
-    if body.username == "__all__":
-        targets = db.query(User).all()
-    else:
-        user = db.query(User).filter(User.username == body.username).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-        targets = [user]
-
-    updated = []
-    for target in targets:
-        xp_row = db.query(UserXP).filter(UserXP.username == target.username).first()
-        if not xp_row:
-            xp_row = UserXP(username=target.username, xp=0, level=1, streak=0)
-            db.add(xp_row)
-
-        old_xp = xp_row.xp
-        if body.operation == "add":
-            xp_row.xp = max(0, xp_row.xp + body.amount)
-        elif body.operation == "sub":
-            xp_row.xp = max(0, xp_row.xp - body.amount)
-        elif body.operation == "set":
-            xp_row.xp = body.amount
-
-        xp_row.level = calc_level(xp_row.xp)
-
-        op_label = {"add": "XP配布", "sub": "XP没収", "set": "XP設定"}[body.operation]
-        detail = f"{target.username}: {old_xp}→{xp_row.xp} XP"
-        if body.reason:
-            detail += f"（{body.reason}）"
-        db.add(Log(username=admin.username, action=op_label, detail=detail))
-        updated.append({"username": target.username, "old_xp": old_xp, "new_xp": xp_row.xp, "level": xp_row.level})
-
+        if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+            xp_row.level = i + 1
+            break
+    db.add(Log(username=admin.username, action="XP配布",
+               detail=f"{body.username} に +{body.amount}XP（{body.reason}）"))
     db.commit()
-    return {"message": f"{len(updated)}人のXPを更新しました", "updated": updated}
+    return {"message": f"{body.username} に {body.amount}XP を配布しました", "new_xp": xp_row.xp, "new_level": xp_row.level}
+
+@router.post("/xp/revoke")
+def revoke_xp(body: XPManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """XPを没収する（管理者専用）"""
+    from models.database import UserXP
+    target = db.query(User).filter(User.username == body.username).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="没収量は1以上にしてください")
+
+    xp_row = db.query(UserXP).filter(UserXP.username == body.username).first()
+    if not xp_row:
+        raise HTTPException(status_code=404, detail="XPデータがありません")
+    xp_row.xp = max(0, xp_row.xp - body.amount)
+    LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
+    for i in range(len(LEVEL_THRESHOLDS) - 1, -1, -1):
+        if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+            xp_row.level = i + 1
+            break
+    db.add(Log(username=admin.username, action="XP没収",
+               detail=f"{body.username} から -{body.amount}XP（{body.reason}）"))
+    db.commit()
+    return {"message": f"{body.username} から {body.amount}XP を没収しました", "new_xp": xp_row.xp, "new_level": xp_row.level}
+
+@router.post("/xp/reset")
+def reset_xp(body: XPManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """XPを0にリセット（管理者専用）"""
+    from models.database import UserXP
+    target = db.query(User).filter(User.username == body.username).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    xp_row = db.query(UserXP).filter(UserXP.username == body.username).first()
+    if xp_row:
+        xp_row.xp = 0
+        xp_row.level = 1
+    db.add(Log(username=admin.username, action="XPリセット",
+               detail=f"{body.username} のXPをリセット（{body.reason}）"))
+    db.commit()
+    return {"message": f"{body.username} のXPをリセットしました"}
+
+
+# ===================== プロフィール強化 =====================
+class ProfileUpdate(BaseModel):
+    bio: str = ""
+    selected_title: str = ""
+    selected_badges: str = "[]"  # JSON文字列
+
+@router.patch("/me/profile")
+def update_profile(body: ProfileUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if len(body.bio) > 200:
+        raise HTTPException(status_code=400, detail="自己紹介文は200文字以内にしてください")
+    current_user.bio = body.bio
+    current_user.selected_title = body.selected_title
+    current_user.selected_badges = body.selected_badges
+    db.commit()
+    return {"message": "プロフィールを更新しました"}
+
+@router.get("/profile/{username}")
+def get_user_profile(username: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """他ユーザーのプロフィールを取得"""
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    from models.database import UserXP, Post
+    xp_row = db.query(UserXP).filter(UserXP.username == username).first()
+    post_count = db.query(Post).filter(Post.username == username).count()
+    return {
+        "username": user.username,
+        "user_id": user.user_id,
+        "avatar": user.avatar,
+        "bio": user.bio or "",
+        "selected_title": user.selected_title or "",
+        "selected_badges": user.selected_badges or "[]",
+        "role": user.role,
+        "created_at": user.created_at,
+        "xp": xp_row.xp if xp_row else 0,
+        "level": xp_row.level if xp_row else 1,
+        "streak": xp_row.streak if xp_row else 0,
+        "post_count": post_count,
+    }

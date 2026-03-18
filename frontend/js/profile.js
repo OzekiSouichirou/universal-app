@@ -14,6 +14,7 @@ async function init() {
   if (user.avatar) {
     showAvatar(user.avatar);
   }
+  buildEquipUI(user);
 }
 
 function showAvatar(dataUrl) {
@@ -196,3 +197,152 @@ document.getElementById('delete-account-btn').addEventListener('click', async ()
 });
 
 init();
+
+// ===================== ガチャアイテムデータ（game.jsと共通） =====================
+const GACHA_POOL = [
+  { id:'badge_fire',    name:'🔥 炎バッジ',        rarity:'N',  color:'#f76c24', type:'badge' },
+  { id:'badge_water',   name:'💧 水バッジ',        rarity:'N',  color:'#538eed', type:'badge' },
+  { id:'badge_grass',   name:'🌿 草バッジ',        rarity:'N',  color:'#5dbd58', type:'badge' },
+  { id:'badge_electric',name:'⚡ 電気バッジ',      rarity:'N',  color:'#f5cc17', type:'badge' },
+  { id:'badge_ice',     name:'❄️ 氷バッジ',        rarity:'R',  color:'#75d5d5', type:'badge' },
+  { id:'badge_dragon',  name:'🐉 ドラゴンバッジ',  rarity:'R',  color:'#0a6ac9', type:'badge' },
+  { id:'badge_psychic', name:'🔮 エスパーバッジ',  rarity:'R',  color:'#f461af', type:'badge' },
+  { id:'badge_ghost',   name:'👻 ゴーストバッジ',  rarity:'SR', color:'#5064aa', type:'badge' },
+  { id:'badge_dark',    name:'🌑 あくバッジ',      rarity:'SR', color:'#5b5369', type:'badge' },
+  { id:'badge_fairy',   name:'🌸 フェアリーバッジ',rarity:'SR', color:'#ed76d0', type:'badge' },
+  { id:'title_champion',name:'👑 チャンピオン',    rarity:'SSR',color:'#f5a623', type:'title' },
+  { id:'title_legend',  name:'⭐ 伝説使い',        rarity:'SSR',color:'#e87aaa', type:'title' },
+];
+const RARITY_COLOR = { N:'#8892b0', R:'#3ecf8e', SR:'#41b4f5', SSR:'#f5a623' };
+
+let inventory = JSON.parse(localStorage.getItem('gacha_inventory') || '[]');
+let selectedTitle = '';
+let selectedBadges = [];
+
+function buildEquipUI(user) {
+  // 現在の装備を復元
+  selectedTitle = user.selected_title || '';
+  try { selectedBadges = JSON.parse(user.selected_badges || '[]'); } catch { selectedBadges = []; }
+
+  // 自己紹介
+  const bioInput = document.getElementById('bio-input');
+  bioInput.value = user.bio || '';
+  document.getElementById('bio-count').textContent = `${bioInput.value.length} / 200`;
+  bioInput.addEventListener('input', () => {
+    document.getElementById('bio-count').textContent = `${bioInput.value.length} / 200`;
+  });
+
+  renderEquipGrid();
+  renderPreview();
+}
+
+function renderEquipGrid() {
+  const titles = GACHA_POOL.filter(i => i.type === 'title');
+  const badges = GACHA_POOL.filter(i => i.type === 'badge');
+
+  // 称号リスト
+  const titleList = document.getElementById('title-list');
+  titleList.innerHTML = titles.map(item => {
+    const owned = inventory.find(i => i.id === item.id);
+    const selected = selectedTitle === item.id;
+    return `
+      <button class="equip-btn ${selected ? 'equipped' : ''} ${!owned ? 'not-owned' : ''}"
+        data-id="${item.id}" data-type="title"
+        style="--item-color:${item.color}"
+        ${!owned ? 'title="未所持"' : ''}>
+        <span class="equip-rarity" style="color:${RARITY_COLOR[item.rarity]}">${item.rarity}</span>
+        <span class="equip-name">${item.name}</span>
+        ${!owned ? '<span class="equip-lock">🔒</span>' : ''}
+      </button>`;
+  }).join('');
+
+  // バッジリスト
+  const badgeList = document.getElementById('badge-list');
+  badgeList.innerHTML = badges.map(item => {
+    const owned = inventory.find(i => i.id === item.id);
+    const selected = selectedBadges.includes(item.id);
+    return `
+      <button class="equip-btn ${selected ? 'equipped' : ''} ${!owned ? 'not-owned' : ''}"
+        data-id="${item.id}" data-type="badge"
+        style="--item-color:${item.color}"
+        ${!owned ? 'title="未所持"' : ''}>
+        <span class="equip-rarity" style="color:${RARITY_COLOR[item.rarity]}">${item.rarity}</span>
+        <span class="equip-name">${item.name}</span>
+        ${selected ? `<span class="equip-slot">${selectedBadges.indexOf(item.id)+1}</span>` : ''}
+        ${!owned ? '<span class="equip-lock">🔒</span>' : ''}
+      </button>`;
+  }).join('');
+
+  // クリックイベント
+  document.querySelectorAll('.equip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const type = btn.dataset.type;
+      const owned = inventory.find(i => i.id === id);
+      if (!owned) return; // 未所持は選択不可
+
+      if (type === 'title') {
+        selectedTitle = selectedTitle === id ? '' : id;
+      } else {
+        if (selectedBadges.includes(id)) {
+          selectedBadges = selectedBadges.filter(b => b !== id);
+        } else {
+          if (selectedBadges.length >= 3) {
+            selectedBadges.shift(); // 3つ超えたら一番古いを削除
+          }
+          selectedBadges.push(id);
+        }
+      }
+      renderEquipGrid();
+      renderPreview();
+    });
+  });
+}
+
+function renderPreview() {
+  const preview = document.getElementById('equip-preview');
+  const titleItem = GACHA_POOL.find(i => i.id === selectedTitle);
+  const badgeItems = selectedBadges.map(id => GACHA_POOL.find(i => i.id === id)).filter(Boolean);
+
+  if (!titleItem && badgeItems.length === 0) {
+    preview.innerHTML = '';
+    return;
+  }
+
+  preview.innerHTML = `
+    <div class="equip-preview-inner">
+      <div class="equip-preview-label">プレビュー</div>
+      <div class="equip-preview-content">
+        ${titleItem ? `<span class="profile-title-badge" style="background:${titleItem.color}22;border-color:${titleItem.color};color:${titleItem.color}">${titleItem.name}</span>` : ''}
+        <div class="equip-preview-badges">
+          ${badgeItems.map(b => `<span class="profile-badge-item" style="background:${b.color}22;border-color:${b.color}" title="${b.name}">${b.name.split(' ')[0]}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+document.getElementById('save-profile-btn').addEventListener('click', async () => {
+  const bio = document.getElementById('bio-input').value.trim();
+  const msg = document.getElementById('profile-save-msg');
+
+  const res = await fetch(`${API}/users/me/profile`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      bio,
+      selected_title: selectedTitle,
+      selected_badges: JSON.stringify(selectedBadges),
+    })
+  });
+
+  if (res.ok) {
+    msg.style.color = '#3ecf8e';
+    msg.textContent = '✓ プロフィールを保存しました';
+    setTimeout(() => msg.textContent = '', 3000);
+  } else {
+    const data = await res.json();
+    msg.style.color = '#f0476c';
+    msg.textContent = data.detail;
+  }
+});
+

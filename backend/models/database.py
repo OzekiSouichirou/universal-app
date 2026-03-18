@@ -16,14 +16,7 @@ if not DATABASE_URL:
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    connect_args={"connect_timeout": 30},
-)
+engine = create_engine(DATABASE_URL, pool_size=5, max_overflow=10, pool_pre_ping=True, pool_recycle=300)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -35,6 +28,9 @@ class User(Base):
     role = Column(String, default="user")
     avatar = Column(Text, nullable=True)
     user_id = Column(String, unique=True, nullable=True)
+    bio = Column(String, nullable=True)
+    selected_title = Column(String, nullable=True)
+    selected_badges = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Log(Base):
