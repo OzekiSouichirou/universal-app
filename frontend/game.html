@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - ゲーム</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#5b6ef5">
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.8.0-β</span></div>
+      <nav>
+        <ul>
+          <li><a href="home.html">ホーム</a></li>
+          <li><a href="board.html">掲示板</a></li>
+          <li><a href="calendar.html">カレンダー</a></li>
+          <li><a href="timetable.html">時間割</a></li>
+          <li><a href="profile.html">プロフィール</a></li>
+          <li><a href="feedback.html">ご意見箱</a></li>
+          <li class="active"><a href="game.html">ゲーム</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <h2>ゲーム</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+
+        <!-- タブ -->
+        <div class="game-tabs">
+          <button class="game-tab active" data-tab="type-chart">🔥 タイプ相性表</button>
+          <button class="game-tab" data-tab="damage-calc">⚔️ ダメージ計算機</button>
+          <button class="game-tab" data-tab="gacha">🎲 ガチャ</button>
+        </div>
+
+        <!-- ① タイプ相性表 -->
+        <div class="game-panel active" id="tab-type-chart">
+          <div class="game-card">
+            <div class="game-card-title">🔥 ポケモン タイプ相性表</div>
+            <div class="type-search-row">
+              <div class="type-search-group">
+                <label class="type-search-label">攻撃タイプで調べる</label>
+                <div class="type-btn-grid" id="atk-type-grid"></div>
+                <div id="atk-result" class="type-result-box"></div>
+              </div>
+              <div class="type-search-group">
+                <label class="type-search-label">防御タイプで調べる（複合可）</label>
+                <div class="type-btn-grid" id="def-type-grid"></div>
+                <div id="def-result" class="type-result-box"></div>
+              </div>
+            </div>
+            <div class="type-full-table-wrap">
+              <div class="game-card-title" style="margin-top:24px;">📊 全タイプ相性一覧表</div>
+              <p style="font-size:12px;color:var(--text-2);margin-bottom:8px;">縦＝攻撃タイプ　横＝防御タイプ</p>
+              <div class="table-scroll">
+                <table class="type-table" id="type-full-table"></table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ② ダメージ計算機 -->
+        <div class="game-panel" id="tab-damage-calc">
+          <div class="game-card">
+            <div class="game-card-title">⚔️ ポケモン ダメージ計算機</div>
+            <div class="calc-grid">
+              <div class="calc-section">
+                <div class="calc-section-title">🗡️ 攻撃側</div>
+                <div class="calc-row">
+                  <label>攻撃/特攻実数値</label>
+                  <input type="number" id="atk-stat" value="150" min="1" max="999">
+                </div>
+                <div class="calc-row">
+                  <label>技の威力</label>
+                  <input type="number" id="move-power" value="90" min="1" max="999">
+                </div>
+                <div class="calc-row">
+                  <label>攻撃タイプ</label>
+                  <select id="move-type">
+                    <option value="">なし</option>
+                  </select>
+                </div>
+                <div class="calc-row">
+                  <label>一致補正（STAB）</label>
+                  <select id="stab">
+                    <option value="1">なし (×1)</option>
+                    <option value="1.5" selected>あり (×1.5)</option>
+                    <option value="2">テラス一致 (×2)</option>
+                  </select>
+                </div>
+                <div class="calc-row">
+                  <label>急所</label>
+                  <select id="critical">
+                    <option value="1" selected>なし (×1)</option>
+                    <option value="1.5">あり (×1.5)</option>
+                  </select>
+                </div>
+                <div class="calc-row">
+                  <label>乱数</label>
+                  <select id="random-factor">
+                    <option value="1">最大 (×1.00)</option>
+                    <option value="0.925" selected>平均 (×0.925)</option>
+                    <option value="0.85">最小 (×0.85)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="calc-section">
+                <div class="calc-section-title">🛡️ 防御側</div>
+                <div class="calc-row">
+                  <label>防御/特防実数値</label>
+                  <input type="number" id="def-stat" value="130" min="1" max="999">
+                </div>
+                <div class="calc-row">
+                  <label>HP実数値</label>
+                  <input type="number" id="hp-stat" value="200" min="1" max="999">
+                </div>
+                <div class="calc-row">
+                  <label>防御タイプ①</label>
+                  <select id="def-type1">
+                    <option value="">なし</option>
+                  </select>
+                </div>
+                <div class="calc-row">
+                  <label>防御タイプ②</label>
+                  <select id="def-type2">
+                    <option value="">なし</option>
+                  </select>
+                </div>
+                <div class="calc-row">
+                  <label>天気補正</label>
+                  <select id="weather">
+                    <option value="1" selected>なし (×1)</option>
+                    <option value="1.5">晴れ/雨（一致）(×1.5)</option>
+                    <option value="0.5">晴れ/雨（不一致）(×0.5)</option>
+                  </select>
+                </div>
+                <div class="calc-row">
+                  <label>やけど（物理）</label>
+                  <select id="burn">
+                    <option value="1" selected>なし (×1)</option>
+                    <option value="0.5">やけど (×0.5)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary calc-btn" id="calc-btn">計算する</button>
+            <div id="calc-result" class="calc-result-box"></div>
+          </div>
+        </div>
+
+        <!-- ③ ガチャ -->
+        <div class="game-panel" id="tab-gacha">
+          <div class="game-card">
+            <div class="game-card-title">🎲 ガチャ</div>
+            <div class="gacha-xp-info">
+              <span>所持XP：</span>
+              <span id="gacha-xp" class="gacha-xp-val">---</span>
+              <span style="font-size:12px;color:var(--text-2);">（1回50XP消費）</span>
+            </div>
+            <div class="gacha-btns">
+              <button class="btn-primary gacha-roll-btn" id="gacha-1">🎲 1回引く（50XP）</button>
+              <button class="btn-primary gacha-roll-btn" id="gacha-10">🎲🎲 10連（450XP）</button>
+            </div>
+            <div id="gacha-result" class="gacha-result-area"></div>
+            <div class="gacha-inventory-title">🎒 所持バッジ・称号</div>
+            <div id="gacha-inventory" class="gacha-inventory"></div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+  <script src="js/auth.js"></script>
+  <script src="js/game.js?v=1"></script>
+</body>
+</html>
