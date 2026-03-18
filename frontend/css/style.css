@@ -198,7 +198,7 @@ body {
 
 .sidebar-title a {
   color: transparent;
-  background: linear-gradient(90deg, var(--accent-2), var(--blue));
+  background: linear-gradient(90deg, #3a2fd4 0%, #c4386b 40%, #e8649a 70%, #f4a8c8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   text-decoration: none;

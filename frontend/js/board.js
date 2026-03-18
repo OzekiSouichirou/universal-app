@@ -13,15 +13,25 @@ textarea.addEventListener('input', () => {
 });
 
 
-// 称号AのテキストからPOOL_Aを検索してレア度を返す
-function getTitleColor(titleA) {
-  if (!titleA || typeof POOL_A === 'undefined') return 'var(--text-2)';
-  for (const [rarity, words] of Object.entries(POOL_A)) {
-    if (words.includes(titleA)) {
-      return GACHA_RARITY[rarity]?.color || 'var(--text-2)';
-    }
+const RARITY_RANK = {N:0, R:1, SR:2, SSR:3, UR:4, SECR:5};
+
+function getRarityFromPool(text, pool) {
+  if (!text || typeof pool === 'undefined') return null;
+  for (const [rarity, words] of Object.entries(pool)) {
+    if (words.includes(text)) return rarity;
   }
-  return 'var(--text-2)';
+  return null;
+}
+
+// A・B両方のレア度を比較して高い方の色を返す
+function getTitleColor(titleA, titleB) {
+  if (typeof GACHA_RARITY === 'undefined') return 'var(--text-2)';
+  const rA = getRarityFromPool(titleA, typeof POOL_A !== 'undefined' ? POOL_A : {});
+  const rB = getRarityFromPool(titleB, typeof POOL_B !== 'undefined' ? POOL_B : {});
+  const rankA = rA ? (RARITY_RANK[rA] ?? -1) : -1;
+  const rankB = rB ? (RARITY_RANK[rB] ?? -1) : -1;
+  const best = rankA >= rankB ? rA : rB;
+  return best ? (GACHA_RARITY[best]?.color || 'var(--text-2)') : 'var(--text-2)';
 }
 function avatarHtml(username, avatar) {
   const av = avatar !== undefined ? avatar : avatars[username];
@@ -210,7 +220,7 @@ function renderPosts(posts) {
           ${avatarHtml(p.username, p.avatar)}
           <div class="post-user-meta">
             <span class="post-username user-link" data-user="${p.username}" style="cursor:pointer;">${p.username}</span>
-            ${p.title ? `<span class="post-user-title" style="color:${getTitleColor(p.title_a)}">${p.title}</span>` : ''}
+            ${p.title ? `<span class="post-user-title" style="color:${getTitleColor(p.title_a, p.title_b)}">${p.title.replace(" ", "")}</span>` : ''}
           </div>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
@@ -309,7 +319,7 @@ async function fetchComments(postId) {
         ${avatarHtml(c.username)}
         <div class="post-user-meta">
           <span class="comment-username">${c.username}</span>
-          ${c.title ? `<span class="post-user-title" style="color:${getTitleColor(c.title_a)}">${c.title}</span>` : ''}
+          ${c.title ? `<span class="post-user-title" style="color:${getTitleColor(c.title_a, c.title_b)}">${c.title.replace(" ", "")}</span>` : ''}
         </div>
         <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
         ${c.username === currentUser.username || currentUser.role === 'admin' ? `
