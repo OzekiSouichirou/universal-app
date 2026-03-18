@@ -14,7 +14,7 @@ async function init() {
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('welcome-msg').textContent = `ようこそ、${user.username} さん`;
 
-  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable()]);
+  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable(), loadFortune()]);
 }
 
 async function loadNotices() {
@@ -147,3 +147,37 @@ async function loadTodayTimetable() {
 }
 
 init();
+
+async function loadFortune() {
+  try {
+    const res = await fetch(`${API}/users/fortune/today`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const f = await res.json();
+
+    const box = document.getElementById('fortune-box');
+    const rankEl = document.getElementById('fortune-rank');
+    const msgEl = document.getElementById('fortune-msg');
+    const xpEl = document.getElementById('fortune-xp');
+
+    rankEl.textContent = `${f.emoji} ${f.rank}`;
+    msgEl.textContent = f.msg;
+
+    if (f.xp_gained > 0) {
+      xpEl.textContent = `+${f.xp_gained} XP 獲得！`;
+      xpEl.style.display = 'block';
+    } else if (f.already_gained) {
+      xpEl.textContent = '（本日のXPは取得済み）';
+      xpEl.style.display = 'block';
+    }
+
+    // レアリティに応じた色
+    const colors = {
+      '大吉': '#f5a623', '中吉': '#3ecf8e', '小吉': '#41b4f5',
+      '吉': '#8892b0', '末吉': '#b899c0', '凶': '#f0476c', '大凶': '#b06ef5'
+    };
+    rankEl.style.color = colors[f.rank] || 'var(--text)';
+    box.style.display = 'block';
+  } catch(e) {}
+}

@@ -110,6 +110,7 @@ class UserXP(Base):
     level = Column(Integer, default=1)
     streak = Column(Integer, default=0)
     last_login = Column(String, nullable=True)
+    fortune_date = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class Feedback(Base):

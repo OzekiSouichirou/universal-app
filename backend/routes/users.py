@@ -535,3 +535,83 @@ def clear_user_gacha_inventory(username: str, db: Session = Depends(get_db), adm
     db.add(Log(username=admin.username, action="ガチャINV削除", detail=f"{username}のインベントリをクリア"))
     db.commit()
     return {"message": f"{username} のインベントリをクリアしました"}
+
+
+# ===================== 運勢システム =====================
+import random as _random
+from datetime import date as _date
+
+FORTUNE_TABLE = [
+    {"rank": "大吉", "emoji": "🌟", "xp": 50,  "weight": 5,
+     "msgs": ["今日は最高の一日！全力で行こう！", "絶好調の予感。チャンスを掴め！", "運気MAX！何でもうまくいく日！"]},
+    {"rank": "中吉", "emoji": "✨", "xp": 20,  "weight": 20,
+     "msgs": ["いい感じの一日になりそう。", "ほどよく順調。無理せず進もう。", "なんとなくツイてる気がする日。"]},
+    {"rank": "小吉", "emoji": "🍀", "xp": 10,  "weight": 30,
+     "msgs": ["まあまあの一日。コツコツやろう。", "小さな幸運が積み重なる日。", "地道な努力が実を結ぶ兆し。"]},
+    {"rank": "吉",   "emoji": "😊", "xp":  5,  "weight": 25,
+     "msgs": ["普通に良い日。平和が一番。", "特別なことはないが安定した日。", "焦らずのんびりいこう。"]},
+    {"rank": "末吉", "emoji": "🌱", "xp":  2,  "weight": 12,
+     "msgs": ["今日は慎重に。でも諦めないで。", "ちょっと注意が必要な日かも。", "下積みの日。明日への糧にしよう。"]},
+    {"rank": "凶",   "emoji": "💦", "xp":  1,  "weight":  6,
+     "msgs": ["厳しい一日かも。でも乗り越えろ！", "逆境こそ成長のチャンス！", "今日を乗り切れば明日は良くなる！"]},
+    {"rank": "大凶", "emoji": "💀", "xp":  0,  "weight":  2,
+     "msgs": ["最悪の予感…でも大凶を引いた勇者！", "底を打ったら後は上がるだけ！", "伝説の大凶！レアすぎる一日！"]},
+]
+
+@router.get("/fortune/today")
+def get_fortune_today(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """今日の運勢を取得。1日1回のみXPを付与。"""
+    from models.database import UserXP
+
+    today = _date.today().isoformat()
+    # ユーザーIDと日付でシードを固定→同じ日は同じ運勢
+    seed_str = f"{current_user.username}-{today}-fortune"
+    seed = sum(ord(c) for c in seed_str)
+    rng = _random.Random(seed)
+
+    # 重み付き抽選
+    total = sum(f["weight"] for f in FORTUNE_TABLE)
+    r = rng.randint(0, total - 1)
+    cumulative = 0
+    fortune = FORTUNE_TABLE[-1]
+    for f in FORTUNE_TABLE:
+        cumulative += f["weight"]
+        if r < cumulative:
+            fortune = f
+            break
+
+    msg = rng.choice(fortune["msgs"])
+
+    # XP付与（1日1回）
+    xp_row = db.query(UserXP).filter(UserXP.username == current_user.username).first()
+    already_gained = False
+    xp_gained = 0
+
+    if xp_row and getattr(xp_row, 'fortune_date', None) == today:
+        already_gained = True
+    elif fortune["xp"] > 0:
+        if not xp_row:
+            xp_row = UserXP(username=current_user.username, xp=0, level=1, streak=0)
+            db.add(xp_row)
+        xp_row.xp += fortune["xp"]
+        LEVEL_THRESHOLDS = [0,100,250,450,700,1000,1400,1900,2500,3200,4000]
+        for i in range(len(LEVEL_THRESHOLDS)-1,-1,-1):
+            if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+                xp_row.level = i+1
+                break
+        # fortune_dateカラムがあれば保存
+        try:
+            xp_row.fortune_date = today
+        except Exception:
+            pass
+        db.commit()
+        xp_gained = fortune["xp"]
+
+    return {
+        "rank": fortune["rank"],
+        "emoji": fortune["emoji"],
+        "msg": msg,
+        "xp": fortune["xp"],
+        "xp_gained": xp_gained,
+        "already_gained": already_gained,
+    }

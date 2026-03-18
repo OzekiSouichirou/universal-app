@@ -40,7 +40,8 @@ def run_migrations():
         ("users", "selected_title",  "ALTER TABLE users ADD COLUMN selected_title VARCHAR(200)"),
         ("users", "selected_badges",   "ALTER TABLE users ADD COLUMN selected_badges TEXT"),
         ("users", "selected_title_a", "ALTER TABLE users ADD COLUMN selected_title_a VARCHAR(100)"),
-        ("users", "selected_title_b", "ALTER TABLE users ADD COLUMN selected_title_b VARCHAR(100)"),
+        ("users", "selected_title_b",  "ALTER TABLE users ADD COLUMN selected_title_b VARCHAR(100)"),
+        ("user_xp", "fortune_date",      "ALTER TABLE user_xp ADD COLUMN fortune_date VARCHAR(20)"),
     ]
     try:
         with engine.connect() as conn:

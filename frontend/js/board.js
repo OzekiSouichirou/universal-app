@@ -196,8 +196,11 @@ function renderPosts(posts) {
     <div class="post-card" id="post-${p.id}">
       <div class="post-header">
         <div class="post-user-info">
-          ${avatarHtml(p.username)}
-          <span class="post-username">${p.username}</span>
+          ${avatarHtml(p.username, p.avatar)}
+          <div class="post-user-meta">
+            <span class="post-username user-link" data-user="${p.username}" style="cursor:pointer;">${p.username}</span>
+            ${p.title ? `<span class="post-user-title">${p.title}</span>` : ''}
+          </div>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
