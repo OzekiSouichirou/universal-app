@@ -169,8 +169,21 @@ body {
 }
 
 /* 桜グラデーションライン */
+/* top-barのライン（下部）と高さを揃える */
 .sidebar::before {
-  display: none;
+  content: '';
+  position: absolute;
+  top: 53px; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    #3a2fd4 0%,
+    #c4386b 30%,
+    #e8649a 55%,
+    #f4a8c8 80%,
+    #ffffff 100%
+  );
+  opacity: 1;
+  z-index: 10;
 }
 
 .sidebar-title {
@@ -185,19 +198,9 @@ body {
   position: relative;
 }
 
+/* サイドバーのラインはtop-barに合わせてsidebar全体に設置 */
 .sidebar-title::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg,
-    #3a2fd4 0%,
-    #c4386b 30%,
-    #e8649a 55%,
-    #f4a8c8 80%,
-    #ffffff 100%
-  );
-  opacity: 1;
+  display: none;
 }
 
 .sidebar-version {
