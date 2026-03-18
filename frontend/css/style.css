@@ -173,7 +173,7 @@ body {
 .sidebar::before {
   content: '';
   position: absolute;
-  top: 53px; left: 0; right: 0;
+  top: 56px; left: 0; right: 0;
   height: 3px;
   background: linear-gradient(90deg,
     #3a2fd4 0%,
