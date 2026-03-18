@@ -66,6 +66,12 @@ wait_for_db()
 Base.metadata.create_all(bind=engine)
 run_migrations()
 
+# マイグレーション後にSQLAlchemyの接続をリフレッシュ
+try:
+    engine.dispose()
+except Exception as e:
+    print(f"engine dispose: {e}")
+
 def init_admin():
     try:
         db = SessionLocal()

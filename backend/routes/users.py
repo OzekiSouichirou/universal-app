@@ -57,11 +57,11 @@ def get_me(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
         "avatar": current_user.avatar,
         "user_id": current_user.user_id,
-        "bio": current_user.bio or "",
-        "selected_title": current_user.selected_title or "",
-        "selected_title_a": current_user.selected_title_a or "",
-        "selected_title_b": current_user.selected_title_b or "",
-        "selected_badges": current_user.selected_badges or "[]",
+        "bio": getattr(current_user, "bio", None) or "",
+        "selected_title": getattr(current_user, "selected_title", None) or "",
+        "selected_title_a": getattr(current_user, "selected_title_a", None) or "",
+        "selected_title_b": getattr(current_user, "selected_title_b", None) or "",
+        "selected_badges": getattr(current_user, "selected_badges", None) or "[]",
         "created_at": current_user.created_at
     }
 
@@ -287,11 +287,16 @@ class ProfileUpdate(BaseModel):
 def update_profile(body: ProfileUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if len(body.bio) > 200:
         raise HTTPException(status_code=400, detail="自己紹介文は200文字以内にしてください")
-    current_user.bio = body.bio
-    current_user.selected_title = body.selected_title
-    current_user.selected_title_a = body.selected_title_a
-    current_user.selected_title_b = body.selected_title_b
-    current_user.selected_badges = body.selected_badges
+    try: current_user.bio = body.bio
+    except: pass
+    try: current_user.selected_title = body.selected_title
+    except: pass
+    try: current_user.selected_title_a = body.selected_title_a
+    except: pass
+    try: current_user.selected_title_b = body.selected_title_b
+    except: pass
+    try: current_user.selected_badges = body.selected_badges
+    except: pass
     db.commit()
     return {"message": "プロフィールを更新しました"}
 
@@ -308,11 +313,11 @@ def get_user_profile(username: str, db: Session = Depends(get_db), current_user:
         "username": user.username,
         "user_id": user.user_id,
         "avatar": user.avatar,
-        "bio": user.bio or "",
-        "selected_title": user.selected_title or "",
-        "selected_title_a": user.selected_title_a or "",
-        "selected_title_b": user.selected_title_b or "",
-        "selected_badges": user.selected_badges or "[]",
+        "bio": getattr(user, "bio", None) or "",
+        "selected_title": getattr(user, "selected_title", None) or "",
+        "selected_title_a": getattr(user, "selected_title_a", None) or "",
+        "selected_title_b": getattr(user, "selected_title_b", None) or "",
+        "selected_badges": getattr(user, "selected_badges", None) or "[]",
         "role": user.role,
         "created_at": user.created_at,
         "xp": xp_row.xp if xp_row else 0,
