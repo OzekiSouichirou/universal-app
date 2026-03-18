@@ -3149,15 +3149,17 @@ body {
 /* ===================== 投稿ユーザー二つ名 ===================== */
 .post-user-meta {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .post-user-title {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--accent-2);
   font-weight: 600;
-  letter-spacing: 0.2px;
-  opacity: 0.9;
+  opacity: 0.85;
+  white-space: nowrap;
 }
 
 /* ===================== ガチャガイド ===================== */
