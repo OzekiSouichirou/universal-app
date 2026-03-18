@@ -74,8 +74,11 @@ async function fetchInventoryFromDB(token, apiBase) {
     });
     if (!res.ok) return;
     const items = await res.json();
+    console.log('[gacha] total items:', items.length);
+    console.log('[gacha] types:', [...new Set(items.map(i => i.type))]);
     _invCacheA = items.filter(i => i.type === 'A');
     _invCacheB = items.filter(i => i.type === 'B');
+    console.log('[gacha] A:', _invCacheA.length, 'B:', _invCacheB.length);
   } catch(e) { console.error('inventory fetch error:', e); }
 }
 
