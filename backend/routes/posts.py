@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -18,14 +18,20 @@ class CommentCreate(BaseModel):
 @router.get("/")
 def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     posts = db.query(Post).order_by(Post.created_at.desc()).limit(100).all()
+    # ユーザーの称号・アバターを一括取得
+    usernames = list(set(p.username for p in posts))
+    user_map = {u.username: u for u in db.query(User).filter(User.username.in_(usernames)).all()}
     result = []
     for post in posts:
         likes = db.query(Like).filter(Like.post_id == post.id).count()
         liked = db.query(Like).filter(Like.post_id == post.id, Like.username == current_user.username).first() is not None
         comment_count = db.query(Comment).filter(Comment.post_id == post.id).count()
+        u = user_map.get(post.username)
         result.append({
             "id": post.id,
             "username": post.username,
+            "title": u.selected_title if u and u.selected_title else "",
+            "avatar": u.avatar if u else None,
             "content": post.content,
             "image": post.image,
             "created_at": post.created_at,
@@ -113,7 +119,16 @@ def get_comments(post_id: int, db: Session = Depends(get_db), current_user: User
     if not post:
         raise HTTPException(status_code=404, detail="投稿が見つかりません")
     comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.asc()).all()
-    return [{"id": c.id, "username": c.username, "content": c.content, "created_at": c.created_at} for c in comments]
+    comment_user_map = {u.username: u for u in db.query(User).filter(
+        User.username.in_([c.username for c in comments])
+    ).all()}
+    return [{
+        "id": c.id,
+        "username": c.username,
+        "title": comment_user_map.get(c.username).selected_title if comment_user_map.get(c.username) else "",
+        "content": c.content,
+        "created_at": c.created_at
+    } for c in comments]
 
 @router.post("/{post_id}/comments")
 def create_comment(post_id: int, req: CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

@@ -1,5 +1,5 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-let chartTrend = null, chartXP = null, chartHourly = null;
+let chartTrend = null;
 
 const CHART_DEFAULTS = {
   color: '#e4e9f7',
@@ -47,9 +47,6 @@ async function loadStats(user) {
     ]);
 
     renderTrendChart(admin.post_trend, '全体の投稿数');
-    renderXPChart(admin.xp_ranking);
-    renderHourlyChart(admin.hourly_posts);
-    document.getElementById('hourly-card').style.display = 'block';
 
   } else {
     const res = await fetch(`${API}/stats/me`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -65,8 +62,6 @@ async function loadStats(user) {
     ]);
 
     renderTrendChart(me.post_trend, '自分の投稿数');
-    renderXPChart(me.xp_ranking);
-    document.getElementById('hourly-card').style.display = 'none';
   }
 }
 
@@ -106,44 +101,9 @@ function renderTrendChart(data, label) {
   });
 }
 
-function renderXPChart(ranking) {
-  const ctx = document.getElementById('chart-xp').getContext('2d');
-  if (chartXP) chartXP.destroy();
-  chartXP = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ranking.map(r => r.username),
-      datasets: [{
-        label: 'XP',
-        data: ranking.map(r => r.xp),
-        backgroundColor: [
-          '#f5a623','#c0c0c0','#cd7f32',
-          CHART_DEFAULTS.accent, CHART_DEFAULTS.blue
-        ],
-        borderRadius: 6,
-      }]
-    },
-    options: { ...chartOptions(), indexAxis: 'y' },
-  });
-}
+// renderXPChart 廃止
 
-function renderHourlyChart(data) {
-  const ctx = document.getElementById('chart-hourly').getContext('2d');
-  if (chartHourly) chartHourly.destroy();
-  chartHourly = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: data.map(d => d.hour + '時'),
-      datasets: [{
-        label: '投稿数',
-        data: data.map(d => d.count),
-        backgroundColor: CHART_DEFAULTS.green + 'cc',
-        borderRadius: 4,
-      }]
-    },
-    options: chartOptions(),
-  });
-}
+// renderHourlyChart 廃止
 
 function chartOptions() {
   return {

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+from sqlalchemy import func
 from models.database import get_db, User, Post, Like, Comment, UserXP
 from routes.users import get_current_user
 from datetime import datetime, timedelta, date
@@ -29,18 +29,11 @@ def get_admin_stats(db: Session = Depends(get_db), current_user: User = Depends(
         post_trend.append({"date": d.strftime("%m/%d"), "count": count})
 
     # 時間帯別投稿数
-    hourly = []
     for h in range(24):
         count = db.query(func.count(Post.id)).filter(
-            extract("hour", Post.created_at) == h
         ).scalar()
-        hourly.append({"hour": h, "count": count})
 
-    # XPランキング上位5（存在するユーザーのみ）
-    existing_usernames = db.query(User.username).subquery()
-    xp_ranking = db.query(UserXP).filter(
-        UserXP.username.in_(existing_usernames)
-    ).order_by(UserXP.xp.desc()).limit(5).all()
+    # XPランキング上位5
 
     return {
         "total_users": total_users,
@@ -49,8 +42,6 @@ def get_admin_stats(db: Session = Depends(get_db), current_user: User = Depends(
         "total_comments": total_comments,
         "total_likes": total_likes,
         "post_trend": post_trend,
-        "hourly_posts": hourly,
-        "xp_ranking": [{"username": x.username, "xp": x.xp, "level": x.level} for x in xp_ranking]
     }
 
 @router.get("/me")
@@ -75,11 +66,7 @@ def get_my_stats(db: Session = Depends(get_db), current_user: User = Depends(get
         ).scalar()
         post_trend.append({"date": d.strftime("%m/%d"), "count": count})
 
-    # XPランキング上位5（存在するユーザーのみ）
-    existing_usernames = db.query(User.username).subquery()
-    xp_ranking = db.query(UserXP).filter(
-        UserXP.username.in_(existing_usernames)
-    ).order_by(UserXP.xp.desc()).limit(5).all()
+    # XPランキング上位5
 
     return {
         "my_posts": my_posts,
@@ -89,5 +76,4 @@ def get_my_stats(db: Session = Depends(get_db), current_user: User = Depends(get
         "level": xp_row.level if xp_row else 1,
         "streak": xp_row.streak if xp_row else 0,
         "post_trend": post_trend,
-        "xp_ranking": [{"username": x.username, "xp": x.xp, "level": x.level} for x in xp_ranking]
     }

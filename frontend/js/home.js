@@ -1,5 +1,5 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-let chartTrend = null, chartXP = null;
+let chartTrend = null;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -89,21 +89,7 @@ async function loadStats() {
     options: chartOptions(),
   });
 
-  const ctx2 = document.getElementById('home-chart-xp').getContext('2d');
-  if (chartXP) chartXP.destroy();
-  chartXP = new Chart(ctx2, {
-    type: 'bar',
-    data: {
-      labels: me.xp_ranking.map(r => r.username),
-      datasets: [{
-        label: 'XP',
-        data: me.xp_ranking.map(r => r.xp),
-        backgroundColor: ['#f5a623','#c0c0c0','#cd7f32', CHART_DEFAULTS.accent, '#41b4f5'],
-        borderRadius: 6,
-      }]
-    },
-    options: { ...chartOptions(), indexAxis: 'y' },
-  });
+  // XPランキング廃止
 }
 
 function chartOptions() {

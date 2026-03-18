@@ -12,8 +12,8 @@ textarea.addEventListener('input', () => {
   charCount.textContent = `${textarea.value.length} / 500`;
 });
 
-function avatarHtml(username) {
-  const av = avatars[username];
+function avatarHtml(username, avatar) {
+  const av = avatar !== undefined ? avatar : avatars[username];
   const initial = username.charAt(0).toUpperCase();
   if (av) return `<div class="post-avatar"><img src="${av}" alt="${initial}"></div>`;
   return `<div class="post-avatar">${initial}</div>`;
@@ -197,7 +197,7 @@ function renderPosts(posts) {
       <div class="post-header">
         <div class="post-user-info">
           ${avatarHtml(p.username)}
-          <span class="post-username user-link" data-user="${p.username}" style="cursor:pointer;">${p.username}</span>
+          <span class="post-username">${p.username}</span>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
@@ -277,12 +277,6 @@ function renderPosts(posts) {
       if (res.ok) document.getElementById(`post-${id}`).remove();
     });
   });
-
-  document.querySelectorAll('.user-link').forEach(el => {
-    el.addEventListener('click', () => {
-      window.location.href = `user-profile.html?u=${encodeURIComponent(el.dataset.user)}`;
-    });
-  });
 }
 
 async function fetchComments(postId) {
@@ -299,7 +293,10 @@ async function fetchComments(postId) {
     <div class="comment-item" id="comment-${c.id}">
       <div class="comment-header">
         ${avatarHtml(c.username)}
-        <span class="comment-username">${c.username}</span>
+        <div class="post-user-meta">
+          <span class="comment-username">${c.username}</span>
+          ${c.title ? `<span class="post-user-title">${c.title}</span>` : ''}
+        </div>
         <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
         ${c.username === currentUser.username || currentUser.role === 'admin' ? `
           <button class="delete-comment-btn" data-post-id="${postId}" data-id="${c.id}">削除</button>

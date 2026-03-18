@@ -41,6 +41,7 @@
           <button class="game-tab active" data-tab="type-chart">🔥 タイプ相性表</button>
           <button class="game-tab" data-tab="damage-calc">⚔️ ダメージ計算機</button>
           <button class="game-tab" data-tab="gacha">🎲 ガチャ</button>
+          <button class="game-tab" data-tab="gacha-guide">📖 ガチャガイド</button>
         </div>
 
         <!-- ① タイプ相性表 -->
@@ -155,6 +156,87 @@
             </div>
             <button class="btn-primary calc-btn" id="calc-btn">計算する</button>
             <div id="calc-result" class="calc-result-box"></div>
+          </div>
+        </div>
+
+        <!-- ④ ガチャガイド -->
+        <div class="game-panel" id="tab-gacha-guide">
+          <div class="game-card">
+            <div class="game-card-title">📖 ガチャガイド</div>
+
+            <div class="guide-section">
+              <div class="guide-title">🎲 ガチャとは</div>
+              <p class="guide-text">XPを消費して称号のパーツ（A・B）を入手できるシステムです。AとBを組み合わせてプロフィールに二つ名として表示できます。</p>
+            </div>
+
+            <div class="guide-section">
+              <div class="guide-title">💰 消費XP</div>
+              <table class="guide-table">
+                <tr><th>回数</th><th>消費XP</th><th>備考</th></tr>
+                <tr><td>1回引く</td><td>50 XP</td><td>A・B各1枚ずつ排出</td></tr>
+                <tr><td>10連</td><td>450 XP</td><td>50XP分お得</td></tr>
+              </table>
+            </div>
+
+            <div class="guide-section">
+              <div class="guide-title">⭐ レアリティと排出率</div>
+              <table class="guide-table">
+                <tr><th>レア</th><th>確率</th><th>特徴</th></tr>
+                <tr><td><span style="color:#9ea0a0;font-weight:700;">N</span></td><td>50%</td><td>ノーマル。よくある日常系のワード</td></tr>
+                <tr><td><span style="color:#3ecf8e;font-weight:700;">R</span></td><td>30%</td><td>レア。学校あるあるなワード</td></tr>
+                <tr><td><span style="color:#41b4f5;font-weight:700;">SR</span></td><td>15%</td><td>スーパーレア。限界学生感あるワード</td></tr>
+                <tr><td><span style="color:#f5a623;font-weight:700;">SSR</span></td><td>4%</td><td>ダブルスーパーレア。伝説・神話系の強いワード</td></tr>
+                <tr><td><span style="color:#e87aaa;font-weight:700;">UR</span></td><td>0.9%</td><td>ウルトラレア。システム・バグ系の謎ワード</td></tr>
+                <tr><td><span style="color:#b06ef5;font-weight:700;">SECR</span></td><td>0.1%</td><td>シークレット。極レア。特別なワード。パルス発光</td></tr>
+              </table>
+              <p class="guide-note">A・Bそれぞれ独立してレアリティが決定されます。1回の排出でA・B各1枚ずつ入手できます。</p>
+            </div>
+
+            <div class="guide-section">
+              <div class="guide-title">🔄 かぶりについて</div>
+              <p class="guide-text">既に所持しているワードが出た場合、インベントリには追加されません。その代わり <span style="color:var(--accent-2);font-weight:700;">+1XP</span> のボーナスが付与されます。</p>
+            </div>
+
+            <div class="guide-section">
+              <div class="guide-title">⭐ XPの貯め方</div>
+              <table class="guide-table">
+                <tr><th>アクション</th><th>獲得XP</th></tr>
+                <tr><td>🔥 ログインボーナス（1日1回）</td><td>+5 XP</td></tr>
+                <tr><td>📅 カレンダーにイベントを追加</td><td>+10 XP</td></tr>
+                <tr><td>✅ 予定・メモを完了にする</td><td>+30 XP</td></tr>
+                <tr><td>⚠️ 試験イベントを完了にする</td><td>+50 XP</td></tr>
+                <tr><td>🔄 ガチャのかぶり</td><td>+1 XP</td></tr>
+                <tr><td>⭐ 管理者からの配布</td><td>任意</td></tr>
+              </table>
+            </div>
+
+            <div class="guide-section">
+              <div class="guide-title">📊 レベル閾値</div>
+              <table class="guide-table">
+                <tr><th>レベル</th><th>必要累計XP</th><th>10連ガチャ可能回数目安</th></tr>
+                <tr><td>Lv.1</td><td>0</td><td>0回</td></tr>
+                <tr><td>Lv.2</td><td>100 XP</td><td>2回</td></tr>
+                <tr><td>Lv.3</td><td>250 XP</td><td>5回</td></tr>
+                <tr><td>Lv.4</td><td>450 XP</td><td>10回</td></tr>
+                <tr><td>Lv.5</td><td>700 XP</td><td>15回</td></tr>
+                <tr><td>Lv.6</td><td>1,000 XP</td><td>22回</td></tr>
+                <tr><td>Lv.7</td><td>1,400 XP</td><td>31回</td></tr>
+                <tr><td>Lv.8</td><td>1,900 XP</td><td>42回</td></tr>
+                <tr><td>Lv.9</td><td>2,500 XP</td><td>55回</td></tr>
+                <tr><td>Lv.10</td><td>3,200 XP</td><td>71回</td></tr>
+                <tr><td>Lv.11</td><td>4,000 XP</td><td>88回</td></tr>
+              </table>
+            </div>
+
+            <div class="guide-section">
+              <div class="guide-title">👑 称号の使い方</div>
+              <p class="guide-text">ガチャで獲得したA・Bのワードは <a href="profile.html" style="color:var(--accent-2);">プロフィールページ</a> で組み合わせて二つ名として装備できます。装備した称号は掲示板の投稿やユーザープロフィールに表示されます。</p>
+              <div class="guide-example">
+                <span style="color:var(--text-2);font-size:12px;">例：</span>
+                <span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">徹夜明けの 揚げパン神</span>
+              </div>
+            </div>
+
           </div>
         </div>
 
