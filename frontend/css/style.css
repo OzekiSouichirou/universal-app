@@ -170,10 +170,26 @@ body {
 
 /* 桜グラデーションライン */
 .sidebar::before {
+  display: none;
+}
+
+.sidebar-title {
+  font-size: 22px;
+  font-weight: 800;
+  padding: 0 20px 20px;
+  border-bottom: none;
+  letter-spacing: -0.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+}
+
+.sidebar-title::after {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
   background: linear-gradient(90deg,
     #3a2fd4 0%,
     #c4386b 30%,
@@ -182,18 +198,6 @@ body {
     #ffffff 100%
   );
   opacity: 1;
-  z-index: 10;
-}
-
-.sidebar-title {
-  font-size: 22px;
-  font-weight: 800;
-  padding: 0 20px 20px;
-  border-bottom: 1px solid var(--border);
-  letter-spacing: -0.5px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 
 .sidebar-version {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polonix-v0.7.3';
+const CACHE_NAME = 'polonix-v0.7.4';
 const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
   '/home.html', '/board.html', '/calendar.html', '/timetable.html',
