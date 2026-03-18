@@ -73,14 +73,15 @@ body {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
+  height: 4px;
   background: linear-gradient(90deg,
-    var(--sakura-navy) 0%,
-    var(--sakura-3)   30%,
-    var(--sakura-2)   55%,
-    var(--sakura)     80%,
-    #fff              100%
+    #3a2fd4 0%,
+    #c4386b 30%,
+    #e8649a 55%,
+    #f4a8c8 80%,
+    #ffffff 100%
   );
+  opacity: 1;
 }
 
 .login-box h1 {
@@ -172,15 +173,16 @@ body {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
+  height: 4px;
   background: linear-gradient(90deg,
-    var(--sakura-navy) 0%,
-    var(--sakura-3)   30%,
-    var(--sakura-2)   55%,
-    var(--sakura)     75%,
-    #fff              100%
+    #3a2fd4 0%,
+    #c4386b 30%,
+    #e8649a 55%,
+    #f4a8c8 80%,
+    #ffffff 100%
   );
-  opacity: 0.9;
+  opacity: 1;
+  z-index: 10;
 }
 
 .sidebar-title {
@@ -297,15 +299,15 @@ body {
   content: '';
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 2px;
+  height: 3px;
   background: linear-gradient(90deg,
-    var(--sakura-navy) 0%,
-    var(--sakura-3)   25%,
-    var(--sakura-2)   50%,
-    var(--sakura)     80%,
-    transparent       100%
+    #3a2fd4 0%,
+    #c4386b 25%,
+    #e8649a 55%,
+    #f4a8c8 85%,
+    transparent 100%
   );
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .top-bar h2 {
