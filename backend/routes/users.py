@@ -50,18 +50,24 @@ def get_avatars(db: Session = Depends(get_db), current_user: User = Depends(get_
     return {u.username: u.avatar for u in users}
 
 @router.get("/me")
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    # getattr経由ではSQLAlchemyキャッシュの問題があるため生SQLで取得
+    row = db.execute(
+        text("SELECT bio, selected_title, selected_title_a, selected_title_b, selected_badges FROM users WHERE id = :id"),
+        {"id": current_user.id}
+    ).fetchone()
     return {
         "id": current_user.id,
         "username": current_user.username,
         "role": current_user.role,
         "avatar": current_user.avatar,
         "user_id": current_user.user_id,
-        "bio": getattr(current_user, "bio", None) or "",
-        "selected_title": getattr(current_user, "selected_title", None) or "",
-        "selected_title_a": getattr(current_user, "selected_title_a", None) or "",
-        "selected_title_b": getattr(current_user, "selected_title_b", None) or "",
-        "selected_badges": getattr(current_user, "selected_badges", None) or "[]",
+        "bio": (row.bio or "") if row else "",
+        "selected_title": (row.selected_title or "") if row else "",
+        "selected_title_a": (row.selected_title_a or "") if row else "",
+        "selected_title_b": (row.selected_title_b or "") if row else "",
+        "selected_badges": (row.selected_badges or "[]") if row else "[]",
         "created_at": current_user.created_at
     }
 
@@ -323,17 +329,22 @@ def get_user_profile(username: str, db: Session = Depends(get_db), current_user:
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
     from models.database import UserXP, Post
+    from sqlalchemy import text
     xp_row = db.query(UserXP).filter(UserXP.username == username).first()
     post_count = db.query(Post).filter(Post.username == username).count()
+    row = db.execute(
+        text("SELECT bio, selected_title, selected_title_a, selected_title_b, selected_badges FROM users WHERE id = :id"),
+        {"id": user.id}
+    ).fetchone()
     return {
         "username": user.username,
         "user_id": user.user_id,
         "avatar": user.avatar,
-        "bio": getattr(user, "bio", None) or "",
-        "selected_title": getattr(user, "selected_title", None) or "",
-        "selected_title_a": getattr(user, "selected_title_a", None) or "",
-        "selected_title_b": getattr(user, "selected_title_b", None) or "",
-        "selected_badges": getattr(user, "selected_badges", None) or "[]",
+        "bio": (row.bio or "") if row else "",
+        "selected_title": (row.selected_title or "") if row else "",
+        "selected_title_a": (row.selected_title_a or "") if row else "",
+        "selected_title_b": (row.selected_title_b or "") if row else "",
+        "selected_badges": (row.selected_badges or "[]") if row else "[]",
         "role": user.role,
         "created_at": user.created_at,
         "xp": xp_row.xp if xp_row else 0,

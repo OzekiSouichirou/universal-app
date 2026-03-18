@@ -18,9 +18,19 @@ class CommentCreate(BaseModel):
 @router.get("/")
 def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     posts = db.query(Post).order_by(Post.created_at.desc()).limit(100).all()
-    # ユーザーの称号・アバターを一括取得
+    from sqlalchemy import text
+    # ユーザーの称号・アバターを生SQLで一括取得（SQLAlchemyキャッシュ回避）
     usernames = list(set(p.username for p in posts))
-    user_map = {u.username: u for u in db.query(User).filter(User.username.in_(usernames)).all()}
+    if usernames:
+        placeholders = ','.join([f':u{i}' for i in range(len(usernames))])
+        params = {f'u{i}': u for i, u in enumerate(usernames)}
+        rows = db.execute(
+            text(f"SELECT username, avatar, selected_title FROM users WHERE username IN ({placeholders})"),
+            params
+        ).fetchall()
+        user_map = {r.username: r for r in rows}
+    else:
+        user_map = {}
     result = []
     for post in posts:
         likes = db.query(Like).filter(Like.post_id == post.id).count()
@@ -30,8 +40,8 @@ def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         result.append({
             "id": post.id,
             "username": post.username,
-            "title": getattr(u, "selected_title", None) or "" if u else "",
-            "avatar": getattr(u, "avatar", None) if u else None,
+            "title": (u.selected_title or "") if u else "",
+            "avatar": u.avatar if u else None,
             "content": post.content,
             "image": post.image,
             "created_at": post.created_at,
@@ -119,13 +129,22 @@ def get_comments(post_id: int, db: Session = Depends(get_db), current_user: User
     if not post:
         raise HTTPException(status_code=404, detail="投稿が見つかりません")
     comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.asc()).all()
-    comment_user_map = {u.username: u for u in db.query(User).filter(
-        User.username.in_([c.username for c in comments])
-    ).all()}
+    from sqlalchemy import text
+    c_usernames = list(set(c.username for c in comments))
+    if c_usernames:
+        placeholders = ','.join([f':u{i}' for i in range(len(c_usernames))])
+        params = {f'u{i}': u for i, u in enumerate(c_usernames)}
+        c_rows = db.execute(
+            text(f"SELECT username, selected_title FROM users WHERE username IN ({placeholders})"),
+            params
+        ).fetchall()
+        comment_user_map = {r.username: r for r in c_rows}
+    else:
+        comment_user_map = {}
     return [{
         "id": c.id,
         "username": c.username,
-        "title": getattr(comment_user_map.get(c.username), "selected_title", None) or "" if comment_user_map.get(c.username) else "",
+        "title": (comment_user_map[c.username].selected_title or "") if c.username in comment_user_map else "",
         "content": c.content,
         "created_at": c.created_at
     } for c in comments]
