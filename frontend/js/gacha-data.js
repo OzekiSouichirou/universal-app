@@ -67,24 +67,23 @@ function getInventoryB() { try { return JSON.parse(localStorage.getItem('gacha_i
 function saveInventoryA(inv) { localStorage.setItem('gacha_inv_a', JSON.stringify(inv)); }
 function saveInventoryB(inv) { localStorage.setItem('gacha_inv_b', JSON.stringify(inv)); }
 
+// かぶりの場合はインベントリに追加しない。trueを返す=かぶり
 function addToInventoryA(rarity, text) {
   const inv = getInventoryA();
   const ex = inv.find(i => i.text === text);
-  const isDup = !!ex;
-  if (ex) ex.count = (ex.count||1)+1;
-  else inv.push({ rarity, text, count:1 });
+  if (ex) return true; // かぶり・追加しない
+  inv.push({ rarity, text, count: 1 });
   saveInventoryA(inv);
-  return isDup;
+  return false; // 新規
 }
 
 function addToInventoryB(rarity, text) {
   const inv = getInventoryB();
   const ex = inv.find(i => i.text === text);
-  const isDup = !!ex;
-  if (ex) ex.count = (ex.count||1)+1;
-  else inv.push({ rarity, text, count:1 });
+  if (ex) return true; // かぶり・追加しない
+  inv.push({ rarity, text, count: 1 });
   saveInventoryB(inv);
-  return isDup;
+  return false; // 新規
 }
 
 // 旧インベントリをマイグレーション

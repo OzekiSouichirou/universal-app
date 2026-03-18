@@ -3135,3 +3135,13 @@ body {
   flex-wrap: wrap;
   gap: 5px;
 }
+
+.gacha-new-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--green);
+  background: var(--green-bg);
+  border-radius: 99px;
+  padding: 1px 6px;
+  letter-spacing: 0.5px;
+}

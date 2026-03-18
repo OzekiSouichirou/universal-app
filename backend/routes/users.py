@@ -388,3 +388,32 @@ def revoke_title(body: TitleManage, db: Session = Depends(get_db), admin: User =
                detail=f"{body.username} の称号「{old_title}」を削除（{body.reason}）"))
     db.commit()
     return {"message": f"{body.username} の称号を削除しました"}
+
+
+# ===================== ガチャXP消費 =====================
+class GachaSpendXP(BaseModel):
+    count: int  # 1 or 10
+
+@router.post("/gacha/spend-xp")
+def gacha_spend_xp(body: GachaSpendXP, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """ガチャでXPを消費する。残高不足ならエラー。"""
+    from models.database import UserXP
+    if body.count not in [1, 10]:
+        raise HTTPException(status_code=400, detail="countは1または10のみ")
+    cost = 50 if body.count == 1 else 450
+
+    xp_row = db.query(UserXP).filter(UserXP.username == current_user.username).first()
+    if not xp_row:
+        raise HTTPException(status_code=400, detail="XPデータがありません")
+    if xp_row.xp < cost:
+        raise HTTPException(status_code=400, detail=f"XPが足りません（必要：{cost}XP、所持：{xp_row.xp}XP）")
+
+    xp_row.xp -= cost
+    # レベル再計算
+    LEVEL_THRESHOLDS = [0,100,250,450,700,1000,1400,1900,2500,3200,4000]
+    for i in range(len(LEVEL_THRESHOLDS)-1,-1,-1):
+        if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+            xp_row.level = i+1
+            break
+    db.commit()
+    return {"message": "XP消費完了", "new_xp": xp_row.xp, "new_level": xp_row.level}
