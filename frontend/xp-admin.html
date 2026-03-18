@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - XP管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title"><a href="dashboard.html">Polonix</a><span class="sidebar-version">v0.8.0-β</span></div>
+      <nav>
+        <ul>
+          <li><a href="dashboard.html">ダッシュボード</a></li>
+          <li><a href="users.html">ユーザー管理</a></li>
+          <li><a href="notices.html">お知らせ管理</a></li>
+          <li><a href="logs.html">ログ確認</a></li>
+          <li><a href="feedback-admin.html">ご意見箱</a></li>
+          <li class="active"><a href="xp-admin.html">XP管理</a></li>
+          <li><a href="admin-settings.html">設定</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <h2>XP管理</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+
+        <!-- XP一括操作 -->
+        <div class="profile-box" style="margin-bottom:16px;">
+          <h3>⭐ XP配布 / 没収</h3>
+          <div class="xp-admin-form">
+            <div class="xp-admin-row">
+              <label>対象ユーザー</label>
+              <select id="xp-target-user">
+                <option value="__all__">── 全ユーザーに一括 ──</option>
+              </select>
+            </div>
+            <div class="xp-admin-row">
+              <label>操作</label>
+              <div class="xp-op-btns">
+                <button class="xp-op-btn active" id="op-add" data-op="add">➕ 配布</button>
+                <button class="xp-op-btn" id="op-sub" data-op="sub">➖ 没収</button>
+                <button class="xp-op-btn" id="op-set" data-op="set">📌 直接設定</button>
+              </div>
+            </div>
+            <div class="xp-admin-row">
+              <label>XP量</label>
+              <input type="number" id="xp-amount" value="100" min="1" max="99999" placeholder="XP数値">
+            </div>
+            <div class="xp-admin-row">
+              <label>理由（ログに記録）</label>
+              <input type="text" id="xp-reason" placeholder="例：イベント参加報酬" maxlength="100">
+            </div>
+            <button class="btn-primary" id="xp-execute-btn" style="width:100%;padding:11px;font-size:14px;">実行する</button>
+            <p id="xp-admin-msg" style="font-size:13px;min-height:18px;margin-top:8px;"></p>
+          </div>
+        </div>
+
+        <!-- XPランキング一覧 -->
+        <div class="profile-box">
+          <h3>📊 全ユーザー XP一覧</h3>
+          <div class="table-scroll">
+            <table class="user-table" id="xp-table">
+              <thead>
+                <tr>
+                  <th>順位</th>
+                  <th>ユーザー</th>
+                  <th>Lv</th>
+                  <th>XP</th>
+                  <th>連続ログイン</th>
+                  <th>クイック操作</th>
+                </tr>
+              </thead>
+              <tbody id="xp-list"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+  <script src="js/auth.js"></script>
+  <script src="js/xp-admin.js?v=1"></script>
+</body>
+</html>

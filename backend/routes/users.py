@@ -177,3 +177,82 @@ def cleanup_orphan_data(db: Session = Depends(get_db), admin: User = Depends(req
     db.add(Log(username=admin.username, action="孤立データ削除", detail=str(deleted)))
     db.commit()
     return {"message": "クリーンアップ完了", "deleted": deleted}
+
+
+# ===== XP管理API（管理者専用）=====
+from models.database import UserXP
+
+class XPOperation(BaseModel):
+    username: str          # "__all__" で全ユーザー
+    operation: str         # "add" | "sub" | "set"
+    amount: int
+    reason: str = ""
+
+@router.get("/xp-ranking")
+def get_xp_ranking(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """全ユーザーのXP一覧（ランキング順）"""
+    users = db.query(User).all()
+    result = []
+    for u in users:
+        xp_row = db.query(UserXP).filter(UserXP.username == u.username).first()
+        result.append({
+            "id": u.id,
+            "username": u.username,
+            "xp": xp_row.xp if xp_row else 0,
+            "level": xp_row.level if xp_row else 1,
+            "streak": xp_row.streak if xp_row else 0,
+        })
+    result.sort(key=lambda x: x["xp"], reverse=True)
+    return result
+
+LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
+
+def calc_level(xp: int) -> int:
+    for i in range(len(LEVEL_THRESHOLDS) - 1, -1, -1):
+        if xp >= LEVEL_THRESHOLDS[i]:
+            return i + 1
+    return 1
+
+@router.post("/xp-manage")
+def manage_xp(body: XPOperation, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """XP配布・没収・設定（管理者専用）"""
+    if body.operation not in ("add", "sub", "set"):
+        raise HTTPException(status_code=400, detail="operationはadd/sub/setのいずれか")
+    if body.amount < 0:
+        raise HTTPException(status_code=400, detail="amountは0以上")
+
+    # 対象ユーザーを取得
+    if body.username == "__all__":
+        targets = db.query(User).all()
+    else:
+        user = db.query(User).filter(User.username == body.username).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+        targets = [user]
+
+    updated = []
+    for target in targets:
+        xp_row = db.query(UserXP).filter(UserXP.username == target.username).first()
+        if not xp_row:
+            xp_row = UserXP(username=target.username, xp=0, level=1, streak=0)
+            db.add(xp_row)
+
+        old_xp = xp_row.xp
+        if body.operation == "add":
+            xp_row.xp = max(0, xp_row.xp + body.amount)
+        elif body.operation == "sub":
+            xp_row.xp = max(0, xp_row.xp - body.amount)
+        elif body.operation == "set":
+            xp_row.xp = body.amount
+
+        xp_row.level = calc_level(xp_row.xp)
+
+        op_label = {"add": "XP配布", "sub": "XP没収", "set": "XP設定"}[body.operation]
+        detail = f"{target.username}: {old_xp}→{xp_row.xp} XP"
+        if body.reason:
+            detail += f"（{body.reason}）"
+        db.add(Log(username=admin.username, action=op_label, detail=detail))
+        updated.append({"username": target.username, "old_xp": old_xp, "new_xp": xp_row.xp, "level": xp_row.level})
+
+    db.commit()
+    return {"message": f"{len(updated)}人のXPを更新しました", "updated": updated}

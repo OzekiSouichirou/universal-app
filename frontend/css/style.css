@@ -2834,3 +2834,68 @@ body {
   .calc-grid { grid-template-columns: 1fr; }
   .gacha-btns { flex-direction: column; }
 }
+
+/* ===================== XP ADMIN ===================== */
+.xp-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+.xp-admin-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+}
+.xp-admin-row label {
+  color: var(--text-2);
+  min-width: 140px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.xp-admin-row input,
+.xp-admin-row select {
+  flex: 1;
+  background: var(--bg-sub);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--t);
+}
+.xp-admin-row input:focus,
+.xp-admin-row select:focus { border-color: var(--accent); }
+
+.xp-op-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.xp-op-btn {
+  padding: 7px 18px;
+  border-radius: var(--r);
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.xp-op-btn:hover { background: var(--border); color: var(--text); }
+.xp-op-btn.active {
+  background: linear-gradient(135deg, var(--accent), #4557e8);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .xp-admin-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .xp-admin-row label { min-width: auto; }
+  .xp-admin-row input, .xp-admin-row select { width: 100%; }
+}
