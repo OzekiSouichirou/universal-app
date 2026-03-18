@@ -198,30 +198,16 @@ document.getElementById('delete-account-btn').addEventListener('click', async ()
 
 init();
 
-// ===================== ガチャアイテムデータ（game.jsと共通） =====================
-const GACHA_POOL = [
-  { id:'badge_fire',    name:'🔥 炎バッジ',        rarity:'N',  color:'#f76c24', type:'badge' },
-  { id:'badge_water',   name:'💧 水バッジ',        rarity:'N',  color:'#538eed', type:'badge' },
-  { id:'badge_grass',   name:'🌿 草バッジ',        rarity:'N',  color:'#5dbd58', type:'badge' },
-  { id:'badge_electric',name:'⚡ 電気バッジ',      rarity:'N',  color:'#f5cc17', type:'badge' },
-  { id:'badge_ice',     name:'❄️ 氷バッジ',        rarity:'R',  color:'#75d5d5', type:'badge' },
-  { id:'badge_dragon',  name:'🐉 ドラゴンバッジ',  rarity:'R',  color:'#0a6ac9', type:'badge' },
-  { id:'badge_psychic', name:'🔮 エスパーバッジ',  rarity:'R',  color:'#f461af', type:'badge' },
-  { id:'badge_ghost',   name:'👻 ゴーストバッジ',  rarity:'SR', color:'#5064aa', type:'badge' },
-  { id:'badge_dark',    name:'🌑 あくバッジ',      rarity:'SR', color:'#5b5369', type:'badge' },
-  { id:'badge_fairy',   name:'🌸 フェアリーバッジ',rarity:'SR', color:'#ed76d0', type:'badge' },
-  { id:'title_champion',name:'👑 チャンピオン',    rarity:'SSR',color:'#f5a623', type:'title' },
-  { id:'title_legend',  name:'⭐ 伝説使い',        rarity:'SSR',color:'#e87aaa', type:'title' },
-];
-const RARITY_COLOR = { N:'#8892b0', R:'#3ecf8e', SR:'#41b4f5', SSR:'#f5a623' };
-
+// ガチャデータはgacha-data.jsで定義
 let inventory = JSON.parse(localStorage.getItem('gacha_inventory') || '[]');
 let selectedTitle = '';
+let selectedRarity = '';
 let selectedBadges = [];
 
 function buildEquipUI(user) {
   // 現在の装備を復元
   selectedTitle = user.selected_title || '';
+  selectedRarity = '';
   try { selectedBadges = JSON.parse(user.selected_badges || '[]'); } catch { selectedBadges = []; }
 
   // 自己紹介
@@ -237,62 +223,39 @@ function buildEquipUI(user) {
 }
 
 function renderEquipGrid() {
-  const titles = GACHA_POOL.filter(i => i.type === 'title');
-  const badges = GACHA_POOL.filter(i => i.type === 'badge');
+  // gacha-data.jsのインベントリから称号一覧を作成
+  const inv = getInventory();
+  const rarityOrder = ['SECR','UR','SSR','SR','R','N'];
+  const sorted = [...inv].sort((a,b) => rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity));
 
-  // 称号リスト
   const titleList = document.getElementById('title-list');
-  titleList.innerHTML = titles.map(item => {
-    const owned = inventory.find(i => i.id === item.id);
-    const selected = selectedTitle === item.id;
+  if (sorted.length === 0) {
+    titleList.innerHTML = '<p style="font-size:12px;color:var(--text-3);">まだ称号がありません。ゲーム関連ページでガチャを引いてください！</p>';
+    document.getElementById('badge-list').innerHTML = '';
+    return;
+  }
+
+  titleList.innerHTML = sorted.map(item => {
+    const col = GACHA_RARITY[item.rarity]?.color || '#888';
+    const selected = selectedTitle === item.title;
     return `
-      <button class="equip-btn ${selected ? 'equipped' : ''} ${!owned ? 'not-owned' : ''}"
-        data-id="${item.id}" data-type="title"
-        style="--item-color:${item.color}"
-        ${!owned ? 'title="未所持"' : ''}>
-        <span class="equip-rarity" style="color:${RARITY_COLOR[item.rarity]}">${item.rarity}</span>
-        <span class="equip-name">${item.name}</span>
-        ${!owned ? '<span class="equip-lock">🔒</span>' : ''}
+      <button class="equip-btn ${selected ? 'equipped' : ''}"
+        data-title="${item.title}" data-rarity="${item.rarity}"
+        style="--item-color:${col}">
+        <span class="equip-rarity" style="color:${col}">${item.rarity}</span>
+        <span class="equip-name">${item.title}</span>
+        ${item.count > 1 ? `<span class="equip-slot">×${item.count}</span>` : ''}
       </button>`;
   }).join('');
 
-  // バッジリスト
-  const badgeList = document.getElementById('badge-list');
-  badgeList.innerHTML = badges.map(item => {
-    const owned = inventory.find(i => i.id === item.id);
-    const selected = selectedBadges.includes(item.id);
-    return `
-      <button class="equip-btn ${selected ? 'equipped' : ''} ${!owned ? 'not-owned' : ''}"
-        data-id="${item.id}" data-type="badge"
-        style="--item-color:${item.color}"
-        ${!owned ? 'title="未所持"' : ''}>
-        <span class="equip-rarity" style="color:${RARITY_COLOR[item.rarity]}">${item.rarity}</span>
-        <span class="equip-name">${item.name}</span>
-        ${selected ? `<span class="equip-slot">${selectedBadges.indexOf(item.id)+1}</span>` : ''}
-        ${!owned ? '<span class="equip-lock">🔒</span>' : ''}
-      </button>`;
-  }).join('');
+  document.getElementById('badge-list').innerHTML = '';
 
   // クリックイベント
   document.querySelectorAll('.equip-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      const type = btn.dataset.type;
-      const owned = inventory.find(i => i.id === id);
-      if (!owned) return; // 未所持は選択不可
-
-      if (type === 'title') {
-        selectedTitle = selectedTitle === id ? '' : id;
-      } else {
-        if (selectedBadges.includes(id)) {
-          selectedBadges = selectedBadges.filter(b => b !== id);
-        } else {
-          if (selectedBadges.length >= 3) {
-            selectedBadges.shift(); // 3つ超えたら一番古いを削除
-          }
-          selectedBadges.push(id);
-        }
-      }
+      const title = btn.dataset.title;
+      selectedTitle = selectedTitle === title ? '' : title;
+      selectedRarity = btn.dataset.rarity;
       renderEquipGrid();
       renderPreview();
     });
@@ -301,22 +264,13 @@ function renderEquipGrid() {
 
 function renderPreview() {
   const preview = document.getElementById('equip-preview');
-  const titleItem = GACHA_POOL.find(i => i.id === selectedTitle);
-  const badgeItems = selectedBadges.map(id => GACHA_POOL.find(i => i.id === id)).filter(Boolean);
-
-  if (!titleItem && badgeItems.length === 0) {
-    preview.innerHTML = '';
-    return;
-  }
-
+  if (!selectedTitle) { preview.innerHTML = ''; return; }
+  const col = GACHA_RARITY[selectedRarity]?.color || '#888';
   preview.innerHTML = `
     <div class="equip-preview-inner">
       <div class="equip-preview-label">プレビュー</div>
       <div class="equip-preview-content">
-        ${titleItem ? `<span class="profile-title-badge" style="background:${titleItem.color}22;border-color:${titleItem.color};color:${titleItem.color}">${titleItem.name}</span>` : ''}
-        <div class="equip-preview-badges">
-          ${badgeItems.map(b => `<span class="profile-badge-item" style="background:${b.color}22;border-color:${b.color}" title="${b.name}">${b.name.split(' ')[0]}</span>`).join('')}
-        </div>
+        <span class="profile-title-badge" style="background:${col}22;border-color:${col};color:${col}">${selectedTitle}</span>
       </div>
     </div>`;
 }
@@ -331,7 +285,7 @@ document.getElementById('save-profile-btn').addEventListener('click', async () =
     body: JSON.stringify({
       bio,
       selected_title: selectedTitle,
-      selected_badges: JSON.stringify(selectedBadges),
+      selected_badges: '[]',
     })
   });
 

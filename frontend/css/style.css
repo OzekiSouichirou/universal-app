@@ -3008,3 +3008,65 @@ body {
   border-radius: var(--r);
   border: 1px solid var(--border);
 }
+
+/* ===================== GACHA v2 ===================== */
+.gacha-card {
+  background: var(--surface-2);
+  border: 2px solid var(--item-color, var(--border));
+  border-radius: var(--r);
+  padding: 14px 16px;
+  min-width: 130px;
+  text-align: center;
+  animation: cardIn 0.3s ease;
+  box-shadow: 0 0 16px var(--item-glow, transparent);
+  position: relative;
+}
+.gacha-card.is-dup {
+  opacity: 0.7;
+  border-style: dashed;
+}
+.gacha-title-a {
+  font-size: 11px;
+  color: var(--text-2);
+  margin: 6px 0 2px;
+  line-height: 1.4;
+}
+.gacha-title-b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+.gacha-dup-tag {
+  font-size: 10px;
+  color: var(--accent-2);
+  margin-top: 6px;
+  background: var(--glow);
+  border-radius: 99px;
+  padding: 2px 8px;
+  display: inline-block;
+}
+.gacha-dup-notice {
+  text-align: center;
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: var(--glow);
+  border-radius: var(--r);
+}
+.gacha-inv-rarity {
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 36px;
+  text-align: center;
+}
+/* レアリティ演出 */
+.rarity-SSR  { box-shadow: 0 0 20px rgba(245,166,35,0.5) !important; }
+.rarity-UR   { box-shadow: 0 0 24px rgba(232,122,170,0.6) !important; }
+.rarity-SECR { box-shadow: 0 0 32px rgba(176,110,245,0.8) !important; animation: cardIn 0.3s ease, secr-pulse 1.5s ease infinite !important; }
+@keyframes secr-pulse {
+  0%, 100% { box-shadow: 0 0 32px rgba(176,110,245,0.8); }
+  50%       { box-shadow: 0 0 48px rgba(176,110,245,1.0), 0 0 80px rgba(176,110,245,0.4); }
+}

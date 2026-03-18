@@ -1,20 +1,8 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const GACHA_POOL = [
-  { id:'badge_fire',    name:'🔥 炎バッジ',        rarity:'N',  color:'#f76c24', type:'badge' },
-  { id:'badge_water',   name:'💧 水バッジ',        rarity:'N',  color:'#538eed', type:'badge' },
-  { id:'badge_grass',   name:'🌿 草バッジ',        rarity:'N',  color:'#5dbd58', type:'badge' },
-  { id:'badge_electric',name:'⚡ 電気バッジ',      rarity:'N',  color:'#f5cc17', type:'badge' },
-  { id:'badge_ice',     name:'❄️ 氷バッジ',        rarity:'R',  color:'#75d5d5', type:'badge' },
-  { id:'badge_dragon',  name:'🐉 ドラゴンバッジ',  rarity:'R',  color:'#0a6ac9', type:'badge' },
-  { id:'badge_psychic', name:'🔮 エスパーバッジ',  rarity:'R',  color:'#f461af', type:'badge' },
-  { id:'badge_ghost',   name:'👻 ゴーストバッジ',  rarity:'SR', color:'#5064aa', type:'badge' },
-  { id:'badge_dark',    name:'🌑 あくバッジ',      rarity:'SR', color:'#5b5369', type:'badge' },
-  { id:'badge_fairy',   name:'🌸 フェアリーバッジ',rarity:'SR', color:'#ed76d0', type:'badge' },
-  { id:'title_champion',name:'👑 チャンピオン',    rarity:'SSR',color:'#f5a623', type:'title' },
-  { id:'title_legend',  name:'⭐ 伝説使い',        rarity:'SSR',color:'#e87aaa', type:'title' },
-];
+// GACHA_POOL は gacha-data.js で定義
+
 
 async function init() {
   const me = await checkAuth(false);
@@ -40,10 +28,12 @@ async function init() {
   const u = await res.json();
 
   // 称号・バッジ解析
-  const titleItem = GACHA_POOL.find(i => i.id === u.selected_title);
-  let badges = [];
-  try { badges = JSON.parse(u.selected_badges || '[]'); } catch {}
-  const badgeItems = badges.map(id => GACHA_POOL.find(i => i.id === id)).filter(Boolean);
+  // 称号は文字列で保存（二つ名形式）
+  const titleStr = u.selected_title || '';
+  // レアリティを特定（インベントリは他ユーザー分がないためAPIから取れる情報で推定）
+  const rarityKeys = ['SECR','UR','SSR','SR','R','N'];
+  let titleColor = '#8892b0';
+  // 称号文字列からレアリティ色は不明なのでデフォルト色使用（要改善）
 
   // アバター
   const avatarHtml = u.avatar
@@ -64,10 +54,7 @@ async function init() {
         <div class="uprofile-info">
           <div class="uprofile-name">
             <span style="font-size:20px;font-weight:800;">${u.username}</span>
-            ${titleItem ? `<span class="profile-title-badge" style="background:${titleItem.color}22;border-color:${titleItem.color};color:${titleItem.color}">${titleItem.name}</span>` : ''}
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-            ${badgeItems.map(b => `<span class="profile-badge-item" style="background:${b.color}22;border-color:${b.color}" title="${b.name}">${b.name.split(' ')[0]}</span>`).join('')}
+            ${titleStr ? `<span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">${titleStr}</span>` : ''}
           </div>
           <div style="font-size:12px;color:var(--text-3);margin-top:4px;font-family:monospace;">${u.user_id || ''}</div>
         </div>

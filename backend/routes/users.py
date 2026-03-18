@@ -312,3 +312,22 @@ def get_user_profile(username: str, db: Session = Depends(get_db), current_user:
         "streak": xp_row.streak if xp_row else 0,
         "post_count": post_count,
     }
+
+
+# ===================== ガチャかぶりボーナス =====================
+@router.post("/gacha/duplicate-bonus")
+def gacha_duplicate_bonus(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """ガチャかぶり時に1XPを付与"""
+    from models.database import UserXP
+    xp_row = db.query(UserXP).filter(UserXP.username == current_user.username).first()
+    if not xp_row:
+        xp_row = UserXP(username=current_user.username, xp=0, level=1, streak=0)
+        db.add(xp_row)
+    xp_row.xp += 1
+    LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
+    for i in range(len(LEVEL_THRESHOLDS) - 1, -1, -1):
+        if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+            xp_row.level = i + 1
+            break
+    db.commit()
+    return {"message": "かぶりボーナス +1XP", "new_xp": xp_row.xp}

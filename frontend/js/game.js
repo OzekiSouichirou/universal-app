@@ -256,104 +256,90 @@ document.getElementById('calc-btn').addEventListener('click', () => {
 });
 
 // ===================== ガチャ =====================
-const GACHA_POOL = [
-  { id:'badge_fire',    name:'🔥 炎バッジ',       rarity:'N',  color:'#f76c24' },
-  { id:'badge_water',   name:'💧 水バッジ',       rarity:'N',  color:'#538eed' },
-  { id:'badge_grass',   name:'🌿 草バッジ',       rarity:'N',  color:'#5dbd58' },
-  { id:'badge_electric',name:'⚡ 電気バッジ',     rarity:'N',  color:'#f5cc17' },
-  { id:'badge_ice',     name:'❄️ 氷バッジ',       rarity:'R',  color:'#75d5d5' },
-  { id:'badge_dragon',  name:'🐉 ドラゴンバッジ', rarity:'R',  color:'#0a6ac9' },
-  { id:'badge_psychic', name:'🔮 エスパーバッジ', rarity:'R',  color:'#f461af' },
-  { id:'badge_ghost',   name:'👻 ゴーストバッジ', rarity:'SR', color:'#5064aa' },
-  { id:'badge_dark',    name:'🌑 あくバッジ',     rarity:'SR', color:'#5b5369' },
-  { id:'badge_fairy',   name:'🌸 フェアリーバッジ',rarity:'SR',color:'#ed76d0' },
-  { id:'title_champion',name:'👑 チャンピオン称号',rarity:'SSR',color:'#f5a623' },
-  { id:'title_legend',  name:'⭐ 伝説使い称号',   rarity:'SSR',color:'#e87aaa' },
-];
-
-// レアリティ重み
-const RARITY_WEIGHT = { N:50, R:30, SR:15, SSR:5 };
-const RARITY_COLOR  = { N:'#8892b0', R:'#3ecf8e', SR:'#41b4f5', SSR:'#f5a623' };
-
-function gachaRoll() {
-  const total = GACHA_POOL.reduce((s, i) => s + RARITY_WEIGHT[i.rarity], 0);
-  let r = Math.random() * total;
-  for (const item of GACHA_POOL) {
-    r -= RARITY_WEIGHT[item.rarity];
-    if (r <= 0) return item;
-  }
-  return GACHA_POOL[0];
-}
+// データはgacha-data.jsで定義
 
 let gachaUserXP = 0;
-let gachaInventory = JSON.parse(localStorage.getItem('gacha_inventory') || '[]');
 
 async function loadGachaXP() {
   const res = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
   const xp = await res.json();
   gachaUserXP = xp.xp;
-  document.getElementById('gacha-xp').textContent = gachaUserXP + ' XP';
+  document.getElementById('gacha-xp').textContent = gachaUserXP.toLocaleString() + ' XP';
 }
 
-async function spendXP(amount) {
-  // XPをカレンダーAPIから直接減算はできないため、ローカルで管理し表示のみ更新
-  // 本実装ではガチャ専用APIが必要だが、今はフロントで管理
-  gachaUserXP -= amount;
-  document.getElementById('gacha-xp').textContent = gachaUserXP + ' XP';
+async function grantDuplicateXP() {
+  // かぶり時に1XPをバックエンド経由で付与
+  try {
+    await fetch(`${API}/gacha/duplicate-bonus`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    gachaUserXP += 1;
+    document.getElementById('gacha-xp').textContent = gachaUserXP.toLocaleString() + ' XP';
+  } catch {}
 }
 
-function rollAndShow(count) {
+async function rollAndShow(count) {
   const cost = count === 1 ? 50 : 450;
   if (gachaUserXP < cost) {
     document.getElementById('gacha-result').innerHTML =
-      `<p style="color:var(--red);text-align:center;">XPが足りません（必要：${cost}XP）</p>`;
+      `<p style="color:var(--red);text-align:center;padding:16px;">XPが足りません（必要：${cost}XP）</p>`;
     return;
   }
-  spendXP(cost);
+  gachaUserXP -= cost;
+  document.getElementById('gacha-xp').textContent = gachaUserXP.toLocaleString() + ' XP';
 
   const results = [];
-  for (let i = 0; i < count; i++) results.push(gachaRoll());
+  let dupCount = 0;
+  for (let i = 0; i < count; i++) {
+    const r = gachaRoll();
+    const isDup = addToInventory(r);
+    if (isDup) { dupCount++; await grantDuplicateXP(); }
+    results.push({ ...r, isDup });
+  }
 
-  // インベントリに追加
-  results.forEach(item => {
-    const existing = gachaInventory.find(i => i.id === item.id);
-    if (existing) existing.count = (existing.count || 1) + 1;
-    else gachaInventory.push({ ...item, count: 1 });
-  });
-  localStorage.setItem('gacha_inventory', JSON.stringify(gachaInventory));
+  const rarityInfo = (r) => GACHA_RARITY[r];
 
-  // 演出
-  const resultEl = document.getElementById('gacha-result');
-  resultEl.innerHTML = '<div class="gacha-cards">' +
-    results.map(item => `
-      <div class="gacha-card rarity-${item.rarity}" style="--item-color:${item.color}">
-        <div class="gacha-rarity" style="color:${RARITY_COLOR[item.rarity]}">${item.rarity}</div>
-        <div class="gacha-item-name">${item.name}</div>
-      </div>
-    `).join('') +
-  '</div>';
+  const el = document.getElementById('gacha-result');
+  el.innerHTML = `
+    ${dupCount > 0 ? `<p class="gacha-dup-notice">🔄 ${dupCount}個かぶり → +${dupCount} XP獲得！</p>` : ''}
+    <div class="gacha-cards">
+      ${results.map(r => `
+        <div class="gacha-card rarity-${r.rarity} ${r.isDup ? 'is-dup' : ''}"
+             style="--item-color:${rarityInfo(r.rarity).color};--item-glow:${rarityInfo(r.rarity).glowColor}">
+          <div class="gacha-rarity" style="color:${rarityInfo(r.rarity).color}">${r.rarity}</div>
+          <div class="gacha-title-a">${r.a}</div>
+          <div class="gacha-title-b">${r.b}</div>
+          ${r.isDup ? '<div class="gacha-dup-tag">かぶり +1XP</div>' : ''}
+        </div>`).join('')}
+    </div>`;
 
-  renderInventory();
+  renderGachaInventory();
 }
 
-function renderInventory() {
+function renderGachaInventory() {
   const el = document.getElementById('gacha-inventory');
-  if (gachaInventory.length === 0) {
-    el.innerHTML = '<p style="color:var(--text-3);text-align:center;padding:16px;">まだアイテムがありません</p>';
+  const inv = getInventory();
+  if (inv.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-3);text-align:center;padding:16px;">まだ称号がありません</p>';
     return;
   }
-  el.innerHTML = gachaInventory.map(item => `
+  // レアリティ順に並べ替え
+  const order = ['SECR','UR','SSR','SR','R','N'];
+  const sorted = [...inv].sort((a,b) => order.indexOf(a.rarity) - order.indexOf(b.rarity));
+  el.innerHTML = sorted.map(item => `
     <div class="gacha-inv-item">
-      <span class="gacha-rarity-dot" style="background:${RARITY_COLOR[item.rarity]}"></span>
-      <span class="gacha-inv-name">${item.name}</span>
+      <span class="gacha-rarity-dot" style="background:${GACHA_RARITY[item.rarity]?.color || '#888'}"></span>
+      <span class="gacha-inv-rarity" style="color:${GACHA_RARITY[item.rarity]?.color || '#888'}">${item.rarity}</span>
+      <span class="gacha-inv-name">${item.title}</span>
       <span class="gacha-inv-count">×${item.count || 1}</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 document.getElementById('gacha-1').addEventListener('click', () => rollAndShow(1));
 document.getElementById('gacha-10').addEventListener('click', () => rollAndShow(10));
+
 
 // ===================== 初期化 =====================
 async function init() {
@@ -366,7 +352,7 @@ async function init() {
   buildFullTable();
   buildTypeSelects();
   await loadGachaXP();
-  renderInventory();
+  renderGachaInventory();
 }
 
 init();
