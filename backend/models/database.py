@@ -30,6 +30,8 @@ class User(Base):
     user_id = Column(String, unique=True, nullable=True)
     bio = Column(String, nullable=True)
     selected_title = Column(String, nullable=True)
+    selected_title_a = Column(String, nullable=True)
+    selected_title_b = Column(String, nullable=True)
     selected_badges = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

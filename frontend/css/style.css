@@ -3070,3 +3070,68 @@ body {
   0%, 100% { box-shadow: 0 0 32px rgba(176,110,245,0.8); }
   50%       { box-shadow: 0 0 48px rgba(176,110,245,1.0), 0 0 80px rgba(176,110,245,0.4); }
 }
+
+/* ガチャ A・B表示 */
+.gacha-ab-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.gacha-part {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  background: var(--bg-sub);
+  border: 1px solid var(--border);
+  min-width: 70px;
+}
+.gacha-part.is-dup { opacity: 0.6; border-style: dashed; }
+.gacha-part-label { font-size: 10px; font-weight: 700; }
+.gacha-part-text { font-size: 12px; font-weight: 700; color: var(--text); text-align: center; }
+.gacha-part-sep { font-size: 16px; color: var(--text-3); font-weight: 700; }
+.gacha-preview-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-2);
+  margin-top: 6px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+.gacha-inv-type {
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 20px;
+  text-align: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent)22;
+  color: var(--accent-2);
+}
+.gacha-inv-section {}
+.gacha-inv-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.equip-group { margin-bottom: 4px; }
+.equip-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.equip-btn-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polonix - XP管理</title>
+  <title>Polonix - XP・称号管理</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -29,59 +29,103 @@
     <main class="main-content">
       <header class="top-bar">
         <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
-        <h2>XP管理</h2>
+        <h2>XP・称号管理</h2>
         <span id="current-user"></span>
       </header>
       <section class="content-area">
 
-        <!-- XP一括操作 -->
-        <div class="profile-box" style="margin-bottom:16px;">
-          <h3>⭐ XP配布 / 没収</h3>
+        <!-- XP操作パネル -->
+        <div class="profile-box" style="margin-bottom:20px;">
+          <h3>⭐ XP配布・没収</h3>
           <div class="xp-admin-form">
-            <div class="xp-admin-row">
+            <div class="calc-row">
               <label>対象ユーザー</label>
-              <select id="xp-target-user">
-                <option value="__all__">── 全ユーザーに一括 ──</option>
+              <select id="xp-target-user" style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
+                <option value="">選択してください</option>
               </select>
             </div>
-            <div class="xp-admin-row">
-              <label>操作</label>
-              <div class="xp-op-btns">
-                <button class="xp-op-btn active" id="op-add" data-op="add">➕ 配布</button>
-                <button class="xp-op-btn" id="op-sub" data-op="sub">➖ 没収</button>
-                <button class="xp-op-btn" id="op-set" data-op="set">📌 直接設定</button>
-              </div>
-            </div>
-            <div class="xp-admin-row">
+            <div class="calc-row">
               <label>XP量</label>
-              <input type="number" id="xp-amount" value="100" min="1" max="99999" placeholder="XP数値">
+              <input type="number" id="xp-amount" value="100" min="1" max="99999"
+                style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
             </div>
-            <div class="xp-admin-row">
-              <label>理由（ログに記録）</label>
-              <input type="text" id="xp-reason" placeholder="例：イベント参加報酬" maxlength="100">
+            <div class="calc-row">
+              <label>理由（任意）</label>
+              <input type="text" id="xp-reason" placeholder="例：イベント報酬"
+                style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
             </div>
-            <button class="btn-primary" id="xp-execute-btn" style="width:100%;padding:11px;font-size:14px;">実行する</button>
-            <p id="xp-admin-msg" style="font-size:13px;min-height:18px;margin-top:8px;"></p>
+            <div class="xp-admin-btns">
+              <button class="btn-primary" id="xp-grant-btn">＋ XP配布</button>
+              <button class="btn-danger" id="xp-revoke-btn" style="padding:9px 18px;font-size:13px;">－ XP没収</button>
+              <button class="btn-secondary" id="xp-reset-btn">🔄 XPリセット</button>
+            </div>
+            <p id="xp-admin-msg" style="font-size:13px;min-height:18px;margin-top:4px;"></p>
           </div>
         </div>
 
         <!-- XPランキング一覧 -->
         <div class="profile-box">
-          <h3>📊 全ユーザー XP一覧</h3>
+          <h3>🏆 XP一覧（降順）</h3>
           <div class="table-scroll">
-            <table class="user-table" id="xp-table">
+            <table class="user-table">
               <thead>
                 <tr>
                   <th>順位</th>
-                  <th>ユーザー</th>
-                  <th>Lv</th>
+                  <th>ユーザー名</th>
+                  <th>権限</th>
                   <th>XP</th>
+                  <th>レベル</th>
                   <th>連続ログイン</th>
-                  <th>クイック操作</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody id="xp-list"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- 称号管理 -->
+        <div class="profile-box" style="margin-top:20px;">
+          <h3>👑 称号管理</h3>
+          <div class="xp-admin-form">
+            <div class="calc-row">
+              <label>対象ユーザー</label>
+              <select id="title-target-user" style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
+                <option value="">選択してください</option>
+              </select>
+            </div>
+            <div id="title-current-display" style="font-size:12px;color:var(--text-2);padding:4px 0;min-height:18px;"></div>
+            <div class="calc-row">
+              <label>A（形容詞）</label>
+              <input type="text" id="title-a-input" placeholder="例：伝説の" maxlength="20"
+                style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
+            </div>
+            <div class="calc-row">
+              <label>B（役割）</label>
+              <input type="text" id="title-b-input" placeholder="例：単位の神" maxlength="20"
+                style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
+            </div>
+            <div id="title-preview" style="font-size:14px;color:var(--accent-2);font-weight:700;padding:6px 0;min-height:22px;"></div>
+            <div class="calc-row">
+              <label>理由（任意）</label>
+              <input type="text" id="title-reason" placeholder="例：イベント1位"
+                style="flex:1;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;">
+            </div>
+            <div class="xp-admin-btns">
+              <button class="btn-primary" id="title-grant-btn">👑 称号を付与</button>
+              <button class="btn-danger" id="title-revoke-btn" style="padding:9px 18px;font-size:13px;">🗑 称号を削除</button>
+            </div>
+            <p id="title-admin-msg" style="font-size:13px;min-height:18px;margin-top:4px;"></p>
+          </div>
+
+          <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:10px;">現在の称号一覧</div>
+            <div class="table-scroll">
+              <table class="user-table">
+                <thead><tr><th>ユーザー名</th><th>現在の称号</th><th>操作</th></tr></thead>
+                <tbody id="title-list-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 

@@ -1,133 +1,256 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-let currentOp = 'add';
-
 document.getElementById('logout-btn').addEventListener('click', logout);
-
-// 操作ボタン切り替え
-document.querySelectorAll('.xp-op-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.xp-op-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentOp = btn.dataset.op;
-    const label = currentOp === 'add' ? '配布' : currentOp === 'sub' ? '没収' : '設定';
-    document.getElementById('xp-execute-btn').textContent = `実行する（${label}）`;
-  });
-});
 
 async function init() {
   const user = await checkAuth(true);
   if (!user) return;
   document.getElementById('current-user').textContent = user.username;
   await loadXPList();
+  await loadTitlesList();
 }
 
 async function loadXPList() {
-  const res = await fetch(`${API}/users/xp-ranking`, {
+  const res = await fetch(`${API}/users/xp/list`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!res.ok) return;
-  const data = await res.json();
+  const list = await res.json();
 
-  // セレクトボックスにユーザー追加
+  // セレクトボックス更新
   const sel = document.getElementById('xp-target-user');
-  // 既存オプション（全ユーザー以外）をクリア
-  while (sel.options.length > 1) sel.remove(1);
-  data.forEach(u => {
+  const current = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>';
+  list.forEach(u => {
     const opt = document.createElement('option');
     opt.value = u.username;
-    opt.textContent = `${u.username}（Lv.${u.level} / ${u.xp} XP）`;
+    opt.textContent = `${u.username}（Lv.${u.level} / ${u.xp}XP）`;
     sel.appendChild(opt);
   });
+  if (current) sel.value = current;
 
-  // テーブル描画
+  // テーブル更新
   const tbody = document.getElementById('xp-list');
   tbody.innerHTML = '';
-  data.forEach((u, i) => {
-    const rank = i + 1;
-    const rankLabel = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}位`;
+  list.forEach((u, i) => {
     const tr = document.createElement('tr');
+    const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
     tr.innerHTML = `
-      <td data-label="順位" style="font-weight:700;font-size:15px;">${rankLabel}</td>
-      <td data-label="ユーザー"><b>${u.username}</b></td>
-      <td data-label="Lv"><span style="color:var(--accent-2);font-weight:700;">Lv.${u.level}</span></td>
-      <td data-label="XP"><span style="color:var(--text);font-weight:600;">${u.xp.toLocaleString()} XP</span></td>
-      <td data-label="連続ログイン">🔥 ${u.streak}日</td>
-      <td data-label="クイック操作">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn-primary quick-add" data-user="${u.username}" 
-            style="padding:4px 10px;font-size:12px;">+100</button>
-          <button class="btn-secondary quick-sub" data-user="${u.username}"
-            style="padding:4px 10px;font-size:12px;">-100</button>
-          <button class="btn-danger quick-reset" data-user="${u.username}"
-            style="padding:4px 10px;font-size:12px;">0にする</button>
-        </div>
+      <td>${rankIcon}</td>
+      <td><b>${u.username}</b></td>
+      <td><span class="badge ${u.role === 'admin' ? 'badge-active' : 'badge-inactive'}">${u.role === 'admin' ? '管理者' : '一般'}</span></td>
+      <td><span style="color:var(--accent-2);font-weight:700;">${u.xp.toLocaleString()} XP</span></td>
+      <td>Lv.${u.level}</td>
+      <td>🔥 ${u.streak}日</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-primary quick-grant" data-user="${u.username}" style="padding:4px 10px;font-size:12px;">+100</button>
+        <button class="btn-danger quick-revoke" data-user="${u.username}" style="padding:4px 10px;font-size:12px;">-100</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 
-  // クイック操作
-  document.querySelectorAll('.quick-add').forEach(btn => {
-    btn.addEventListener('click', () => executeXP(btn.dataset.user, 'add', 100, 'クイック配布'));
+  // クイックボタン
+  document.querySelectorAll('.quick-grant').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('xp-target-user').value = btn.dataset.user;
+      document.getElementById('xp-amount').value = 100;
+      doGrant();
+    });
   });
-  document.querySelectorAll('.quick-sub').forEach(btn => {
-    btn.addEventListener('click', () => executeXP(btn.dataset.user, 'sub', 100, 'クイック没収'));
-  });
-  document.querySelectorAll('.quick-reset').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm(`${btn.dataset.user} のXPを0にしますか？`)) return;
-      await executeXP(btn.dataset.user, 'set', 0, 'XPリセット');
+  document.querySelectorAll('.quick-revoke').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('xp-target-user').value = btn.dataset.user;
+      document.getElementById('xp-amount').value = 100;
+      doRevoke();
     });
   });
 }
 
-async function executeXP(username, operation, amount, reason) {
-  const msg = document.getElementById('xp-admin-msg');
-  msg.style.color = 'var(--text-2)';
-  msg.textContent = '処理中...';
+function getForm() {
+  return {
+    username: document.getElementById('xp-target-user').value,
+    amount: parseInt(document.getElementById('xp-amount').value) || 0,
+    reason: document.getElementById('xp-reason').value.trim(),
+  };
+}
 
-  const res = await fetch(`${API}/users/xp-manage`, {
+function showMsg(text, isError = false) {
+  const el = document.getElementById('xp-admin-msg');
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+  el.textContent = text;
+  setTimeout(() => el.textContent = '', 4000);
+}
+
+async function doGrant() {
+  const { username, amount, reason } = getForm();
+  if (!username) { showMsg('ユーザーを選択してください', true); return; }
+  if (amount <= 0) { showMsg('XP量を正しく入力してください', true); return; }
+  const res = await fetch(`${API}/users/xp/grant`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ username, operation, amount, reason })
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, amount, reason })
   });
-
   const data = await res.json();
+  if (res.ok) { showMsg(`✓ ${data.message}　新XP: ${data.new_xp} (Lv.${data.new_level})`); await loadXPList(); }
+  else showMsg(data.detail, true);
+}
 
-  if (res.ok) {
-    msg.style.color = 'var(--green)';
-    const updated = data.updated;
-    if (updated.length === 1) {
-      msg.textContent = `✓ ${updated[0].username}：${updated[0].old_xp} → ${updated[0].new_xp} XP（Lv.${updated[0].level}）`;
-    } else {
-      msg.textContent = `✓ ${updated.length}人のXPを更新しました`;
-    }
-    await loadXPList();
+async function doRevoke() {
+  const { username, amount, reason } = getForm();
+  if (!username) { showMsg('ユーザーを選択してください', true); return; }
+  if (amount <= 0) { showMsg('XP量を正しく入力してください', true); return; }
+  if (!confirm(`${username} から ${amount}XP を没収しますか？`)) return;
+  const res = await fetch(`${API}/users/xp/revoke`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, amount, reason })
+  });
+  const data = await res.json();
+  if (res.ok) { showMsg(`✓ ${data.message}　新XP: ${data.new_xp} (Lv.${data.new_level})`); await loadXPList(); }
+  else showMsg(data.detail, true);
+}
+
+async function doReset() {
+  const { username, reason } = getForm();
+  if (!username) { showMsg('ユーザーを選択してください', true); return; }
+  if (!confirm(`${username} のXPを0にリセットしますか？\nこの操作は取り消せません。`)) return;
+  const res = await fetch(`${API}/users/xp/reset`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, amount: 0, reason })
+  });
+  const data = await res.json();
+  if (res.ok) { showMsg(`✓ ${data.message}`); await loadXPList(); }
+  else showMsg(data.detail, true);
+}
+
+document.getElementById('xp-grant-btn').addEventListener('click', doGrant);
+document.getElementById('xp-revoke-btn').addEventListener('click', doRevoke);
+document.getElementById('xp-reset-btn').addEventListener('click', doReset);
+
+init();
+
+// ===================== 称号管理 =====================
+let titlesList = [];
+
+async function loadTitlesList() {
+  const res = await fetch(`${API}/users/titles/list`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) return;
+  titlesList = await res.json();
+
+  // セレクトボックス更新
+  const sel = document.getElementById('title-target-user');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>';
+  titlesList.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.username;
+    opt.textContent = u.username + (u.selected_title ? `（${u.selected_title}）` : '');
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+
+  // テーブル更新
+  const tbody = document.getElementById('title-list-tbody');
+  tbody.innerHTML = titlesList.map(u => `
+    <tr>
+      <td><b>${u.username}</b></td>
+      <td>${u.selected_title
+        ? `<span style="color:var(--accent-2);font-weight:700;">${u.selected_title}</span>`
+        : '<span style="color:var(--text-3);">なし</span>'}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-secondary quick-title-edit" data-user="${u.username}"
+          data-a="${u.selected_title_a||''}" data-b="${u.selected_title_b||''}"
+          style="padding:4px 10px;font-size:12px;">編集</button>
+        ${u.selected_title ? `<button class="btn-danger quick-title-revoke" data-user="${u.username}" style="padding:4px 10px;font-size:12px;">削除</button>` : ''}
+      </td>
+    </tr>`).join('');
+
+  document.querySelectorAll('.quick-title-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('title-target-user').value = btn.dataset.user;
+      document.getElementById('title-a-input').value = btn.dataset.a;
+      document.getElementById('title-b-input').value = btn.dataset.b;
+      updateTitlePreview();
+      onTitleUserChange();
+    });
+  });
+  document.querySelectorAll('.quick-title-revoke').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`${btn.dataset.user} の称号を削除しますか？`)) return;
+      const res = await fetch(`${API}/users/titles/revoke`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: btn.dataset.user, title_a:'', title_b:'', reason:'管理者による削除' })
+      });
+      const data = await res.json();
+      showTitleMsg(res.ok ? `✓ ${data.message}` : data.detail, !res.ok);
+      if (res.ok) loadTitlesList();
+    });
+  });
+}
+
+function onTitleUserChange() {
+  const username = document.getElementById('title-target-user').value;
+  const user = titlesList.find(u => u.username === username);
+  const el = document.getElementById('title-current-display');
+  if (user && user.selected_title) {
+    el.textContent = `現在の称号：${user.selected_title}`;
   } else {
-    msg.style.color = 'var(--red)';
-    msg.textContent = data.detail || 'エラーが発生しました';
+    el.textContent = username ? '現在の称号：なし' : '';
   }
 }
 
-document.getElementById('xp-execute-btn').addEventListener('click', async () => {
-  const username = document.getElementById('xp-target-user').value;
-  const amount = parseInt(document.getElementById('xp-amount').value) || 0;
-  const reason = document.getElementById('xp-reason').value.trim();
+function updateTitlePreview() {
+  const a = document.getElementById('title-a-input').value.trim();
+  const b = document.getElementById('title-b-input').value.trim();
+  const el = document.getElementById('title-preview');
+  el.textContent = (a || b) ? `👑 ${a} ${b}` : '';
+}
 
-  if (amount < 0) {
-    document.getElementById('xp-admin-msg').textContent = 'XP量は0以上で入力してください';
-    return;
-  }
+document.getElementById('title-target-user').addEventListener('change', onTitleUserChange);
+document.getElementById('title-a-input').addEventListener('input', updateTitlePreview);
+document.getElementById('title-b-input').addEventListener('input', updateTitlePreview);
 
-  const targetLabel = username === '__all__' ? '全ユーザー' : username;
-  const opLabel = currentOp === 'add' ? `+${amount}XP配布` : currentOp === 'sub' ? `-${amount}XP没収` : `${amount}XPに設定`;
+function showTitleMsg(text, isError=false) {
+  const el = document.getElementById('title-admin-msg');
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+  el.textContent = text;
+  setTimeout(() => el.textContent = '', 4000);
+}
 
-  if (!confirm(`${targetLabel} に ${opLabel} します。よろしいですか？`)) return;
-
-  await executeXP(username, currentOp, amount, reason);
+document.getElementById('title-grant-btn').addEventListener('click', async () => {
+  const username = document.getElementById('title-target-user').value;
+  const title_a = document.getElementById('title-a-input').value.trim();
+  const title_b = document.getElementById('title-b-input').value.trim();
+  const reason = document.getElementById('title-reason').value.trim();
+  if (!username) { showTitleMsg('ユーザーを選択してください', true); return; }
+  if (!title_a && !title_b) { showTitleMsg('A・Bどちらかを入力してください', true); return; }
+  const res = await fetch(`${API}/users/titles/grant`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, title_a, title_b, reason })
+  });
+  const data = await res.json();
+  showTitleMsg(res.ok ? `✓ ${data.message}` : data.detail, !res.ok);
+  if (res.ok) { loadTitlesList(); loadXPList(); }
 });
 
-init();
+document.getElementById('title-revoke-btn').addEventListener('click', async () => {
+  const username = document.getElementById('title-target-user').value;
+  const reason = document.getElementById('title-reason').value.trim();
+  if (!username) { showTitleMsg('ユーザーを選択してください', true); return; }
+  if (!confirm(`${username} の称号を削除しますか？`)) return;
+  const res = await fetch(`${API}/users/titles/revoke`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, title_a:'', title_b:'', reason })
+  });
+  const data = await res.json();
+  showTitleMsg(res.ok ? `✓ ${data.message}` : data.detail, !res.ok);
+  if (res.ok) { loadTitlesList(); loadXPList(); }
+});
+
+

@@ -59,6 +59,8 @@ def get_me(current_user: User = Depends(get_current_user)):
         "user_id": current_user.user_id,
         "bio": current_user.bio or "",
         "selected_title": current_user.selected_title or "",
+        "selected_title_a": current_user.selected_title_a or "",
+        "selected_title_b": current_user.selected_title_b or "",
         "selected_badges": current_user.selected_badges or "[]",
         "created_at": current_user.created_at
     }
@@ -277,7 +279,9 @@ def reset_xp(body: XPManage, db: Session = Depends(get_db), admin: User = Depend
 class ProfileUpdate(BaseModel):
     bio: str = ""
     selected_title: str = ""
-    selected_badges: str = "[]"  # JSON文字列
+    selected_title_a: str = ""
+    selected_title_b: str = ""
+    selected_badges: str = "[]"
 
 @router.patch("/me/profile")
 def update_profile(body: ProfileUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -285,6 +289,8 @@ def update_profile(body: ProfileUpdate, db: Session = Depends(get_db), current_u
         raise HTTPException(status_code=400, detail="自己紹介文は200文字以内にしてください")
     current_user.bio = body.bio
     current_user.selected_title = body.selected_title
+    current_user.selected_title_a = body.selected_title_a
+    current_user.selected_title_b = body.selected_title_b
     current_user.selected_badges = body.selected_badges
     db.commit()
     return {"message": "プロフィールを更新しました"}
@@ -304,6 +310,8 @@ def get_user_profile(username: str, db: Session = Depends(get_db), current_user:
         "avatar": user.avatar,
         "bio": user.bio or "",
         "selected_title": user.selected_title or "",
+        "selected_title_a": user.selected_title_a or "",
+        "selected_title_b": user.selected_title_b or "",
         "selected_badges": user.selected_badges or "[]",
         "role": user.role,
         "created_at": user.created_at,
@@ -331,3 +339,52 @@ def gacha_duplicate_bonus(db: Session = Depends(get_db), current_user: User = De
             break
     db.commit()
     return {"message": "かぶりボーナス +1XP", "new_xp": xp_row.xp}
+
+
+# ===================== 称号管理（管理者） =====================
+class TitleManage(BaseModel):
+    username: str
+    title_a: str = ""
+    title_b: str = ""
+    reason: str = ""
+
+@router.get("/titles/list")
+def get_titles_list(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """全ユーザーの称号一覧（管理者専用）"""
+    users = db.query(User).all()
+    return [{
+        "id": u.id,
+        "username": u.username,
+        "selected_title": u.selected_title or "",
+        "selected_title_a": u.selected_title_a or "",
+        "selected_title_b": u.selected_title_b or "",
+    } for u in users]
+
+@router.post("/titles/grant")
+def grant_title(body: TitleManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """称号を管理者が付与する（A・B個別に設定）"""
+    target = db.query(User).filter(User.username == body.username).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    target.selected_title_a = body.title_a
+    target.selected_title_b = body.title_b
+    target.selected_title = f"{body.title_a} {body.title_b}".strip() if body.title_a or body.title_b else ""
+    db.add(Log(username=admin.username, action="称号付与",
+               detail=f"{body.username} → {target.selected_title}（{body.reason}）"))
+    db.commit()
+    return {"message": f"{body.username} に称号を設定しました", "title": target.selected_title}
+
+@router.post("/titles/revoke")
+def revoke_title(body: TitleManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """称号を管理者が削除する"""
+    target = db.query(User).filter(User.username == body.username).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    old_title = target.selected_title or ""
+    target.selected_title = ""
+    target.selected_title_a = ""
+    target.selected_title_b = ""
+    db.add(Log(username=admin.username, action="称号削除",
+               detail=f"{body.username} の称号「{old_title}」を削除（{body.reason}）"))
+    db.commit()
+    return {"message": f"{body.username} の称号を削除しました"}

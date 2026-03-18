@@ -200,17 +200,14 @@ init();
 
 // ガチャデータはgacha-data.jsで定義
 let inventory = JSON.parse(localStorage.getItem('gacha_inventory') || '[]');
-let selectedTitle = '';
-let selectedRarity = '';
+let selectedTitleA = '';
+let selectedTitleB = '';
 let selectedBadges = [];
 
 function buildEquipUI(user) {
-  // 現在の装備を復元
-  selectedTitle = user.selected_title || '';
-  selectedRarity = '';
-  try { selectedBadges = JSON.parse(user.selected_badges || '[]'); } catch { selectedBadges = []; }
+  selectedTitleA = user.selected_title_a || '';
+  selectedTitleB = user.selected_title_b || '';
 
-  // 自己紹介
   const bioInput = document.getElementById('bio-input');
   bioInput.value = user.bio || '';
   document.getElementById('bio-count').textContent = `${bioInput.value.length} / 200`;
@@ -223,39 +220,52 @@ function buildEquipUI(user) {
 }
 
 function renderEquipGrid() {
-  // gacha-data.jsのインベントリから称号一覧を作成
-  const inv = getInventory();
-  const rarityOrder = ['SECR','UR','SSR','SR','R','N'];
-  const sorted = [...inv].sort((a,b) => rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity));
+  const invA = getInventoryA();
+  const invB = getInventoryB();
+  const order = ['SECR','UR','SSR','SR','R','N'];
+  const sortFn = (a,b) => order.indexOf(a.rarity) - order.indexOf(b.rarity);
 
   const titleList = document.getElementById('title-list');
-  if (sorted.length === 0) {
-    titleList.innerHTML = '<p style="font-size:12px;color:var(--text-3);">まだ称号がありません。ゲーム関連ページでガチャを引いてください！</p>';
+
+  if (invA.length === 0 && invB.length === 0) {
+    titleList.innerHTML = `<p style="font-size:12px;color:var(--text-3);">まだ称号がありません。ゲーム関連ページでガチャを引いてください！</p>`;
     document.getElementById('badge-list').innerHTML = '';
     return;
   }
 
-  titleList.innerHTML = sorted.map(item => {
+  const mkBtn = (item, type, selectedVal, selColor) => {
     const col = GACHA_RARITY[item.rarity]?.color || '#888';
-    const selected = selectedTitle === item.title;
-    return `
-      <button class="equip-btn ${selected ? 'equipped' : ''}"
-        data-title="${item.title}" data-rarity="${item.rarity}"
-        style="--item-color:${col}">
-        <span class="equip-rarity" style="color:${col}">${item.rarity}</span>
-        <span class="equip-name">${item.title}</span>
-        ${item.count > 1 ? `<span class="equip-slot">×${item.count}</span>` : ''}
-      </button>`;
-  }).join('');
+    const selected = selectedVal === item.text;
+    return `<button class="equip-btn ${selected ? 'equipped' : ''}"
+      data-text="${item.text.replace(/"/g,'&quot;')}" data-type="${type}"
+      style="--item-color:${col}">
+      <span class="equip-rarity" style="color:${col}">${item.rarity}</span>
+      <span class="equip-name">${item.text}</span>
+      ${item.count > 1 ? `<span class="equip-slot">×${item.count}</span>` : ''}
+    </button>`;
+  };
+
+  const sortedA = [...invA].sort(sortFn);
+  const sortedB = [...invB].sort(sortFn);
+
+  titleList.innerHTML = `
+    <div class="equip-group">
+      <div class="equip-group-label" style="color:var(--accent-2);">A（形容詞）</div>
+      <div class="equip-btn-wrap">${sortedA.map(i => mkBtn(i,'A',selectedTitleA)).join('')}</div>
+    </div>
+    <div class="equip-group" style="margin-top:10px;">
+      <div class="equip-group-label" style="color:var(--blue);">B（役割）</div>
+      <div class="equip-btn-wrap">${sortedB.map(i => mkBtn(i,'B',selectedTitleB)).join('')}</div>
+    </div>`;
 
   document.getElementById('badge-list').innerHTML = '';
 
-  // クリックイベント
   document.querySelectorAll('.equip-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const title = btn.dataset.title;
-      selectedTitle = selectedTitle === title ? '' : title;
-      selectedRarity = btn.dataset.rarity;
+      const text = btn.dataset.text;
+      const type = btn.dataset.type;
+      if (type === 'A') selectedTitleA = selectedTitleA === text ? '' : text;
+      if (type === 'B') selectedTitleB = selectedTitleB === text ? '' : text;
       renderEquipGrid();
       renderPreview();
     });
@@ -264,17 +274,16 @@ function renderEquipGrid() {
 
 function renderPreview() {
   const preview = document.getElementById('equip-preview');
-  if (!selectedTitle) { preview.innerHTML = ''; return; }
-  const col = GACHA_RARITY[selectedRarity]?.color || '#888';
+  if (!selectedTitleA && !selectedTitleB) { preview.innerHTML = ''; return; }
+  const full = `${selectedTitleA || '???'} ${selectedTitleB || '???'}`;
   preview.innerHTML = `
     <div class="equip-preview-inner">
-      <div class="equip-preview-label">プレビュー</div>
+      <div class="equip-preview-label">プレビュー（二つ名）</div>
       <div class="equip-preview-content">
-        <span class="profile-title-badge" style="background:${col}22;border-color:${col};color:${col}">${selectedTitle}</span>
+        <span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">${full}</span>
       </div>
     </div>`;
 }
-
 document.getElementById('save-profile-btn').addEventListener('click', async () => {
   const bio = document.getElementById('bio-input').value.trim();
   const msg = document.getElementById('profile-save-msg');
@@ -284,7 +293,9 @@ document.getElementById('save-profile-btn').addEventListener('click', async () =
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       bio,
-      selected_title: selectedTitle,
+      selected_title: selectedTitleA && selectedTitleB ? `${selectedTitleA} ${selectedTitleB}` : (selectedTitleA || selectedTitleB),
+      selected_title_a: selectedTitleA,
+      selected_title_b: selectedTitleB,
       selected_badges: '[]',
     })
   });
