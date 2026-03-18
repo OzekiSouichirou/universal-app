@@ -25,7 +25,7 @@ def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         placeholders = ','.join([f':u{i}' for i in range(len(usernames))])
         params = {f'u{i}': u for i, u in enumerate(usernames)}
         rows = db.execute(
-            text(f"SELECT username, avatar, selected_title FROM users WHERE username IN ({placeholders})"),
+            text(f"SELECT username, avatar, selected_title, selected_title_a, selected_title_b FROM users WHERE username IN ({placeholders})"),
             params
         ).fetchall()
         user_map = {r.username: r for r in rows}
@@ -41,6 +41,7 @@ def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_cu
             "id": post.id,
             "username": post.username,
             "title": (u.selected_title or "") if u else "",
+            "title_a": (u.selected_title_a or "") if u else "",
             "avatar": u.avatar if u else None,
             "content": post.content,
             "image": post.image,
@@ -135,7 +136,7 @@ def get_comments(post_id: int, db: Session = Depends(get_db), current_user: User
         placeholders = ','.join([f':u{i}' for i in range(len(c_usernames))])
         params = {f'u{i}': u for i, u in enumerate(c_usernames)}
         c_rows = db.execute(
-            text(f"SELECT username, selected_title FROM users WHERE username IN ({placeholders})"),
+            text(f"SELECT username, selected_title, selected_title_a FROM users WHERE username IN ({placeholders})"),
             params
         ).fetchall()
         comment_user_map = {r.username: r for r in c_rows}
@@ -145,6 +146,7 @@ def get_comments(post_id: int, db: Session = Depends(get_db), current_user: User
         "id": c.id,
         "username": c.username,
         "title": (comment_user_map[c.username].selected_title or "") if c.username in comment_user_map else "",
+        "title_a": (comment_user_map[c.username].selected_title_a or "") if c.username in comment_user_map else "",
         "content": c.content,
         "created_at": c.created_at
     } for c in comments]

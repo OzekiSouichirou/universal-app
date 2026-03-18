@@ -12,6 +12,17 @@ textarea.addEventListener('input', () => {
   charCount.textContent = `${textarea.value.length} / 500`;
 });
 
+
+// 称号AのテキストからPOOL_Aを検索してレア度を返す
+function getTitleColor(titleA) {
+  if (!titleA || typeof POOL_A === 'undefined') return 'var(--text-2)';
+  for (const [rarity, words] of Object.entries(POOL_A)) {
+    if (words.includes(titleA)) {
+      return GACHA_RARITY[rarity]?.color || 'var(--text-2)';
+    }
+  }
+  return 'var(--text-2)';
+}
 function avatarHtml(username, avatar) {
   const av = avatar !== undefined ? avatar : avatars[username];
   const initial = username.charAt(0).toUpperCase();
@@ -199,7 +210,7 @@ function renderPosts(posts) {
           ${avatarHtml(p.username, p.avatar)}
           <div class="post-user-meta">
             <span class="post-username user-link" data-user="${p.username}" style="cursor:pointer;">${p.username}</span>
-            ${p.title ? `<span class="post-user-title">${p.title}</span>` : ''}
+            ${p.title ? `<span class="post-user-title" style="color:${getTitleColor(p.title_a)}">${p.title}</span>` : ''}
           </div>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
@@ -298,7 +309,7 @@ async function fetchComments(postId) {
         ${avatarHtml(c.username)}
         <div class="post-user-meta">
           <span class="comment-username">${c.username}</span>
-          ${c.title ? `<span class="post-user-title">${c.title}</span>` : ''}
+          ${c.title ? `<span class="post-user-title" style="color:${getTitleColor(c.title_a)}">${c.title}</span>` : ''}
         </div>
         <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
         ${c.username === currentUser.username || currentUser.role === 'admin' ? `
