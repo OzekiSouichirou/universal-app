@@ -1,5 +1,4 @@
 import os
-import time
 import bcrypt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,41 +17,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def wait_for_db(retries: int = 10, delay: int = 5):
-    """DB接続が確立されるまでリトライする"""
-    for i in range(retries):
-        try:
-            with engine.connect() as conn:
-                conn.execute(__import__('sqlalchemy').text("SELECT 1"))
-            print(f"DB接続成功")
-            return True
-        except Exception as e:
-            print(f"DB接続待機中 ({i+1}/{retries}): {e}")
-            time.sleep(delay)
-    print("DB接続に失敗しました。起動を続行します。")
-    return False
-
-wait_for_db()
-
 Base.metadata.create_all(bind=engine)
 
 def init_admin():
-    try:
-        db = SessionLocal()
-        existing = db.query(User).filter(User.username == "admin").first()
-        if not existing:
-            hashed = bcrypt.hashpw("admin1234".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-            admin = User(username="admin", hashed_password=hashed, role="admin")
-            db.add(admin)
-            db.add(Log(username="admin", action="システム初期化", detail="管理者アカウント自動作成"))
-            db.commit()
-        db.close()
-    except Exception as e:
-        print(f"init_admin スキップ: {e}")
+    db = SessionLocal()
+    existing = db.query(User).filter(User.username == "admin").first()
+    if not existing:
+        hashed = bcrypt.hashpw("admin1234".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        admin = User(username="admin", hashed_password=hashed, role="admin")
+        db.add(admin)
+        db.add(Log(username="admin", action="システム初期化", detail="管理者アカウント自動作成"))
+        db.commit()
+    db.close()
 
 init_admin()
 
-app = FastAPI(title="Polonix API", version="0.5.0-beta", docs_url=None, redoc_url=None)
+app = FastAPI(title="Polonix API", version="0.7.5-beta", docs_url=None, redoc_url=None)
 
 origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
