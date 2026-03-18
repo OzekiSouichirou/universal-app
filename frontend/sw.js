@@ -1,11 +1,11 @@
-const CACHE_NAME = 'polonix-v0.8.0';
+const CACHE_NAME = 'polonix-v0.8.5';
 const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
   '/home.html', '/board.html', '/calendar.html', '/timetable.html',
-  '/profile.html', '/feedback.html', '/game.html',
+  '/profile.html', '/feedback.html', '/game.html', '/xp-admin.html',
   '/css/style.css',
   '/js/auth.js', '/js/home.js', '/js/board.js', '/js/calendar.js',
-  '/js/timetable.js', '/js/profile.js', '/js/feedback.js', '/js/game.js',
+  '/js/timetable.js', '/js/profile.js', '/js/feedback.js', '/js/game.js', '/js/xp-admin.js',
   '/offline.html'
 ];
 
