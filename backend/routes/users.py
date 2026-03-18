@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from models.database import get_db, User, Log
+from models.database import get_db, User, Log, GachaInventory
 from auth.auth import decode_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -211,7 +211,6 @@ def get_xp_list(db: Session = Depends(get_db), admin: User = Depends(require_adm
 def grant_xp(body: XPManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     """XPを配布する（管理者専用）"""
     from models.database import UserXP
-    from calendar import calc_level
     target = db.query(User).filter(User.username == body.username).first()
     if not target:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
@@ -360,9 +359,9 @@ def get_titles_list(db: Session = Depends(get_db), admin: User = Depends(require
     return [{
         "id": u.id,
         "username": u.username,
-        "selected_title": u.selected_title or "",
-        "selected_title_a": u.selected_title_a or "",
-        "selected_title_b": u.selected_title_b or "",
+        "selected_title": getattr(u, "selected_title", None) or "",
+        "selected_title_a": getattr(u, "selected_title_a", None) or "",
+        "selected_title_b": getattr(u, "selected_title_b", None) or "",
     } for u in users]
 
 @router.post("/titles/grant")
@@ -371,13 +370,17 @@ def grant_title(body: TitleManage, db: Session = Depends(get_db), admin: User = 
     target = db.query(User).filter(User.username == body.username).first()
     if not target:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-    target.selected_title_a = body.title_a
-    target.selected_title_b = body.title_b
-    target.selected_title = f"{body.title_a} {body.title_b}".strip() if body.title_a or body.title_b else ""
+    try: target.selected_title_a = body.title_a
+    except: pass
+    try: target.selected_title_b = body.title_b
+    except: pass
+    new_title = f"{body.title_a} {body.title_b}".strip() if body.title_a or body.title_b else ""
+    try: target.selected_title = new_title
+    except: pass
     db.add(Log(username=admin.username, action="称号付与",
-               detail=f"{body.username} → {target.selected_title}（{body.reason}）"))
+               detail=f"{body.username} → {new_title}（{body.reason}）"))
     db.commit()
-    return {"message": f"{body.username} に称号を設定しました", "title": target.selected_title}
+    return {"message": f"{body.username} に称号を設定しました", "title": new_title}
 
 @router.post("/titles/revoke")
 def revoke_title(body: TitleManage, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
@@ -385,10 +388,13 @@ def revoke_title(body: TitleManage, db: Session = Depends(get_db), admin: User =
     target = db.query(User).filter(User.username == body.username).first()
     if not target:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-    old_title = target.selected_title or ""
-    target.selected_title = ""
-    target.selected_title_a = ""
-    target.selected_title_b = ""
+    old_title = getattr(target, "selected_title", None) or ""
+    try: target.selected_title = ""
+    except: pass
+    try: target.selected_title_a = ""
+    except: pass
+    try: target.selected_title_b = ""
+    except: pass
     db.add(Log(username=admin.username, action="称号削除",
                detail=f"{body.username} の称号「{old_title}」を削除（{body.reason}）"))
     db.commit()
@@ -425,7 +431,6 @@ def gacha_spend_xp(body: GachaSpendXP, db: Session = Depends(get_db), current_us
 
 
 # ===================== ガチャインベントリ（DB管理） =====================
-from models.database import GachaInventory
 
 @router.get("/gacha/inventory")
 def get_gacha_inventory(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

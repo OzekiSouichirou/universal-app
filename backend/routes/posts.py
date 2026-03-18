@@ -30,8 +30,8 @@ def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         result.append({
             "id": post.id,
             "username": post.username,
-            "title": u.selected_title if u and u.selected_title else "",
-            "avatar": u.avatar if u else None,
+            "title": getattr(u, "selected_title", None) or "" if u else "",
+            "avatar": getattr(u, "avatar", None) if u else None,
             "content": post.content,
             "image": post.image,
             "created_at": post.created_at,
@@ -125,7 +125,7 @@ def get_comments(post_id: int, db: Session = Depends(get_db), current_user: User
     return [{
         "id": c.id,
         "username": c.username,
-        "title": comment_user_map.get(c.username).selected_title if comment_user_map.get(c.username) else "",
+        "title": getattr(comment_user_map.get(c.username), "selected_title", None) or "" if comment_user_map.get(c.username) else "",
         "content": c.content,
         "created_at": c.created_at
     } for c in comments]
