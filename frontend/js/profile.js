@@ -14,7 +14,7 @@ async function init() {
   if (user.avatar) {
     showAvatar(user.avatar);
   }
-  buildEquipUI(user);
+  await buildEquipUI(user);
 }
 
 function showAvatar(dataUrl) {
@@ -204,9 +204,11 @@ let selectedTitleA = '';
 let selectedTitleB = '';
 let selectedBadges = [];
 
-function buildEquipUI(user) {
+async function buildEquipUI(user) {
   selectedTitleA = user.selected_title_a || '';
   selectedTitleB = user.selected_title_b || '';
+  // DBからインベントリを取得
+  await fetchInventoryFromDB(token, API);
 
   const bioInput = document.getElementById('bio-input');
   bioInput.value = user.bio || '';

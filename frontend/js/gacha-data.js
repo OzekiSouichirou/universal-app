@@ -1,7 +1,6 @@
 // ============================================================
-//  Polonix ガチャ データ定義 v0.8.3
-//  AとBを別々に排出。プロフィールで組み合わせて二つ名を作る。
-//  N(50%) R(30%) SR(15%) SSR(4%) UR(0.9%) SECR(0.1%)
+//  Polonix ガチャ データ定義 v0.8.5
+//  AとBを別々に排出。インベントリはDB管理。
 // ============================================================
 
 const GACHA_RARITY = {
@@ -45,10 +44,8 @@ function gachaPickRarity() {
 }
 
 function pickFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
 function getRarityRank(r) { return {N:0,R:1,SR:2,SSR:3,UR:4,SECR:5}[r] ?? 0; }
 
-// 1回の排出でA・B各1枚ずつ排出
 function gachaRoll() {
   const rarityA = gachaPickRarity();
   const rarityB = gachaPickRarity();
@@ -60,34 +57,29 @@ function gachaRoll() {
 }
 
 // ============================================================
-//  インベントリ管理（A・B別）
+//  インベントリ管理（DB管理版）
+//  キャッシュはメモリのみ。ページリロードでDBから再取得。
 // ============================================================
-function getInventoryA() { try { return JSON.parse(localStorage.getItem('gacha_inv_a') || '[]'); } catch { return []; } }
-function getInventoryB() { try { return JSON.parse(localStorage.getItem('gacha_inv_b') || '[]'); } catch { return []; } }
-function saveInventoryA(inv) { localStorage.setItem('gacha_inv_a', JSON.stringify(inv)); }
-function saveInventoryB(inv) { localStorage.setItem('gacha_inv_b', JSON.stringify(inv)); }
 
-// かぶりの場合はインベントリに追加しない。trueを返す=かぶり
-function addToInventoryA(rarity, text) {
-  const inv = getInventoryA();
-  const ex = inv.find(i => i.text === text);
-  if (ex) return true; // かぶり・追加しない
-  inv.push({ rarity, text, count: 1 });
-  saveInventoryA(inv);
-  return false; // 新規
+let _invCacheA = null;
+let _invCacheB = null;
+
+function getInventoryA() { return _invCacheA || []; }
+function getInventoryB() { return _invCacheB || []; }
+
+async function fetchInventoryFromDB(token, apiBase) {
+  try {
+    const res = await fetch(`${apiBase}/users/gacha/inventory`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const items = await res.json();
+    _invCacheA = items.filter(i => i.type === 'A');
+    _invCacheB = items.filter(i => i.type === 'B');
+  } catch(e) { console.error('inventory fetch error:', e); }
 }
 
-function addToInventoryB(rarity, text) {
-  const inv = getInventoryB();
-  const ex = inv.find(i => i.text === text);
-  if (ex) return true; // かぶり・追加しない
-  inv.push({ rarity, text, count: 1 });
-  saveInventoryB(inv);
-  return false; // 新規
-}
-
-// 旧インベントリをマイグレーション
-(function migrateOld() {
-  const old = localStorage.getItem('gacha_inventory');
-  if (old) localStorage.removeItem('gacha_inventory');
+// 旧localStorageデータをクリア（移行対応）
+(function cleanOldStorage() {
+  ['gacha_inventory','gacha_inv_a','gacha_inv_b'].forEach(k => localStorage.removeItem(k));
 })();

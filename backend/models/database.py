@@ -28,11 +28,6 @@ class User(Base):
     role = Column(String, default="user")
     avatar = Column(Text, nullable=True)
     user_id = Column(String, unique=True, nullable=True)
-    bio = Column(String, nullable=True)
-    selected_title = Column(String, nullable=True)
-    selected_title_a = Column(String, nullable=True)
-    selected_title_b = Column(String, nullable=True)
-    selected_badges = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Log(Base):
@@ -126,6 +121,15 @@ class Feedback(Base):
     content = Column(Text, nullable=False)
     is_anonymous = Column(Boolean, default=False)
     status = Column(String, default="open")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class GachaInventory(Base):
+    __tablename__ = "gacha_inventory"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, index=True)
+    type = Column(String, nullable=False)    # 'A' or 'B'
+    rarity = Column(String, nullable=False)
+    text = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():

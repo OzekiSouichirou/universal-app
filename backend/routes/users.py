@@ -417,3 +417,111 @@ def gacha_spend_xp(body: GachaSpendXP, db: Session = Depends(get_db), current_us
             break
     db.commit()
     return {"message": "XP消費完了", "new_xp": xp_row.xp, "new_level": xp_row.level}
+
+
+# ===================== ガチャインベントリ（DB管理） =====================
+from models.database import GachaInventory
+
+@router.get("/gacha/inventory")
+def get_gacha_inventory(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """自分のガチャインベントリを取得"""
+    items = db.query(GachaInventory).filter(
+        GachaInventory.username == current_user.username
+    ).order_by(GachaInventory.created_at.asc()).all()
+    return [{"type": i.type, "rarity": i.rarity, "text": i.text} for i in items]
+
+class GachaRollRequest(BaseModel):
+    count: int  # 1 or 10
+    results: list  # [{type, rarityA, textA, rarityB, textB}, ...]
+
+@router.post("/gacha/roll")
+def gacha_roll(body: GachaRollRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    ガチャ実行：XP消費→インベントリ登録→かぶり判定→かぶりXP付与
+    フロントで抽選した結果をそのまま送る（乱数はフロント側）
+    """
+    from models.database import UserXP
+    if body.count not in [1, 10]:
+        raise HTTPException(status_code=400, detail="countは1または10のみ")
+    cost = 50 if body.count == 1 else 450
+
+    # XP残高確認・消費
+    xp_row = db.query(UserXP).filter(UserXP.username == current_user.username).first()
+    if not xp_row or xp_row.xp < cost:
+        raise HTTPException(status_code=400, detail=f"XPが足りません（必要：{cost}XP、所持：{xp_row.xp if xp_row else 0}XP）")
+
+    xp_row.xp -= cost
+    LEVEL_THRESHOLDS = [0,100,250,450,700,1000,1400,1900,2500,3200,4000]
+    for i in range(len(LEVEL_THRESHOLDS)-1,-1,-1):
+        if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+            xp_row.level = i+1
+            break
+
+    # 既存インベントリを取得してかぶり判定
+    existing_a = {i.text for i in db.query(GachaInventory).filter(
+        GachaInventory.username == current_user.username,
+        GachaInventory.type == 'A'
+    ).all()}
+    existing_b = {i.text for i in db.query(GachaInventory).filter(
+        GachaInventory.username == current_user.username,
+        GachaInventory.type == 'B'
+    ).all()}
+
+    dup_count = 0
+    roll_results = []
+
+    for r in body.results:
+        text_a = r.get('textA','')
+        text_b = r.get('textB','')
+        rarity_a = r.get('rarityA','N')
+        rarity_b = r.get('rarityB','N')
+
+        dup_a = text_a in existing_a
+        dup_b = text_b in existing_b
+
+        if not dup_a:
+            db.add(GachaInventory(username=current_user.username, type='A', rarity=rarity_a, text=text_a))
+            existing_a.add(text_a)
+        else:
+            dup_count += 1
+
+        if not dup_b:
+            db.add(GachaInventory(username=current_user.username, type='B', rarity=rarity_b, text=text_b))
+            existing_b.add(text_b)
+        else:
+            dup_count += 1
+
+        roll_results.append({"dupA": dup_a, "dupB": dup_b})
+
+    # かぶりXP付与
+    if dup_count > 0:
+        xp_row.xp += dup_count
+        for i in range(len(LEVEL_THRESHOLDS)-1,-1,-1):
+            if xp_row.xp >= LEVEL_THRESHOLDS[i]:
+                xp_row.level = i+1
+                break
+
+    db.commit()
+
+    return {
+        "new_xp": xp_row.xp,
+        "new_level": xp_row.level,
+        "dup_count": dup_count,
+        "results": roll_results
+    }
+
+@router.get("/gacha/inventory/admin/{username}")
+def get_user_gacha_inventory(username: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """管理者：特定ユーザーのインベントリ取得"""
+    items = db.query(GachaInventory).filter(
+        GachaInventory.username == username
+    ).order_by(GachaInventory.type, GachaInventory.rarity).all()
+    return [{"type": i.type, "rarity": i.rarity, "text": i.text, "created_at": i.created_at} for i in items]
+
+@router.delete("/gacha/inventory/admin/{username}")
+def clear_user_gacha_inventory(username: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    """管理者：特定ユーザーのインベントリをクリア"""
+    db.query(GachaInventory).filter(GachaInventory.username == username).delete()
+    db.add(Log(username=admin.username, action="ガチャINV削除", detail=f"{username}のインベントリをクリア"))
+    db.commit()
+    return {"message": f"{username} のインベントリをクリアしました"}
