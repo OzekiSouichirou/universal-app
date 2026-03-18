@@ -205,17 +205,24 @@ let selectedTitleB = '';
 let selectedBadges = [];
 
 async function buildEquipUI(user) {
+  // まずDBからインベントリを取得してからselectedをセット
+  await fetchInventoryFromDB(token, API);
+
   selectedTitleA = user.selected_title_a || '';
   selectedTitleB = user.selected_title_b || '';
-  // DBからインベントリを取得
-  await fetchInventoryFromDB(token, API);
+
+  console.log('[profile] selectedTitleA:', selectedTitleA, 'selectedTitleB:', selectedTitleB);
+  console.log('[profile] invA:', getInventoryA().map(i=>i.text));
+  console.log('[profile] invB:', getInventoryB().map(i=>i.text));
 
   const bioInput = document.getElementById('bio-input');
   bioInput.value = user.bio || '';
   document.getElementById('bio-count').textContent = `${bioInput.value.length} / 200`;
-  bioInput.addEventListener('input', () => {
+  bioInput.removeEventListener('input', bioInput._handler);
+  bioInput._handler = () => {
     document.getElementById('bio-count').textContent = `${bioInput.value.length} / 200`;
-  });
+  };
+  bioInput.addEventListener('input', bioInput._handler);
 
   renderEquipGrid();
   renderPreview();
