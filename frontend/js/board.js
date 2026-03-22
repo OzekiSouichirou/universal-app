@@ -182,7 +182,8 @@ async function fetchPosts() {
   const res = await fetch(`${API}/posts/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const data = await res.json();
+  const raw = await res.json();
+  const data = parseResponse(raw, []);
   renderPosts(Array.isArray(data) ? data : []);
 }
 
