@@ -261,8 +261,9 @@ let gachaUserXP = 0;
 async function loadGachaXP() {
   const res = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
-  const xp = await res.json();
-  gachaUserXP = xp.xp;
+  const xpRaw = await res.json();
+  const xp = (xpRaw && xpRaw.success === true) ? xpRaw.data : xpRaw;
+  gachaUserXP = xp.xp ?? 0;
   document.getElementById('gacha-xp').textContent = gachaUserXP.toLocaleString() + ' XP';
 }
 

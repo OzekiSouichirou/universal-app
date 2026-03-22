@@ -107,11 +107,12 @@ async function init() {
 }
 
 async function fetchNotifications() {
-  const res = await fetch(`${API}/posts/notifications/me`, {
+  const res = await fetch(`${API}/posts/notifications/list`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!res.ok) return;
-  const notifs = await res.json();
+  const nJson = await res.json();
+  const notifs = (nJson && nJson.success === true) ? nJson.data : nJson;
   const unread = notifs.filter(n => !n.is_read).length;
   const badge = document.getElementById('notif-badge');
   const bell = document.getElementById('notif-bell');
@@ -127,7 +128,7 @@ function renderNotifications(notifs) {
     return;
   }
   list.innerHTML = notifs.map(n => {
-    const label = n.type === 'like' ? 'いいね' : 'コメント';
+    const label = n.type === 'like' ? '♥ いいね' : '💬 コメント';
     const time = new Date(n.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     return `
       <div class="notif-item ${n.is_read ? '' : 'unread'}" data-post-id="${n.post_id}">
@@ -159,7 +160,7 @@ document.getElementById('notif-bell').addEventListener('click', async () => {
   const panel = document.getElementById('notif-panel');
   panel.classList.toggle('hidden');
   if (!panel.classList.contains('hidden')) {
-    await fetch(`${API}/posts/notifications/read`, {
+    await fetch(`${API}/posts/notifications/read-all`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -208,7 +209,7 @@ function renderPosts(posts) {
           ♥ <span class="like-count">${p.likes}</span>
         </button>
         <button class="comment-toggle-btn" data-id="${p.id}">
-          # <span class="comment-count">${p.comment_count}</span>
+          💬 <span class="comment-count">${p.comment_count}</span>
         </button>
         ${p.username === currentUser.username || currentUser.role === 'admin' ? `
           <button class="delete-post-btn" data-id="${p.id}">削除</button>
@@ -283,7 +284,8 @@ async function fetchComments(postId) {
   const res = await fetch(`${API}/posts/${postId}/comments`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const comments = await res.json();
+  const cJson = await res.json();
+  const comments = (cJson && cJson.success === true) ? cJson.data : (Array.isArray(cJson) ? cJson : []);
   const list = document.getElementById(`comment-list-${postId}`);
   if (comments.length === 0) {
     list.innerHTML = '<p class="no-comments">まだコメントはありません</p>';

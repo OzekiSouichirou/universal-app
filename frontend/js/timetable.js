@@ -41,8 +41,8 @@ function renderTable() {
         td.style.borderTop = `3px solid ${entry.color}`;
         td.innerHTML = `
           <div class="tt-subject">${entry.subject}</div>
-          ${entry.room ? `<div class="tt-sub-info">${entry.room}</div>` : ''}
-          ${entry.teacher ? `<div class="tt-sub-info">${entry.teacher}</div>` : ''}
+          ${entry.room ? `<div class="tt-sub-info">📍 ${entry.room}</div>` : ''}
+          ${entry.teacher ? `<div class="tt-sub-info">👤 ${entry.teacher}</div>` : ''}
         `;
       } else {
         td.className = 'tt-cell empty';

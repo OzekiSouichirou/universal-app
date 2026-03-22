@@ -1,7 +1,7 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const TYPE_LABELS = { idea:'改善案', bug:'バグ報告', request:'機能リクエスト', other:'その他' };
+const TYPE_LABELS = { idea:'💡 改善案', bug:'🐛 バグ報告', request:'🙏 機能リクエスト', other:'📝 その他' };
 const STATUS_LABELS = { open:'未対応', in_progress:'対応中', done:'完了' };
 const STATUS_COLORS = { open:'var(--text-3)', in_progress:'#f5a623', done:'var(--green)' };
 
@@ -35,7 +35,7 @@ document.getElementById('fb-submit-btn').addEventListener('click', async () => {
 
   if (res.ok) {
     msg.style.color = 'var(--green)';
-    msg.textContent = '送信しました。';
+    msg.textContent = '送信しました！ありがとうございます。';
     document.getElementById('fb-title').value = '';
     document.getElementById('fb-content').value = '';
     document.getElementById('fb-content-count').textContent = '0 / 500';
@@ -49,10 +49,11 @@ document.getElementById('fb-submit-btn').addEventListener('click', async () => {
 });
 
 async function loadMine() {
-  const res = await fetch(`${API}/feedback/mine`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(`${API}/feedback/my`, { headers: { 'Authorization': `Bearer ${token}` } });
   const list = document.getElementById('fb-mine-list');
   if (!res.ok) { list.innerHTML = '<p class="db-empty">取得できませんでした</p>'; return; }
-  const items = await res.json();
+  const fbRaw = await res.json();
+  const items = (fbRaw && fbRaw.success === true) ? fbRaw.data : fbRaw;
   if (items.length === 0) { list.innerHTML = '<p class="db-empty">まだ送信していません</p>'; return; }
   list.innerHTML = items.map(f => `
     <div class="fb-item">

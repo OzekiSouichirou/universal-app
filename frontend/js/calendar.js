@@ -7,7 +7,7 @@ let currentYear, currentMonth;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const TYPE_LABELS = { memo:'メモ', schedule:'予定', exam:'試験', deadline:'締め切り', event:'イベント' };
+const TYPE_LABELS = { memo:'📝 メモ', schedule:'📅 予定', exam:'⚠️ 試験', deadline:'🔴 締め切り', event:'🎉 イベント' };
 
 async function init() {
   const user = await checkAuth(false);
@@ -43,7 +43,7 @@ function toDateStr(d) {
 }
 
 async function fetchEvents() {
-  const res = await fetch(`${API}/calendar/events`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(`${API}/calendar/`, { headers: { 'Authorization': `Bearer ${token}` } });
   allEvents = res.ok ? await res.json() : [];
 }
 
@@ -56,7 +56,7 @@ async function fetchXP() {
 
 function renderXP(xp) {
   document.getElementById('xp-level').textContent = `Lv.${xp.level}`;
-  document.getElementById('xp-streak').textContent = `${xp.streak}日`;
+  document.getElementById('xp-streak').textContent = `🔥 ${xp.streak}日`;
   const range = xp.next_level_xp - xp.current_level_xp;
   const progress = xp.xp - xp.current_level_xp;
   const pct = range > 0 ? Math.min(100, Math.round(progress / range * 100)) : 100;
@@ -154,7 +154,7 @@ function renderExamCountdown() {
 
   box.innerHTML = `
     <div class="exam-box">
-      <div class="exam-box-title">試験週間モード</div>
+      <div class="exam-box-title">⚠️ 試験週間モード</div>
       ${exams.slice(0, 3).map(e => `
         <div class="exam-item">
           <span class="exam-name">${e.title}</span>
@@ -196,7 +196,7 @@ function renderDayEvents(dateStr) {
       const id = parseInt(btn.dataset.id);
       const ev = allEvents.find(e => e.id === id);
       if (!ev) return;
-      const res = await fetch(`${API}/calendar/events/${id}`, {
+      const res = await fetch(`${API}/calendar/${id}`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: ev.title, memo: ev.memo, date: ev.date, type: ev.type, is_done: !ev.is_done })
@@ -271,7 +271,7 @@ document.getElementById('ev-save-btn').addEventListener('click', async () => {
 
   if (editingEventId) {
     const ev = allEvents.find(e => e.id === editingEventId);
-    const res = await fetch(`${API}/calendar/events/${editingEventId}`, {
+    const res = await fetch(`${API}/calendar/${editingEventId}`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, memo, date, type, is_done: ev.is_done })
@@ -283,7 +283,7 @@ document.getElementById('ev-save-btn').addEventListener('click', async () => {
       selectedDate = date;
     }
   } else {
-    const res = await fetch(`${API}/calendar/events`, {
+    const res = await fetch(`${API}/calendar/`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, memo, date, type })
@@ -302,7 +302,7 @@ document.getElementById('ev-save-btn').addEventListener('click', async () => {
 
 document.getElementById('ev-delete-btn').addEventListener('click', async () => {
   if (!confirm('このイベントを削除しますか？')) return;
-  const res = await fetch(`${API}/calendar/events/${editingEventId}`, {
+  const res = await fetch(`${API}/calendar/${editingEventId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` }
   });

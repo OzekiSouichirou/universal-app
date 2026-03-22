@@ -105,7 +105,7 @@ document.getElementById('avatar-input').addEventListener('change', async (e) => 
     if (res.ok) {
       showAvatar(dataUrl);
       msg.style.color = '#3ecf8e';
-      msg.textContent = '画像を変更しました';
+      msg.textContent = 'アバターを更新しました';
     } else {
       const data = await res.json();
       msg.style.color = '#f0476c';
@@ -129,7 +129,7 @@ document.getElementById('avatar-delete-btn').addEventListener('click', async () 
   if (res.ok) {
     hideAvatar();
     msg.style.color = '#3ecf8e';
-    msg.textContent = '画像を削除しました';
+    msg.textContent = 'アバターを削除しました';
   }
 });
 
