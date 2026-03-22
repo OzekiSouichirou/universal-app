@@ -286,15 +286,18 @@ async function rollAndShow(count) {
   });
 
   if (!res.ok) {
-    const err = await res.json();
+    const errRaw = await res.json().catch(()=>({}));
+    const errData = parseResponse(errRaw, {}) || errRaw;
+    const errMsg = errData?.error?.message || errData?.detail || 'エラーが発生しました';
     document.getElementById('gacha-result').innerHTML =
-      `<p style="color:var(--red);text-align:center;padding:16px;">${err.detail}</p>`;
+      `<p style="color:var(--red);text-align:center;padding:16px;">${errMsg}</p>`;
     return;
   }
 
-  const data = await res.json();
-  gachaUserXP = data.new_xp;
-  document.getElementById('gacha-xp').textContent = gachaUserXP.toLocaleString() + ' XP';
+  const raw = await res.json();
+  const data = parseResponse(raw, {});
+  gachaUserXP = data.new_xp ?? gachaUserXP;
+  document.getElementById('gacha-xp').textContent = (gachaUserXP ?? 0).toLocaleString() + ' XP';
 
   // ③ キャッシュを更新（DBから再取得）
   await fetchInventoryFromDB(token, API);

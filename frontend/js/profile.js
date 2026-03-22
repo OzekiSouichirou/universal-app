@@ -14,6 +14,10 @@ async function init() {
   if (user.avatar) {
     showAvatar(user.avatar);
   }
+  // 称号装備UIを初期化
+  if (typeof buildEquipUI === 'function') {
+    await buildEquipUI(user);
+  }
 }
 
 function showAvatar(dataUrl) {
@@ -196,6 +200,136 @@ document.getElementById('delete-account-btn').addEventListener('click', async ()
     const data = parseResponse(_r2, {});
     alert(data.detail);
   }
+});
+
+// ============================================================
+// 称号装備UI
+// ============================================================
+let selectedTitleA = '';
+let selectedTitleB = '';
+
+async function buildEquipUI(user) {
+  selectedTitleA = user.selected_title_a || '';
+  selectedTitleB = user.selected_title_b || '';
+  if (typeof fetchInventoryFromDB === 'function') {
+    await fetchInventoryFromDB(token, API);
+  }
+  const bioInput = document.getElementById('bio-input');
+  if (bioInput) {
+    bioInput.value = user.bio || '';
+    const bioCount = document.getElementById('bio-count');
+    if (bioCount) bioCount.textContent = `${bioInput.value.length} / 200`;
+    bioInput.addEventListener('input', () => {
+      if (bioCount) bioCount.textContent = `${bioInput.value.length} / 200`;
+    });
+  }
+  renderEquipGrid();
+  renderPreview();
+}
+
+function renderEquipGrid() {
+  const invA = (typeof getInventoryA === 'function') ? getInventoryA() : [];
+  const invB = (typeof getInventoryB === 'function') ? getInventoryB() : [];
+  const order = ['SECR','UR','SSR','SR','R','N'];
+  const sortFn = (a,b) => order.indexOf(a.rarity) - order.indexOf(b.rarity);
+  const titleList = document.getElementById('title-list');
+  if (!titleList) return;
+
+  if (invA.length === 0 && invB.length === 0) {
+    titleList.innerHTML = '<p style="font-size:12px;color:var(--text-3);">まだ称号がありません。ゲーム関連ページでガチャを引いてください！</p>';
+    const badge = document.getElementById('badge-list');
+    if (badge) badge.innerHTML = '';
+    return;
+  }
+
+  const mkBtn = (item, type, selectedVal) => {
+    const col = (typeof GACHA_RARITY !== 'undefined' && GACHA_RARITY[item.rarity]?.color) || '#888';
+    const selected = selectedVal === item.text;
+    return `<button class="equip-btn ${selected ? 'equipped' : ''}"
+      data-text="${item.text.replace(/"/g,'&quot;')}" data-type="${type}"
+      style="--item-color:${col}">
+      <span class="equip-rarity" style="color:${col}">${item.rarity}</span>
+      <span class="equip-name">${item.text}</span>
+    </button>`;
+  };
+
+  titleList.innerHTML = `
+    <div class="equip-group">
+      <div class="equip-group-label" style="color:var(--accent-2);">A（形容詞）</div>
+      <div class="equip-btn-wrap">${[...invA].sort(sortFn).map(i => mkBtn(i,'A',selectedTitleA)).join('')}</div>
+    </div>
+    <div class="equip-group" style="margin-top:10px;">
+      <div class="equip-group-label" style="color:var(--blue);">B（役割）</div>
+      <div class="equip-btn-wrap">${[...invB].sort(sortFn).map(i => mkBtn(i,'B',selectedTitleB)).join('')}</div>
+    </div>`;
+
+  const badge = document.getElementById('badge-list');
+  if (badge) badge.innerHTML = '';
+
+  document.querySelectorAll('.equip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type;
+      const text = btn.dataset.text;
+      if (type === 'A') selectedTitleA = selectedTitleA === text ? '' : text;
+      if (type === 'B') selectedTitleB = selectedTitleB === text ? '' : text;
+      renderEquipGrid();
+      renderPreview();
+    });
+  });
+}
+
+function renderPreview() {
+  const preview = document.getElementById('equip-preview');
+  if (!preview) return;
+  if (!selectedTitleA && !selectedTitleB) { preview.innerHTML = ''; return; }
+  const full = `${selectedTitleA || '???'} ${selectedTitleB || '???'}`;
+  preview.innerHTML = `<div class="equip-preview-inner">
+    <div class="equip-preview-label">プレビュー（二つ名）</div>
+    <div class="equip-preview-content">
+      <span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">${full}</span>
+    </div>
+  </div>`;
+}
+
+// プロフィール保存
+document.addEventListener('DOMContentLoaded', () => {
+  const saveBtn = document.getElementById('save-profile-btn');
+  const msg = document.getElementById('profile-save-msg');
+  if (!saveBtn) return;
+
+  saveBtn.addEventListener('click', async () => {
+    const bio = (document.getElementById('bio-input')?.value || '').trim();
+    const titleA = selectedTitleA || '';
+    const titleB = selectedTitleB || '';
+    const title = (titleA && titleB) ? `${titleA} ${titleB}` : (titleA || titleB);
+
+    try {
+      const res = await fetch(`${API}/users/me/profile`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bio,
+          selected_title: title,
+          selected_title_a: titleA,
+          selected_title_b: titleB,
+          selected_badges: '[]',
+        })
+      });
+      const raw = await res.json();
+      const data = parseResponse(raw, {});
+      if (res.ok) {
+        if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'プロフィールを保存しました'; }
+        setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
+        renderEquipGrid();
+        renderPreview();
+      } else {
+        const errMsg = data?.error?.message || raw?.detail || '保存に失敗しました';
+        if (msg) { msg.style.color = 'var(--red)'; msg.textContent = errMsg; }
+      }
+    } catch(e) {
+      if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'ネットワークエラーが発生しました'; }
+    }
+  });
 });
 
 init();
