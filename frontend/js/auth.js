@@ -1,7 +1,10 @@
-const API = (typeof API !== 'undefined') ? API :
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+// api.jsで定義済みの場合はそちらを使用、なければここで定義
+if (typeof window._POLONIX_API === 'undefined') {
+  window._POLONIX_API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:8000'
-    : 'https://polonix-api-sod4.onrender.com');
+    : 'https://polonix-api-sod4.onrender.com';
+}
+const API = window._POLONIX_API;
 
 async function checkAuth(requireAdmin = false) {
   const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
