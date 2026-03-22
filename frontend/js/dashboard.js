@@ -53,7 +53,8 @@ async function loadStats(user) {
 
   } else {
     const res = await fetch(`${API}/stats/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const me = await res.json();
+    const meR = await res.json();
+  const me = parseResponse(meR, {});
 
     renderStatCards([
       { label: '自分の投稿数',  value: me.my_posts,    icon: '+' },
@@ -159,10 +160,11 @@ function chartOptions() {
 }
 
 async function loadTodayEvents() {
-  const res = await fetch(`${API}/calendar/events`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(`${API}/calendar/`, { headers: { 'Authorization': `Bearer ${token}` } });
   const el = document.getElementById('db-today-events');
   if (!res.ok) { el.innerHTML = '<p class="db-empty">取得できませんでした</p>'; return; }
-  const events = await res.json();
+  const evR = await res.json();
+  const events = parseResponse(evR, []);
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const items = events.filter(e => (e.date === today || e.date === tomorrow) && !e.is_done);

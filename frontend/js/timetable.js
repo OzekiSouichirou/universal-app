@@ -19,7 +19,8 @@ async function init() {
 async function fetchTimetable() {
   const res = await fetch(`${API}/timetable/`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
-  const data = await res.json();
+  const ttR = await res.json();
+  const data = parseResponse(ttR, []);
   timetableData = {};
   data.forEach(e => { timetableData[`${e.day}-${e.period}`] = e; });
 }

@@ -27,7 +27,8 @@ async function fetchLogs() {
   const res = await fetch(`${API}/logs/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const data = await res.json();
+  const lR = await res.json();
+  const data = parseResponse(lR, {});
   const logs = Array.isArray(data) ? data : [];
   const tbody = document.getElementById('log-list');
   tbody.innerHTML = '';

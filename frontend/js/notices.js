@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let editingId = null;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
@@ -14,7 +14,8 @@ async function fetchNotices() {
   const res = await fetch(`${API}/notices/all`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const notices = await res.json();
+  const nR = await res.json();
+  const notices = parseResponse(nR, []);
   const tbody = document.getElementById('notice-list');
   tbody.innerHTML = '';
 

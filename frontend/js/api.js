@@ -6,10 +6,10 @@
  * frontend/js/api.js に配置
  */
 
-window._POLONIX_API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+window._POLONIX_API = window._POLONIX_API || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://127.0.0.1:8000'
-  : 'https://polonix-api-sod4.onrender.com';
-const API = window._POLONIX_API;
+  : 'https://polonix-api-sod4.onrender.com');
+var API = window._POLONIX_API;
 
 function getToken() {
   return localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
@@ -129,4 +129,29 @@ function showToast(message, type = 'info') {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+/**
+ * APIレスポンスをパースする共通関数
+ * v0.9.0形式 {success, data} と旧形式の両方に対応
+ */
+function parseResponse(json, fallback = null) {
+  if (json && json.success === true) return json.data;
+  if (json && json.success === false) return fallback;
+  return json ?? fallback;
+}
+
+/**
+ * fetchしてパース済みデータを返す。エラー時はfallbackを返す
+ */
+async function fetchData(url, options = {}, fallback = null) {
+  try {
+    const res = await fetch(url, { headers: authHeaders(), ...options });
+    if (!res.ok) return fallback;
+    const json = await res.json().catch(() => null);
+    return parseResponse(json, fallback);
+  } catch (e) {
+    console.warn('[fetchData error]', url, e.message);
+    return fallback;
+  }
 }

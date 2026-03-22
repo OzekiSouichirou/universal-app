@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -21,8 +21,8 @@ async function fetchUsers() {
   const res = await fetch(`${API}/users/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const data = await res.json();
-  const users = Array.isArray(data) ? data : [];
+  const uR = await res.json();
+  const users = parseResponse(uR, []); Array.isArray(data) ? data : [];
   renderUsers(users);
 }
 
@@ -78,7 +78,8 @@ function renderUsers(users) {
       if (res.ok) {
         fetchUsers();
       } else {
-        const data = await res.json();
+        const dR = await res.json();
+    const data = parseResponse(dR, {});
         alert(data.detail);
       }
     });
@@ -118,7 +119,8 @@ document.getElementById('modal-submit').addEventListener('click', async () => {
     document.getElementById('new-password').value = '';
     fetchUsers();
   } else {
-    const data = await res.json();
+    const dR = await res.json();
+    const data = parseResponse(dR, {});
     alert(data.detail);
   }
 });

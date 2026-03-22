@@ -44,13 +44,15 @@ function toDateStr(d) {
 
 async function fetchEvents() {
   const res = await fetch(`${API}/calendar/`, { headers: { 'Authorization': `Bearer ${token}` } });
-  allEvents = res.ok ? await res.json() : [];
+  const evR2 = res.ok ? await res.json() : null;
+  allEvents = parseResponse(evR2, []);
 }
 
 async function fetchXP() {
   const res = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
-  const xp = await res.json();
+  const xpR = await res.json();
+  const xp = parseResponse(xpR, {});
   renderXP(xp);
 }
 

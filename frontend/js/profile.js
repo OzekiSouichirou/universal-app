@@ -107,7 +107,8 @@ document.getElementById('avatar-input').addEventListener('change', async (e) => 
       msg.style.color = '#3ecf8e';
       msg.textContent = 'アバターを更新しました';
     } else {
-      const data = await res.json();
+      const _r0 = await res.json();
+      const data = parseResponse(_r0, {});
       msg.style.color = '#f0476c';
       msg.textContent = data.detail;
     }
@@ -160,7 +161,8 @@ document.getElementById('change-password-btn').addEventListener('click', async (
     body: JSON.stringify({ current_password: current, new_password: newPass })
   });
 
-  const data = await res.json();
+  const _r1 = await res.json();
+  const data = parseResponse(_r1, {});
 
   if (res.ok) {
     msg.style.color = '#3ecf8e';
@@ -190,7 +192,8 @@ document.getElementById('delete-account-btn').addEventListener('click', async ()
     alert('アカウントを削除しました。ご利用ありがとうございました。');
     logout();
   } else {
-    const data = await res.json();
+    const _r2 = await res.json();
+    const data = parseResponse(_r2, {});
     alert(data.detail);
   }
 });

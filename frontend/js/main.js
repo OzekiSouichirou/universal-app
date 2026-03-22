@@ -1,3 +1,4 @@
+var API = window._POLONIX_API || (window.location.hostname === 'localhost' ? 'http://127.0.0.1:8000' : 'https://polonix-api-sod4.onrender.com');
 const loginBtn = document.getElementById('login-btn');
 const errorMsg = document.getElementById('error-msg');
 

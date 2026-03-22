@@ -73,7 +73,8 @@ async function fetchInventoryFromDB(token, apiBase) {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) return;
-    const items = await res.json();
+    const iR = await res.json();
+    const items = parseResponse(iR, []);
     console.log('[gacha] total items:', items.length);
     console.log('[gacha] types:', [...new Set(items.map(i => i.type))]);
     _invCacheA = items.filter(i => i.type === 'A');
