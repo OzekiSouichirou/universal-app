@@ -4,8 +4,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from pydantic import BaseModel
-from database import get_db, rows_to_list
-from users import get_current_user, require_admin
+from models.database import get_db, rows_to_list
+from routes.users import get_current_user, require_admin
 from response import ok, err, E
 
 router = APIRouter()

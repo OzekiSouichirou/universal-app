@@ -4,8 +4,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import text
 from pydantic import BaseModel
-from database import get_db
-from auth import verify_password, hash_password, create_access_token
+from models.database import get_db
+from auth.auth import verify_password, hash_password, create_access_token
 from response import ok, err, E
 from security import check_rate_limit, RATE, validate_username, validate_password
 

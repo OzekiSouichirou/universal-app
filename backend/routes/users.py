@@ -13,8 +13,8 @@ from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
 
-from database import get_db, row_to_dict, rows_to_list
-from auth import decode_token, verify_password, hash_password, create_access_token
+from models.database import get_db, row_to_dict, rows_to_list
+from auth.auth import decode_token, verify_password, hash_password, create_access_token
 from response import ok, err, E
 from security import (
     check_rate_limit, RATE,

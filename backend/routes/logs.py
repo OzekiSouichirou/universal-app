@@ -3,8 +3,8 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
-from database import get_db, rows_to_list
-from users import require_admin
+from models.database import get_db, rows_to_list
+from routes.users import require_admin
 from response import ok
 
 router = APIRouter()

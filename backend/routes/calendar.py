@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
-from database import get_db, rows_to_list
-from users import get_current_user, calc_level
+from models.database import get_db, rows_to_list
+from routes.users import get_current_user, calc_level
 from response import ok, err, E
 
 router = APIRouter()

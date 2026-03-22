@@ -13,8 +13,8 @@ from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
 
-from database import get_db, row_to_dict, rows_to_list
-from users import get_current_user
+from models.database import get_db, row_to_dict, rows_to_list
+from routes.users import get_current_user
 from response import ok, err, E
 from security import check_rate_limit, RATE, validate_post_content
 

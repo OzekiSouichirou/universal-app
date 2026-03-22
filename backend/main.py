@@ -14,7 +14,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from sqlalchemy import text
-from database import engine, get_db_ctx
+from models.database import engine
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -157,15 +157,15 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # ============================================================
 # ルーター登録
 # ============================================================
-from auth_routes import router as auth_router
-from users       import router as users_router
-from logs        import router as logs_router
-from notices     import router as notices_router
-from posts       import router as posts_router
-from calendar    import router as calendar_router
-from timetable   import router as timetable_router
-from stats       import router as stats_router
-from feedback    import router as feedback_router
+from auth.routes     import router as auth_router
+from routes.users    import router as users_router
+from routes.logs     import router as logs_router
+from routes.notices  import router as notices_router
+from routes.posts    import router as posts_router
+from routes.calendar import router as calendar_router
+from routes.timetable import router as timetable_router
+from routes.stats    import router as stats_router
+from routes.feedback import router as feedback_router
 
 app.include_router(auth_router,      prefix="/auth",      tags=["auth"])
 app.include_router(users_router,     prefix="/users",     tags=["users"])
