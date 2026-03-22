@@ -10,7 +10,7 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.8.0-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.5.0-beta</span></div>
       <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
@@ -64,6 +64,33 @@
             <span id="profile-created">---</span>
           </div>
         </div>
+        <!-- 自己紹介・称号装備 -->
+        <div class="profile-box" id="equip-section">
+          <h3>称号・バッジ装備</h3>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">ガチャで獲得した称号・バッジを装備できます。称号は1つ、バッジは最大3つまで。</p>
+
+          <div class="equip-block">
+            <div class="equip-block-title">称号（1つ選択・ガチャで獲得した称号が表示されます）</div>
+            <div class="equip-sub-label">A（形容詞）</div>
+            <div id="title-list"></div>
+            <div id="badge-list"></div>
+          </div>
+
+          <div id="equip-preview" style="margin-top:12px;"></div>
+
+          <div style="margin-top:16px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-2);display:block;margin-bottom:6px;">自己紹介</label>
+            <textarea id="bio-input" maxlength="200" placeholder="自己紹介を入力（200文字以内）"
+              style="width:100%;background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);
+                     color:var(--text);padding:10px 12px;font-size:13px;font-family:inherit;
+                     resize:vertical;min-height:80px;box-sizing:border-box;"></textarea>
+            <div id="bio-count" style="font-size:11px;color:var(--text-3);text-align:right;margin-top:2px;">0 / 200</div>
+          </div>
+
+          <button class="btn-primary" id="save-profile-btn" style="margin-top:16px;width:100%;padding:12px;">プロフィールを保存</button>
+          <p id="profile-save-msg" style="font-size:13px;min-height:18px;margin-top:6px;text-align:center;"></p>
+        </div>
+
         <div class="profile-box">
           <h3>パスワード変更</h3>
           <input type="password" id="current-password" placeholder="現在のパスワード">
@@ -72,32 +99,6 @@
           <button id="change-password-btn" class="btn-primary">変更する</button>
           <p id="password-msg"></p>
         </div>
-        <!-- 自己紹介文 -->
-        <div class="profile-box">
-          <h3>✏️ 自己紹介</h3>
-          <textarea id="bio-input" placeholder="自己紹介文を入力（200文字以内）" maxlength="200" rows="3" style="width:100%;background:var(--bg-sub);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical;outline:none;"></textarea>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span id="bio-count" style="font-size:11px;color:var(--text-3);">0 / 200</span>
-          </div>
-        </div>
-
-        <!-- 称号・バッジ装備 -->
-        <div class="profile-box">
-          <h3>🏅 称号・バッジ装備</h3>
-          <p style="font-size:12px;color:var(--text-2);margin-bottom:12px;">ガチャで獲得した称号・バッジを装備できます。称号は1つ、バッジは最大3つまで。</p>
-
-          <div class="equip-section">
-            <div class="equip-label">👑 称号（1つ選択・ガチャで獲得した称号が表示されます）</div>
-            <div id="title-list" class="equip-grid"></div>
-          </div>
-          <div id="badge-list" style="display:none;"></div>
-
-          <div class="equip-preview" id="equip-preview"></div>
-
-          <button class="btn-primary" id="save-profile-btn" style="width:100%;margin-top:12px;">プロフィールを保存</button>
-          <p id="profile-save-msg" style="font-size:12px;min-height:16px;text-align:center;margin-top:4px;"></p>
-        </div>
-
         <div class="profile-box danger-box">
           <h3>アカウント削除</h3>
           <p class="danger-text">この操作は取り消せません。アカウントと全データが削除されます。</p>
@@ -107,7 +108,8 @@
     </main>
   </div>
   <script src="js/auth.js"></script>
-  <script src="js/gacha-data.js?v=1"></script>
-  <script src="js/profile.js?v=3"></script>
+  <script src="js/gacha-data.js"></script>
+  <script src="js/gacha-data.js"></script>
+  <script src="js/profile.js"></script>
 </body>
 </html>

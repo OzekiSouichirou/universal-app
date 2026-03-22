@@ -38,16 +38,16 @@
 
         <!-- タブ -->
         <div class="game-tabs">
-          <button class="game-tab active" data-tab="type-chart">🔥 タイプ相性表</button>
-          <button class="game-tab" data-tab="damage-calc">⚔️ ダメージ計算機</button>
-          <button class="game-tab" data-tab="gacha">🎲 ガチャ</button>
-          <button class="game-tab" data-tab="gacha-guide">📖 ガチャガイド</button>
+          <button class="game-tab active" data-tab="type-chart">タイプ相性表</button>
+          <button class="game-tab" data-tab="damage-calc">ダメージ計算機</button>
+          <button class="game-tab" data-tab="gacha">ガチャ</button>
+          <button class="game-tab" data-tab="gacha-guide">ガチャガイド</button>
         </div>
 
         <!-- ① タイプ相性表 -->
         <div class="game-panel active" id="tab-type-chart">
           <div class="game-card">
-            <div class="game-card-title">🔥 ポケモン タイプ相性表</div>
+            <div class="game-card-title">ポケモン タイプ相性表</div>
             <div class="type-search-row">
               <div class="type-search-group">
                 <label class="type-search-label">攻撃タイプで調べる</label>
@@ -61,7 +61,7 @@
               </div>
             </div>
             <div class="type-full-table-wrap">
-              <div class="game-card-title" style="margin-top:24px;">📊 全タイプ相性一覧表</div>
+              <div class="game-card-title" style="margin-top:24px;">全タイプ相性一覧表</div>
               <p style="font-size:12px;color:var(--text-2);margin-bottom:8px;">縦＝攻撃タイプ　横＝防御タイプ</p>
               <div class="table-scroll">
                 <table class="type-table" id="type-full-table"></table>
@@ -73,10 +73,10 @@
         <!-- ② ダメージ計算機 -->
         <div class="game-panel" id="tab-damage-calc">
           <div class="game-card">
-            <div class="game-card-title">⚔️ ポケモン ダメージ計算機</div>
+            <div class="game-card-title">ポケモン ダメージ計算機</div>
             <div class="calc-grid">
               <div class="calc-section">
-                <div class="calc-section-title">🗡️ 攻撃側</div>
+                <div class="calc-section-title">攻撃側</div>
                 <div class="calc-row">
                   <label>攻撃/特攻実数値</label>
                   <input type="number" id="atk-stat" value="150" min="1" max="999">
@@ -116,7 +116,7 @@
                 </div>
               </div>
               <div class="calc-section">
-                <div class="calc-section-title">🛡️ 防御側</div>
+                <div class="calc-section-title">防御側</div>
                 <div class="calc-row">
                   <label>防御/特防実数値</label>
                   <input type="number" id="def-stat" value="130" min="1" max="999">
@@ -162,15 +162,15 @@
         <!-- ④ ガチャガイド -->
         <div class="game-panel" id="tab-gacha-guide">
           <div class="game-card">
-            <div class="game-card-title">📖 ガチャガイド</div>
+            <div class="game-card-title">ガチャガイド</div>
 
             <div class="guide-section">
-              <div class="guide-title">🎲 ガチャとは</div>
+              <div class="guide-title">ガチャとは</div>
               <p class="guide-text">XPを消費して称号のパーツ（A・B）を入手できるシステムです。AとBを組み合わせてプロフィールに二つ名として表示できます。</p>
             </div>
 
             <div class="guide-section">
-              <div class="guide-title">💰 消費XP</div>
+              <div class="guide-title">消費XP</div>
               <table class="guide-table">
                 <tr><th>回数</th><th>消費XP</th><th>備考</th></tr>
                 <tr><td>1回引く</td><td>50 XP</td><td>A・B各1枚ずつ排出</td></tr>
@@ -179,7 +179,7 @@
             </div>
 
             <div class="guide-section">
-              <div class="guide-title">⭐ レアリティと排出率</div>
+              <div class="guide-title">レアリティと排出率</div>
               <table class="guide-table">
                 <tr><th>レア</th><th>確率</th><th>特徴</th></tr>
                 <tr><td><span style="color:#9ea0a0;font-weight:700;">N</span></td><td>50%</td><td>ノーマル。よくある日常系のワード</td></tr>
@@ -193,25 +193,25 @@
             </div>
 
             <div class="guide-section">
-              <div class="guide-title">🔄 かぶりについて</div>
+              <div class="guide-title">かぶりについて</div>
               <p class="guide-text">既に所持しているワードが出た場合、インベントリには追加されません。その代わり <span style="color:var(--accent-2);font-weight:700;">+1XP</span> のボーナスが付与されます。</p>
             </div>
 
             <div class="guide-section">
-              <div class="guide-title">⭐ XPの貯め方</div>
+              <div class="guide-title">XPの貯め方</div>
               <table class="guide-table">
                 <tr><th>アクション</th><th>獲得XP</th></tr>
-                <tr><td>🔥 ログインボーナス（1日1回）</td><td>+5 XP</td></tr>
-                <tr><td>📅 カレンダーにイベントを追加</td><td>+10 XP</td></tr>
-                <tr><td>✅ 予定・メモを完了にする</td><td>+30 XP</td></tr>
+                <tr><td>ログインボーナス（1日1回）</td><td>+5 XP</td></tr>
+                <tr><td>カレンダーにイベントを追加</td><td>+10 XP</td></tr>
+                <tr><td>予定・メモを完了にする</td><td>+30 XP</td></tr>
                 <tr><td>試験イベントを完了にする</td><td>+50 XP</td></tr>
-                <tr><td>🔄 ガチャのかぶり</td><td>+1 XP</td></tr>
-                <tr><td>⭐ 管理者からの配布</td><td>任意</td></tr>
+                <tr><td>ガチャのかぶり</td><td>+1 XP</td></tr>
+                <tr><td>管理者からの配布</td><td>任意</td></tr>
               </table>
             </div>
 
             <div class="guide-section">
-              <div class="guide-title">📊 レベル閾値</div>
+              <div class="guide-title">レベル閾値</div>
               <table class="guide-table">
                 <tr><th>レベル</th><th>必要累計XP</th><th>10連ガチャ可能回数目安</th></tr>
                 <tr><td>Lv.1</td><td>0</td><td>0回</td></tr>
@@ -229,7 +229,7 @@
             </div>
 
             <div class="guide-section">
-              <div class="guide-title">👑 称号の使い方</div>
+              <div class="guide-title">称号の使い方</div>
               <p class="guide-text">ガチャで獲得したA・Bのワードは <a href="profile.html" style="color:var(--accent-2);">プロフィールページ</a> で組み合わせて二つ名として装備できます。装備した称号は掲示板の投稿やユーザープロフィールに表示されます。</p>
               <div class="guide-example">
                 <span style="color:var(--text-2);font-size:12px;">例：</span>
@@ -243,7 +243,7 @@
         <!-- ③ ガチャ -->
         <div class="game-panel" id="tab-gacha">
           <div class="game-card">
-            <div class="game-card-title">🎲 ガチャ</div>
+            <div class="game-card-title">ガチャ</div>
             <div class="gacha-xp-info">
               <span>所持XP：</span>
               <span id="gacha-xp" class="gacha-xp-val">---</span>
