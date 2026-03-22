@@ -186,7 +186,7 @@ async function loadTitlesList() {
         body: JSON.stringify({ username: btn.dataset.user, title_a:'', title_b:'', reason:'管理者による削除' })
       });
       const data = await res.json();
-      showTitleMsg(res.ok ? `✓ ${data.message}` : data.detail, !res.ok);
+      showTitleMsg(res.ok ? data.message : data.detail, !res.ok);
       if (res.ok) loadTitlesList();
     });
   });
@@ -234,7 +234,7 @@ document.getElementById('title-grant-btn').addEventListener('click', async () =>
     body: JSON.stringify({ username, title_a, title_b, reason })
   });
   const data = await res.json();
-  showTitleMsg(res.ok ? `✓ ${data.message}` : data.detail, !res.ok);
+  showTitleMsg(res.ok ? data.message : data.detail, !res.ok);
   if (res.ok) { loadTitlesList(); loadXPList(); }
 });
 
@@ -249,7 +249,7 @@ document.getElementById('title-revoke-btn').addEventListener('click', async () =
     body: JSON.stringify({ username, title_a:'', title_b:'', reason })
   });
   const data = await res.json();
-  showTitleMsg(res.ok ? `✓ ${data.message}` : data.detail, !res.ok);
+  showTitleMsg(res.ok ? data.message : data.detail, !res.ok);
   if (res.ok) { loadTitlesList(); loadXPList(); }
 });
 

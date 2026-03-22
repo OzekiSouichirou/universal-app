@@ -10,16 +10,14 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.8.0-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.5.0-beta</span></div>
       <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
           <li class="active"><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
           <li><a href="timetable.html">時間割</a></li>
-          <li><a href="game.html">ゲーム関連</a></li>
           <li><a href="profile.html">プロフィール</a></li>
-          <li><a href="feedback.html">ご意見箱</a></li>
         </ul>
       </nav>
       <div class="sidebar-footer">
@@ -32,7 +30,7 @@
         <h2>掲示板</h2>
         <div class="top-bar-right">
           <div class="notif-wrap">
-            <button class="notif-bell" id="notif-bell" aria-label="通知">🔔<span class="notif-badge" id="notif-badge" style="display:none;"></span></button>
+            <button class="notif-bell" id="notif-bell" aria-label="通知">●<span class="notif-badge" id="notif-badge" style="display:none;"></span></button>
             <div class="notif-panel hidden" id="notif-panel">
               <div class="notif-panel-header">
                 <span>通知</span>
@@ -50,7 +48,7 @@
           <div class="post-form-footer">
             <span id="char-count">0 / 500</span>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button id="image-attach-btn" class="btn-secondary btn-icon" title="画像を添付">🖼</button>
+              <button id="image-attach-btn" class="btn-secondary btn-icon" title="画像を添付">+</button>
               <input type="file" id="image-input" accept="image/*" style="display:none;">
               <button id="post-btn" class="btn-primary">投稿する</button>
             </div>

@@ -12,29 +12,8 @@ textarea.addEventListener('input', () => {
   charCount.textContent = `${textarea.value.length} / 500`;
 });
 
-
-const RARITY_RANK = {N:0, R:1, SR:2, SSR:3, UR:4, SECR:5};
-
-function getRarityFromPool(text, pool) {
-  if (!text || typeof pool === 'undefined') return null;
-  for (const [rarity, words] of Object.entries(pool)) {
-    if (words.includes(text)) return rarity;
-  }
-  return null;
-}
-
-// A・B両方のレア度を比較して高い方の色を返す
-function getTitleColor(titleA, titleB) {
-  if (typeof GACHA_RARITY === 'undefined') return 'var(--text-2)';
-  const rA = getRarityFromPool(titleA, typeof POOL_A !== 'undefined' ? POOL_A : {});
-  const rB = getRarityFromPool(titleB, typeof POOL_B !== 'undefined' ? POOL_B : {});
-  const rankA = rA ? (RARITY_RANK[rA] ?? -1) : -1;
-  const rankB = rB ? (RARITY_RANK[rB] ?? -1) : -1;
-  const best = rankA >= rankB ? rA : rB;
-  return best ? (GACHA_RARITY[best]?.color || 'var(--text-2)') : 'var(--text-2)';
-}
-function avatarHtml(username, avatar) {
-  const av = avatar !== undefined ? avatar : avatars[username];
+function avatarHtml(username) {
+  const av = avatars[username];
   const initial = username.charAt(0).toUpperCase();
   if (av) return `<div class="post-avatar"><img src="${av}" alt="${initial}"></div>`;
   return `<div class="post-avatar">${initial}</div>`;
@@ -148,7 +127,7 @@ function renderNotifications(notifs) {
     return;
   }
   list.innerHTML = notifs.map(n => {
-    const label = n.type === 'like' ? '♥ いいね' : '💬 コメント';
+    const label = n.type === 'like' ? 'いいね' : 'コメント';
     const time = new Date(n.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     return `
       <div class="notif-item ${n.is_read ? '' : 'unread'}" data-post-id="${n.post_id}">
@@ -217,11 +196,8 @@ function renderPosts(posts) {
     <div class="post-card" id="post-${p.id}">
       <div class="post-header">
         <div class="post-user-info">
-          ${avatarHtml(p.username, p.avatar)}
-          <div class="post-user-meta">
-            <span class="post-username user-link" data-user="${p.username}" style="cursor:pointer;">${p.username}</span>
-            ${p.title ? `<span class="post-user-title" style="color:${getTitleColor(p.title_a, p.title_b)}">${p.title.replace(" ", "")}</span>` : ''}
-          </div>
+          ${avatarHtml(p.username)}
+          <span class="post-username">${p.username}</span>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
@@ -232,7 +208,7 @@ function renderPosts(posts) {
           ♥ <span class="like-count">${p.likes}</span>
         </button>
         <button class="comment-toggle-btn" data-id="${p.id}">
-          💬 <span class="comment-count">${p.comment_count}</span>
+          # <span class="comment-count">${p.comment_count}</span>
         </button>
         ${p.username === currentUser.username || currentUser.role === 'admin' ? `
           <button class="delete-post-btn" data-id="${p.id}">削除</button>
@@ -317,10 +293,7 @@ async function fetchComments(postId) {
     <div class="comment-item" id="comment-${c.id}">
       <div class="comment-header">
         ${avatarHtml(c.username)}
-        <div class="post-user-meta">
-          <span class="comment-username">${c.username}</span>
-          ${c.title ? `<span class="post-user-title" style="color:${getTitleColor(c.title_a, c.title_b)}">${c.title.replace(" ", "")}</span>` : ''}
-        </div>
+        <span class="comment-username">${c.username}</span>
         <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
         ${c.username === currentUser.username || currentUser.role === 'admin' ? `
           <button class="delete-comment-btn" data-post-id="${postId}" data-id="${c.id}">削除</button>

@@ -1,5 +1,5 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-let chartTrend = null;
+let chartTrend = null, chartXP = null, chartHourly = null;
 
 const CHART_DEFAULTS = {
   color: '#e4e9f7',
@@ -38,30 +38,35 @@ async function loadStats(user) {
     const me = await meRes.json();
 
     renderStatCards([
-      { label: '総ユーザー数', value: admin.total_users, icon: '👥' },
-      { label: '総投稿数',    value: admin.total_posts,    icon: '📝' },
-      { label: '総コメント数', value: admin.total_comments, icon: '💬' },
-      { label: '総いいね数',  value: admin.total_likes,    icon: '❤️' },
-      { label: '自分の投稿',  value: me.my_posts,          icon: '✏️' },
-      { label: 'Lv.' + me.level + ' / ' + me.xp + 'XP', value: '🔥' + me.streak + '日', icon: '⭐' },
+      { label: '総ユーザー数', value: admin.total_users, icon: '#' },
+      { label: '総投稿数',    value: admin.total_posts,    icon: '+' },
+      { label: '総コメント数', value: admin.total_comments, icon: '#' },
+      { label: '総いいね数',  value: admin.total_likes,    icon: '♡' },
+      { label: '自分の投稿',  value: me.my_posts,          icon: '+' },
+      { label: 'Lv.' + me.level + ' / ' + me.xp + 'XP', value: me.streak + '日', icon: 'Lv' },
     ]);
 
     renderTrendChart(admin.post_trend, '全体の投稿数');
+    renderXPChart(admin.xp_ranking);
+    renderHourlyChart(admin.hourly_posts);
+    document.getElementById('hourly-card').style.display = 'block';
 
   } else {
     const res = await fetch(`${API}/stats/me`, { headers: { 'Authorization': `Bearer ${token}` } });
     const me = await res.json();
 
     renderStatCards([
-      { label: '自分の投稿数',  value: me.my_posts,    icon: '✏️' },
-      { label: '受け取ったいいね', value: me.my_likes, icon: '❤️' },
-      { label: '自分のコメント', value: me.my_comments, icon: '💬' },
-      { label: 'レベル',        value: 'Lv.' + me.level, icon: '⭐' },
-      { label: 'XP',           value: me.xp,            icon: '💡' },
-      { label: '連続ログイン',  value: me.streak + '日', icon: '🔥' },
+      { label: '自分の投稿数',  value: me.my_posts,    icon: '+' },
+      { label: '受け取ったいいね', value: me.my_likes, icon: '♡' },
+      { label: '自分のコメント', value: me.my_comments, icon: '#' },
+      { label: 'レベル',        value: 'Lv.' + me.level, icon: 'Lv' },
+      { label: 'XP',           value: me.xp,            icon: 'XP' },
+      { label: '連続ログイン',  value: me.streak + '日', icon: '+' },
     ]);
 
     renderTrendChart(me.post_trend, '自分の投稿数');
+    renderXPChart(me.xp_ranking);
+    document.getElementById('hourly-card').style.display = 'none';
   }
 }
 
@@ -101,9 +106,44 @@ function renderTrendChart(data, label) {
   });
 }
 
-// renderXPChart 廃止
+function renderXPChart(ranking) {
+  const ctx = document.getElementById('chart-xp').getContext('2d');
+  if (chartXP) chartXP.destroy();
+  chartXP = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ranking.map(r => r.username),
+      datasets: [{
+        label: 'XP',
+        data: ranking.map(r => r.xp),
+        backgroundColor: [
+          '#f5a623','#c0c0c0','#cd7f32',
+          CHART_DEFAULTS.accent, CHART_DEFAULTS.blue
+        ],
+        borderRadius: 6,
+      }]
+    },
+    options: { ...chartOptions(), indexAxis: 'y' },
+  });
+}
 
-// renderHourlyChart 廃止
+function renderHourlyChart(data) {
+  const ctx = document.getElementById('chart-hourly').getContext('2d');
+  if (chartHourly) chartHourly.destroy();
+  chartHourly = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.hour + '時'),
+      datasets: [{
+        label: '投稿数',
+        data: data.map(d => d.count),
+        backgroundColor: CHART_DEFAULTS.green + 'cc',
+        borderRadius: 4,
+      }]
+    },
+    options: chartOptions(),
+  });
+}
 
 function chartOptions() {
   return {
@@ -130,10 +170,10 @@ async function loadTodayEvents() {
     el.innerHTML = '<p class="db-empty">予定なし</p>';
     return;
   }
-  const TYPE_ICONS = { memo:'📝', schedule:'📅', exam:'⚠️', deadline:'🔴', event:'🎉' };
+  const TYPE_ICONS = { memo:'', schedule:'', exam:'', deadline:'', event:'' };
   el.innerHTML = items.map(e => `
     <div class="db-list-item">
-      <span>${TYPE_ICONS[e.type] || '📌'}</span>
+      <span>${TYPE_ICONS[e.type] || ''}</span>
       <span class="db-list-text">${e.date === today ? '今日' : '明日'}：${e.title}</span>
     </div>
   `).join('');

@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 const DAYS = ['月','火','水','木','金','土'];
 const PERIODS = 6;
 const COLORS = ['#5b6ef5','#3ecf8e','#f0476c','#41b4f5','#f5a623','#b06ef5','#f56e6e','#6ef5c3'];
@@ -41,8 +41,8 @@ function renderTable() {
         td.style.borderTop = `3px solid ${entry.color}`;
         td.innerHTML = `
           <div class="tt-subject">${entry.subject}</div>
-          ${entry.room ? `<div class="tt-sub-info">📍 ${entry.room}</div>` : ''}
-          ${entry.teacher ? `<div class="tt-sub-info">👤 ${entry.teacher}</div>` : ''}
+          ${entry.room ? `<div class="tt-sub-info">${entry.room}</div>` : ''}
+          ${entry.teacher ? `<div class="tt-sub-info">${entry.teacher}</div>` : ''}
         `;
       } else {
         td.className = 'tt-cell empty';

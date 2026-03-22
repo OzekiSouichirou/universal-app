@@ -37,21 +37,27 @@
 
         <div class="db-grid">
           <div class="db-card db-card-wide">
-            <div class="db-card-title">📈 投稿数推移（過去7日）</div>
+            <div class="db-card-title">投稿数推移（過去7日）</div>
             <canvas id="chart-trend" height="120"></canvas>
           </div>
-
-
           <div class="db-card">
-            <div class="db-card-title">📅 今日の予定</div>
+            <div class="db-card-title">XPランキング</div>
+            <canvas id="chart-xp" height="180"></canvas>
+          </div>
+          <div class="db-card admin-only" id="hourly-card">
+            <div class="db-card-title">時間帯別投稿数</div>
+            <canvas id="chart-hourly" height="180"></canvas>
+          </div>
+          <div class="db-card">
+            <div class="db-card-title">今日の予定</div>
             <div id="db-today-events" class="db-list"></div>
           </div>
           <div class="db-card">
-            <div class="db-card-title">📚 今日の時間割</div>
+            <div class="db-card-title">今日の時間割</div>
             <div id="db-today-tt" class="db-list"></div>
           </div>
           <div class="db-card">
-            <div class="db-card-title">⚡ サーバー状態</div>
+            <div class="db-card-title">サーバー状態</div>
             <div id="db-server" class="db-server-box">
               <span id="db-server-dot" class="server-dot"></span>
               <span id="db-server-label">確認中...</span>

@@ -1,5 +1,5 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-let chartTrend = null;
+let chartTrend = null, chartXP = null;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -14,7 +14,7 @@ async function init() {
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('welcome-msg').textContent = `ようこそ、${user.username} さん`;
 
-  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable(), loadFortune()]);
+  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable()]);
 }
 
 async function loadNotices() {
@@ -40,10 +40,10 @@ async function loadStats() {
   const me = await res.json();
 
   document.getElementById('home-stat-cards').innerHTML = [
-    { label: '自分の投稿数',     value: me.my_posts,    icon: '✏️' },
-    { label: '受け取ったいいね', value: me.my_likes,    icon: '❤️' },
-    { label: '自分のコメント',   value: me.my_comments, icon: '💬' },
-    { label: 'レベル',          value: 'Lv.' + me.level, icon: '⭐' },
+    { label: '自分の投稿数',     value: me.my_posts,    icon: '+' },
+    { label: '受け取ったいいね', value: me.my_likes,    icon: '♡' },
+    { label: '自分のコメント',   value: me.my_comments, icon: '#' },
+    { label: 'レベル',          value: 'Lv.' + me.level, icon: 'Lv' },
   ].map(c => `
     <div class="db-stat-card">
       <span class="db-stat-icon">${c.icon}</span>
@@ -56,7 +56,7 @@ async function loadStats() {
 
   const xpWrap = document.getElementById('home-xp-wrap');
   document.getElementById('home-xp-level').textContent = `Lv.${me.level}`;
-  document.getElementById('home-xp-streak').textContent = `🔥 ${me.streak}日連続`;
+  document.getElementById('home-xp-streak').textContent = `${me.streak}日連続`;
 
   const xpRes = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (xpRes.ok) {
@@ -89,7 +89,21 @@ async function loadStats() {
     options: chartOptions(),
   });
 
-  // XPランキング廃止
+  const ctx2 = document.getElementById('home-chart-xp').getContext('2d');
+  if (chartXP) chartXP.destroy();
+  chartXP = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: me.xp_ranking.map(r => r.username),
+      datasets: [{
+        label: 'XP',
+        data: me.xp_ranking.map(r => r.xp),
+        backgroundColor: ['#f5a623','#c0c0c0','#cd7f32', CHART_DEFAULTS.accent, '#41b4f5'],
+        borderRadius: 6,
+      }]
+    },
+    options: { ...chartOptions(), indexAxis: 'y' },
+  });
 }
 
 function chartOptions() {
@@ -111,11 +125,11 @@ async function loadTodayEvents() {
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const items = events.filter(e => (e.date === today || e.date === tomorrow) && !e.is_done);
-  const TYPE_ICONS = { memo:'📝', schedule:'📅', exam:'⚠️', deadline:'🔴', event:'🎉' };
+  const TYPE_ICONS = { memo:'', schedule:'', exam:'', deadline:'', event:'' };
   if (items.length === 0) { el.innerHTML = '<p class="db-empty">予定なし</p>'; return; }
   el.innerHTML = items.map(e => `
     <div class="db-list-item">
-      <span>${TYPE_ICONS[e.type] || '📌'}</span>
+      <span>${TYPE_ICONS[e.type] || ''}</span>
       <span class="db-list-text">${e.date === today ? '今日' : '明日'}：${e.title}</span>
     </div>
   `).join('');
@@ -147,37 +161,3 @@ async function loadTodayTimetable() {
 }
 
 init();
-
-async function loadFortune() {
-  try {
-    const res = await fetch(`${API}/users/fortune/today`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) return;
-    const f = await res.json();
-
-    const box = document.getElementById('fortune-box');
-    const rankEl = document.getElementById('fortune-rank');
-    const msgEl = document.getElementById('fortune-msg');
-    const xpEl = document.getElementById('fortune-xp');
-
-    rankEl.textContent = `${f.emoji} ${f.rank}`;
-    msgEl.textContent = f.msg;
-
-    if (f.xp_gained > 0) {
-      xpEl.textContent = `+${f.xp_gained} XP 獲得！`;
-      xpEl.style.display = 'block';
-    } else if (f.already_gained) {
-      xpEl.textContent = '（本日のXPは取得済み）';
-      xpEl.style.display = 'block';
-    }
-
-    // レアリティに応じた色
-    const colors = {
-      '大吉': '#f5a623', '中吉': '#3ecf8e', '小吉': '#41b4f5',
-      '吉': '#8892b0', '末吉': '#b899c0', '凶': '#f0476c', '大凶': '#b06ef5'
-    };
-    rankEl.style.color = colors[f.rank] || 'var(--text)';
-    box.style.display = 'block';
-  } catch(e) {}
-}

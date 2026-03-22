@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let currentUser = null;
 let allEvents = [];
 let selectedDate = null;
@@ -7,7 +7,7 @@ let currentYear, currentMonth;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const TYPE_LABELS = { memo:'📝 メモ', schedule:'📅 予定', exam:'⚠️ 試験', deadline:'🔴 締め切り', event:'🎉 イベント' };
+const TYPE_LABELS = { memo:'メモ', schedule:'予定', exam:'試験', deadline:'締め切り', event:'イベント' };
 
 async function init() {
   const user = await checkAuth(false);
@@ -56,7 +56,7 @@ async function fetchXP() {
 
 function renderXP(xp) {
   document.getElementById('xp-level').textContent = `Lv.${xp.level}`;
-  document.getElementById('xp-streak').textContent = `🔥 ${xp.streak}日`;
+  document.getElementById('xp-streak').textContent = `${xp.streak}日`;
   const range = xp.next_level_xp - xp.current_level_xp;
   const progress = xp.xp - xp.current_level_xp;
   const pct = range > 0 ? Math.min(100, Math.round(progress / range * 100)) : 100;
@@ -154,7 +154,7 @@ function renderExamCountdown() {
 
   box.innerHTML = `
     <div class="exam-box">
-      <div class="exam-box-title">⚠️ 試験週間モード</div>
+      <div class="exam-box-title">試験週間モード</div>
       ${exams.slice(0, 3).map(e => `
         <div class="exam-item">
           <span class="exam-name">${e.title}</span>

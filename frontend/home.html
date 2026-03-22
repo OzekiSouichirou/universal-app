@@ -13,14 +13,13 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.8.0-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.7.0-beta</span></div>
       <nav>
         <ul>
           <li class="active"><a href="home.html">ホーム</a></li>
           <li><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
           <li><a href="timetable.html">時間割</a></li>
-          <li><a href="game.html">ゲーム関連</a></li>
           <li><a href="profile.html">プロフィール</a></li>
           <li><a href="feedback.html">ご意見箱</a></li>
         </ul>
@@ -42,22 +41,12 @@
           <p>Polonix へログインしました。</p>
         </div>
 
-        <!-- 運勢 -->
-        <div class="fortune-box" id="fortune-box" style="display:none;">
-          <div class="fortune-inner">
-            <div class="fortune-label">🎴 今日の運勢</div>
-            <div class="fortune-rank" id="fortune-rank"></div>
-            <div class="fortune-msg" id="fortune-msg"></div>
-            <div class="fortune-xp" id="fortune-xp" style="display:none;"></div>
-          </div>
-        </div>
-
         <div class="db-stat-row" id="home-stat-cards"></div>
 
         <div class="home-xp-bar-wrap" id="home-xp-wrap">
           <div class="home-xp-header">
             <span id="home-xp-level">Lv.1</span>
-            <span id="home-xp-streak">🔥 0日連続</span>
+            <span id="home-xp-streak">0日連続</span>
             <span id="home-xp-label">0 / 100 XP</span>
           </div>
           <div class="xp-bar-wrap">
@@ -67,16 +56,19 @@
 
         <div class="home-grid">
           <div class="db-card">
-            <div class="db-card-title">📈 自分の投稿推移（過去7日）</div>
+            <div class="db-card-title">自分の投稿推移（過去7日）</div>
             <canvas id="home-chart-trend" height="120"></canvas>
           </div>
-
           <div class="db-card">
-            <div class="db-card-title">📅 今日・明日の予定</div>
+            <div class="db-card-title">XPランキング</div>
+            <canvas id="home-chart-xp" height="160"></canvas>
+          </div>
+          <div class="db-card">
+            <div class="db-card-title">今日・明日の予定</div>
             <div id="home-today-events" class="db-list"></div>
           </div>
           <div class="db-card">
-            <div class="db-card-title">📚 今日の時間割</div>
+            <div class="db-card-title">今日の時間割</div>
             <div id="home-today-tt" class="db-list"></div>
           </div>
         </div>
