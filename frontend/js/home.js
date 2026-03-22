@@ -1,12 +1,8 @@
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-let chartTrend = null, chartXP = null;
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-const CHART_DEFAULTS = {
-  color: '#e4e9f7', gridColor: '#1e2640',
-  accent: '#5b6ef5', accent2: '#7b8cf7',
-};
+
 
 async function init() {
   const user = await checkAuth(false);
@@ -68,54 +64,9 @@ async function loadStats() {
     document.getElementById('home-xp-label').textContent = `${xp.xp} / ${xp.next_level_xp} XP`;
   }
 
-  const ctx1 = document.getElementById('home-chart-trend').getContext('2d');
-  if (chartTrend) chartTrend.destroy();
-  chartTrend = new Chart(ctx1, {
-    type: 'line',
-    data: {
-      labels: me.post_trend.map(d => d.date),
-      datasets: [{
-        label: '投稿数',
-        data: me.post_trend.map(d => d.count),
-        borderColor: CHART_DEFAULTS.accent,
-        backgroundColor: 'rgba(91,110,245,0.12)',
-        borderWidth: 2,
-        pointBackgroundColor: CHART_DEFAULTS.accent2,
-        pointRadius: 4,
-        tension: 0.4,
-        fill: true,
-      }]
-    },
-    options: chartOptions(),
-  });
-
-  const ctx2 = document.getElementById('home-chart-xp').getContext('2d');
-  if (chartXP) chartXP.destroy();
-  chartXP = new Chart(ctx2, {
-    type: 'bar',
-    data: {
-      labels: me.xp_ranking.map(r => r.username),
-      datasets: [{
-        label: 'XP',
-        data: me.xp_ranking.map(r => r.xp),
-        backgroundColor: ['#f5a623','#c0c0c0','#cd7f32', CHART_DEFAULTS.accent, '#41b4f5'],
-        borderRadius: 6,
-      }]
-    },
-    options: { ...chartOptions(), indexAxis: 'y' },
-  });
 }
 
-function chartOptions() {
-  return {
-    responsive: true,
-    plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { size: 12 } } } },
-    scales: {
-      x: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
-      y: { ticks: { color: CHART_DEFAULTS.color, stepSize: 1 }, grid: { color: CHART_DEFAULTS.gridColor } },
-    },
-  };
-}
+
 
 async function loadTodayEvents() {
   const res = await fetch(`${API}/calendar/events`, { headers: { 'Authorization': `Bearer ${token}` } });

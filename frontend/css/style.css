@@ -174,7 +174,7 @@ body {
 }
 
 .sidebar-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   padding: 0 20px 16px;
   border-bottom: none;
@@ -198,10 +198,11 @@ body {
 
 .sidebar-title a {
   color: transparent;
-  background: linear-gradient(90deg, #3a2fd4 0%, #c4386b 40%, #e8649a 70%, #f4a8c8 100%);
+  background: linear-gradient(90deg, #ffffff 0%, #f4a8c8 45%, #e8649a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   text-decoration: none;
+  text-shadow: none;
 }
 
 .sidebar-title a:hover {
