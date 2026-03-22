@@ -1,4 +1,7 @@
-// API定数はapi.jsで定義
+const API = (typeof API !== 'undefined') ? API :
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:8000'
+    : 'https://polonix-api-sod4.onrender.com');
 
 async function checkAuth(requireAdmin = false) {
   const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
@@ -8,7 +11,10 @@ async function checkAuth(requireAdmin = false) {
     return null;
   }
 
-  // リトライ付きfetch（Renderスリープ対応）
+  // Renderスリープ明けのwarmup（/にGETしてから/users/meを叩く）
+  try { await fetch(`${API}/`, { method: 'GET' }); } catch (_) {}
+
+  // リトライ付きfetch
   let res = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -18,9 +24,8 @@ async function checkAuth(requireAdmin = false) {
       break;
     } catch (e) {
       if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 3000));
       } else {
-        // 3回失敗 = ネットワークエラー。ログイン画面には飛ばさない
         console.warn('checkAuth: network error after 3 attempts');
         return null;
       }

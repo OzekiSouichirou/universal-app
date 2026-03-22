@@ -6,11 +6,17 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 
 async function init() {
   const user = await checkAuth(false);
-  if (!user) return;
+  if (!user) {
+    // ネットワークエラー時もトークンがあれば画面は維持する
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    if (!token) return;
+    await loadNotices().catch(() => {});
+    return;
+  }
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('welcome-msg').textContent = `ようこそ、${user.username} さん`;
 
-  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable()]);
+  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable(), loadFortune()]);
 }
 
 async function loadNotices() {
