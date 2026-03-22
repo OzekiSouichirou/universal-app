@@ -1,12 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+"""
+Polonix v0.9.0 - 投稿ルート
+- 生SQL統一
+- APIレスポンス統一
+- レート制限
+- 投稿検索追加
+"""
+import os, sys, logging
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from fastapi import APIRouter, Depends, Request, Query
+from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
-from models.database import get_db, Post, Like, Log, Comment, Notification
-from routes.users import get_current_user
-from models.database import User
+
+from database import get_db, row_to_dict, rows_to_list
+from users import get_current_user
+from response import ok, err, E
+from security import check_rate_limit, RATE, validate_post_content
 
 router = APIRouter()
+logger = logging.getLogger("polonix.posts")
 
 class PostCreate(BaseModel):
     content: str
@@ -16,195 +29,161 @@ class CommentCreate(BaseModel):
     content: str
 
 @router.get("/")
-def get_posts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    posts = db.query(Post).order_by(Post.created_at.desc()).limit(100).all()
-    from sqlalchemy import text
-    # ユーザーの称号・アバターを生SQLで一括取得（SQLAlchemyキャッシュ回避）
-    usernames = list(set(p.username for p in posts))
-    if usernames:
-        placeholders = ','.join([f':u{i}' for i in range(len(usernames))])
-        params = {f'u{i}': u for i, u in enumerate(usernames)}
-        rows = db.execute(
-            text(f"SELECT username, avatar, selected_title, selected_title_a, selected_title_b FROM users WHERE username IN ({placeholders})"),
-            params
-        ).fetchall()
-        user_map = {r.username: r for r in rows}
+def get_posts(
+    q: Optional[str] = Query(None, description="検索キーワード"),
+    limit: int = Query(100, le=100),
+    db=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if q and q.strip():
+        keyword = f"%{q.strip()}%"
+        rows = db.execute(text("""
+            SELECT p.id, p.username, p.content, p.image, p.created_at,
+                   u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b,
+                   COUNT(DISTINCT l.id) AS likes,
+                   MAX(CASE WHEN l.username=:me THEN 1 ELSE 0 END) AS liked,
+                   COUNT(DISTINCT c.id) AS comment_count
+            FROM posts p
+            LEFT JOIN users u ON u.username = p.username
+            LEFT JOIN likes l ON l.post_id = p.id
+            LEFT JOIN comments c ON c.post_id = p.id
+            WHERE p.content ILIKE :kw
+            GROUP BY p.id, u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b
+            ORDER BY p.created_at DESC
+            LIMIT :limit
+        """), {"me": current_user.username, "kw": keyword, "limit": limit}).fetchall()
     else:
-        user_map = {}
+        rows = db.execute(text("""
+            SELECT p.id, p.username, p.content, p.image, p.created_at,
+                   u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b,
+                   COUNT(DISTINCT l.id) AS likes,
+                   MAX(CASE WHEN l.username=:me THEN 1 ELSE 0 END) AS liked,
+                   COUNT(DISTINCT c.id) AS comment_count
+            FROM posts p
+            LEFT JOIN users u ON u.username = p.username
+            LEFT JOIN likes l ON l.post_id = p.id
+            LEFT JOIN comments c ON c.post_id = p.id
+            GROUP BY p.id, u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b
+            ORDER BY p.created_at DESC
+            LIMIT :limit
+        """), {"me": current_user.username, "limit": limit}).fetchall()
+
     result = []
-    for post in posts:
-        likes = db.query(Like).filter(Like.post_id == post.id).count()
-        liked = db.query(Like).filter(Like.post_id == post.id, Like.username == current_user.username).first() is not None
-        comment_count = db.query(Comment).filter(Comment.post_id == post.id).count()
-        u = user_map.get(post.username)
-        result.append({
-            "id": post.id,
-            "username": post.username,
-            "title": (u.selected_title or "") if u else "",
-            "title_a": (u.selected_title_a or "") if u else "",
-            "title_b": (u.selected_title_b or "") if u else "",
-            "avatar": u.avatar if u else None,
-            "content": post.content,
-            "image": post.image,
-            "created_at": post.created_at,
-            "likes": likes,
-            "liked": liked,
-            "comment_count": comment_count
-        })
-    return result
+    for r in rows:
+        d = row_to_dict(r)
+        d["liked"] = bool(d.get("liked", 0))
+        d["title"] = d.pop("selected_title", "") or ""
+        d["title_a"] = d.pop("selected_title_a", "") or ""
+        d["title_b"] = d.pop("selected_title_b", "") or ""
+        result.append(d)
+    return ok(result)
 
 @router.post("/")
-def create_post(req: PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not req.content.strip():
-        raise HTTPException(status_code=400, detail="内容を入力してください")
-    if len(req.content) > 500:
-        raise HTTPException(status_code=400, detail="500文字以内で入力してください")
-    if req.image:
-        if not req.image.startswith("data:image/"):
-            raise HTTPException(status_code=400, detail="無効な画像データです")
-        if len(req.image) > 800 * 1024:
-            raise HTTPException(status_code=400, detail="画像サイズが大きすぎます")
-    post = Post(username=current_user.username, content=req.content, image=req.image)
-    db.add(post)
-    db.add(Log(username=current_user.username, action="投稿作成"))
-    db.commit()
-    db.refresh(post)
-    return {
-        "id": post.id,
-        "username": post.username,
-        "content": post.content,
-        "image": post.image,
-        "created_at": post.created_at,
-        "likes": 0,
-        "liked": False,
-        "comment_count": 0
-    }
+def create_post(body: PostCreate, request: Request, db=Depends(get_db), current_user=Depends(get_current_user)):
+    check_rate_limit(f"post:{current_user.username}", *RATE["post"])
+    content = validate_post_content(body.content)
+    if body.image:
+        if not body.image.startswith("data:image/"):
+            err(E.INVALID_INPUT, "無効な画像データです")
+        if len(body.image) > 1.5 * 1024 * 1024:
+            err(E.INVALID_INPUT, "画像サイズが大きすぎます")
+    row = db.execute(
+        text("INSERT INTO posts (username,content,image) VALUES (:u,:c,:i) RETURNING id"),
+        {"u": current_user.username, "c": content, "i": body.image}
+    ).fetchone()
+    return ok({"id": row.id, "message": "投稿しました"})
 
 @router.delete("/{post_id}")
-def delete_post(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="投稿が見つかりません")
-    if post.username != current_user.username and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="削除権限がありません")
-    db.query(Like).filter(Like.post_id == post_id).delete()
-    db.query(Comment).filter(Comment.post_id == post_id).delete()
-    db.query(Notification).filter(Notification.post_id == post_id).delete()
-    db.delete(post)
-    db.add(Log(username=current_user.username, action="投稿削除", detail=f"post_id={post_id}"))
-    db.commit()
-    return {"message": "削除しました"}
+def delete_post(post_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    row = db.execute(
+        text("SELECT username FROM posts WHERE id=:id"), {"id": post_id}
+    ).fetchone()
+    if not row:
+        err(E.NOT_FOUND, "投稿が見つかりません", 404)
+    if row.username != current_user.username and current_user.role != "admin":
+        err(E.FORBIDDEN, "削除権限がありません", 403)
+    for table in ["likes", "comments", "notifications"]:
+        db.execute(text(f"DELETE FROM {table} WHERE post_id=:id"), {"id": post_id})
+    db.execute(text("DELETE FROM posts WHERE id=:id"), {"id": post_id})
+    return ok({"message": "投稿を削除しました"})
 
 @router.post("/{post_id}/like")
-def toggle_like(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="投稿が見つかりません")
-    existing = db.query(Like).filter(Like.post_id == post_id, Like.username == current_user.username).first()
+def toggle_like(post_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    existing = db.execute(
+        text("SELECT id FROM likes WHERE post_id=:p AND username=:u"),
+        {"p": post_id, "u": current_user.username}
+    ).fetchone()
     if existing:
-        db.delete(existing)
-        db.query(Notification).filter(
-            Notification.post_id == post_id,
-            Notification.from_username == current_user.username,
-            Notification.type == "like"
-        ).delete()
-        db.commit()
+        db.execute(text("DELETE FROM likes WHERE post_id=:p AND username=:u"),
+                   {"p": post_id, "u": current_user.username})
         liked = False
     else:
-        like = Like(post_id=post_id, username=current_user.username)
-        db.add(like)
-        if post.username != current_user.username:
-            db.add(Notification(
-                username=post.username,
-                type="like",
-                post_id=post_id,
-                from_username=current_user.username
-            ))
-        db.commit()
+        db.execute(
+            text("INSERT INTO likes (post_id,username) VALUES (:p,:u) ON CONFLICT DO NOTHING"),
+            {"p": post_id, "u": current_user.username}
+        )
+        # 投稿者への通知
+        post = db.execute(text("SELECT username FROM posts WHERE id=:id"), {"id": post_id}).fetchone()
+        if post and post.username != current_user.username:
+            db.execute(text("""
+                INSERT INTO notifications (username,type,post_id,from_username)
+                VALUES (:u,'like',:p,:f)
+            """), {"u": post.username, "p": post_id, "f": current_user.username})
         liked = True
-    likes = db.query(Like).filter(Like.post_id == post_id).count()
-    return {"liked": liked, "likes": likes}
+    count = db.execute(
+        text("SELECT COUNT(*) AS c FROM likes WHERE post_id=:p"), {"p": post_id}
+    ).fetchone().c
+    return ok({"liked": liked, "likes": count})
 
 @router.get("/{post_id}/comments")
-def get_comments(post_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="投稿が見つかりません")
-    comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.asc()).all()
-    from sqlalchemy import text
-    c_usernames = list(set(c.username for c in comments))
-    if c_usernames:
-        placeholders = ','.join([f':u{i}' for i in range(len(c_usernames))])
-        params = {f'u{i}': u for i, u in enumerate(c_usernames)}
-        c_rows = db.execute(
-            text(f"SELECT username, selected_title, selected_title_a, selected_title_b FROM users WHERE username IN ({placeholders})"),
-            params
-        ).fetchall()
-        comment_user_map = {r.username: r for r in c_rows}
-    else:
-        comment_user_map = {}
-    return [{
-        "id": c.id,
-        "username": c.username,
-        "title": (comment_user_map[c.username].selected_title or "") if c.username in comment_user_map else "",
-        "title_a": (comment_user_map[c.username].selected_title_a or "") if c.username in comment_user_map else "",
-        "title_b": (comment_user_map[c.username].selected_title_b or "") if c.username in comment_user_map else "",
-        "content": c.content,
-        "created_at": c.created_at
-    } for c in comments]
+def get_comments(post_id: int, db=Depends(get_db), _=Depends(get_current_user)):
+    rows = db.execute(text("""
+        SELECT c.id, c.username, c.content, c.created_at,
+               u.selected_title, u.selected_title_a
+        FROM comments c
+        LEFT JOIN users u ON u.username = c.username
+        WHERE c.post_id = :p
+        ORDER BY c.created_at ASC
+    """), {"p": post_id}).fetchall()
+    result = []
+    for r in rows:
+        d = row_to_dict(r)
+        d["title"] = d.pop("selected_title", "") or ""
+        d["title_a"] = d.pop("selected_title_a", "") or ""
+        result.append(d)
+    return ok(result)
 
 @router.post("/{post_id}/comments")
-def create_comment(post_id: int, req: CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="投稿が見つかりません")
-    if not req.content.strip():
-        raise HTTPException(status_code=400, detail="内容を入力してください")
-    if len(req.content) > 200:
-        raise HTTPException(status_code=400, detail="200文字以内で入力してください")
-    comment = Comment(post_id=post_id, username=current_user.username, content=req.content)
-    db.add(comment)
-    if post.username != current_user.username:
-        db.add(Notification(
-            username=post.username,
-            type="comment",
-            post_id=post_id,
-            from_username=current_user.username
-        ))
-    db.commit()
-    db.refresh(comment)
-    return {"id": comment.id, "username": comment.username, "content": comment.content, "created_at": comment.created_at}
+def add_comment(post_id: int, body: CommentCreate, db=Depends(get_db), current_user=Depends(get_current_user)):
+    if not body.content or not body.content.strip():
+        err(E.VALIDATION, "コメント内容を入力してください")
+    if len(body.content) > 300:
+        err(E.VALIDATION, "コメントは300文字以内にしてください")
+    db.execute(
+        text("INSERT INTO comments (post_id,username,content) VALUES (:p,:u,:c)"),
+        {"p": post_id, "u": current_user.username, "c": body.content.strip()}
+    )
+    post = db.execute(text("SELECT username FROM posts WHERE id=:id"), {"id": post_id}).fetchone()
+    if post and post.username != current_user.username:
+        db.execute(text("""
+            INSERT INTO notifications (username,type,post_id,from_username)
+            VALUES (:u,'comment',:p,:f)
+        """), {"u": post.username, "p": post_id, "f": current_user.username})
+    return ok({"message": "コメントを投稿しました"})
 
-@router.delete("/{post_id}/comments/{comment_id}")
-def delete_comment(post_id: int, comment_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    comment = db.query(Comment).filter(Comment.id == comment_id, Comment.post_id == post_id).first()
-    if not comment:
-        raise HTTPException(status_code=404, detail="コメントが見つかりません")
-    if comment.username != current_user.username and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="削除権限がありません")
-    db.delete(comment)
-    db.commit()
-    return {"message": "削除しました"}
+@router.get("/notifications/list")
+def get_notifications(db=Depends(get_db), current_user=Depends(get_current_user)):
+    rows = db.execute(text("""
+        SELECT id, type, post_id, from_username, is_read, created_at
+        FROM notifications WHERE username=:u
+        ORDER BY created_at DESC LIMIT 30
+    """), {"u": current_user.username}).fetchall()
+    return ok(rows_to_list(rows))
 
-@router.get("/notifications/me")
-def get_notifications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    notifs = db.query(Notification).filter(
-        Notification.username == current_user.username
-    ).order_by(Notification.created_at.desc()).limit(30).all()
-    return [{
-        "id": n.id,
-        "type": n.type,
-        "post_id": n.post_id,
-        "from_username": n.from_username,
-        "is_read": n.is_read,
-        "created_at": n.created_at
-    } for n in notifs]
-
-@router.post("/notifications/read")
-def mark_all_read(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    db.query(Notification).filter(
-        Notification.username == current_user.username,
-        Notification.is_read == False
-    ).update({"is_read": True})
-    db.commit()
-    return {"message": "既読にしました"}
+@router.patch("/notifications/read-all")
+def mark_all_read(db=Depends(get_db), current_user=Depends(get_current_user)):
+    db.execute(
+        text("UPDATE notifications SET is_read=true WHERE username=:u"),
+        {"u": current_user.username}
+    )
+    return ok({"message": "既読にしました"})

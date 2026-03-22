@@ -1,98 +1,116 @@
+"""
+Polonix v0.9.0 - メインアプリケーション
+- ORM廃止・生SQL統一
+- Alembicによるマイグレーション管理
+- run_migrations()は残すが、Alembic移行後は不要
+"""
 import os
+import time
 import bcrypt
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from models.database import Base, engine, SessionLocal, User, Log
-from auth.routes import router as auth_router
-from routes.users import router as users_router
-from routes.logs import router as logs_router
-from routes.notices import router as notices_router
-from routes.posts import router as posts_router
-from routes.calendar import router as calendar_router
-from routes.timetable import router as timetable_router
-from routes.stats import router as stats_router
-from routes.feedback import router as feedback_router
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
+from sqlalchemy import text
+from database import engine, get_db_ctx
 from dotenv import load_dotenv
 
 load_dotenv()
 
-import time
-from sqlalchemy import text
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger("polonix")
 
-def wait_for_db(retries=10, delay=5):
+# ============================================================
+# DB起動待機
+# ============================================================
+def wait_for_db(retries: int = 10, delay: int = 5) -> bool:
     for i in range(retries):
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
-            print("DB接続成功")
+            logger.info("DB接続成功")
             return True
         except Exception as e:
-            print(f"DB接続待機中 ({i+1}/{retries}): {e}")
+            logger.warning(f"DB接続待機中 ({i+1}/{retries}): {e}")
             time.sleep(delay)
-    print("DB接続失敗。起動続行")
+    logger.error("DB接続失敗。起動続行")
     return False
 
+# ============================================================
+# マイグレーション（Alembic移行前の暫定対応）
+# 新カラムはAlembicで管理するため、ここでは最小限に留める
+# ============================================================
 def run_migrations():
-    """既存テーブルに不足カラムをALTER TABLEで追加する"""
-    migrations = [
-        ("users", "bio",             "ALTER TABLE users ADD COLUMN bio VARCHAR(200)"),
-        ("users", "selected_title",  "ALTER TABLE users ADD COLUMN selected_title VARCHAR(200)"),
-        ("users", "selected_badges",   "ALTER TABLE users ADD COLUMN selected_badges TEXT"),
-        ("users", "selected_title_a", "ALTER TABLE users ADD COLUMN selected_title_a VARCHAR(100)"),
-        ("users", "selected_title_b",  "ALTER TABLE users ADD COLUMN selected_title_b VARCHAR(100)"),
-        ("user_xp", "fortune_date",      "ALTER TABLE user_xp ADD COLUMN fortune_date VARCHAR(20)"),
+    MIGRATIONS = [
+        ("users",           "bio",             "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(200)"),
+        ("users",           "selected_title",  "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title VARCHAR(200)"),
+        ("users",           "selected_badges", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_badges TEXT"),
+        ("users",           "selected_title_a","ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_a VARCHAR(100)"),
+        ("users",           "selected_title_b","ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_b VARCHAR(100)"),
+        ("users",           "is_banned",       "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
+        ("user_xp",         "fortune_date",    "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
     ]
     try:
         with engine.connect() as conn:
-            for table, column, sql in migrations:
+            for table, column, sql in MIGRATIONS:
                 try:
-                    # カラムが存在するか確認
-                    result = conn.execute(text(
-                        f"SELECT column_name FROM information_schema.columns "
-                        f"WHERE table_name='{table}' AND column_name='{column}'"
-                    ))
-                    if result.fetchone() is None:
-                        conn.execute(text(sql))
-                        conn.commit()
-                        print(f"Migration: {table}.{column} を追加しました")
-                    else:
-                        print(f"Migration: {table}.{column} は既に存在します")
+                    conn.execute(text(sql))
+                    conn.commit()
+                    logger.info(f"Migration: {table}.{column} 確認済み")
                 except Exception as e:
-                    print(f"Migration skipped ({table}.{column}): {e}")
+                    logger.warning(f"Migration skipped ({table}.{column}): {e}")
     except Exception as e:
-        print(f"Migration failed: {e}")
+        logger.error(f"Migration failed: {e}")
 
-wait_for_db()
-Base.metadata.create_all(bind=engine)
-run_migrations()
-
-# マイグレーション後にSQLAlchemyの接続をリフレッシュ
-try:
-    engine.dispose()
-except Exception as e:
-    print(f"engine dispose: {e}")
-
+# ============================================================
+# 管理者アカウント初期化
+# ============================================================
 def init_admin():
     try:
-        db = SessionLocal()
-        existing = db.query(User).filter(User.username == "admin").first()
-        if not existing:
-            hashed = bcrypt.hashpw("admin1234".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-            admin = User(username="admin", hashed_password=hashed, role="admin")
-            db.add(admin)
-            db.add(Log(username="admin", action="システム初期化", detail="管理者アカウント自動作成"))
-            db.commit()
-        db.close()
+        with engine.connect() as conn:
+            row = conn.execute(
+                text("SELECT id FROM users WHERE username = 'admin'")
+            ).fetchone()
+            if not row:
+                hashed = bcrypt.hashpw(b"admin1234", bcrypt.gensalt()).decode()
+                import uuid, random, string
+                uid = "#" + "".join(random.choices(string.digits, k=8))
+                conn.execute(text(
+                    "INSERT INTO users (username, hashed_password, role, user_id) "
+                    "VALUES (:u, :p, 'admin', :uid)"
+                ), {"u": "admin", "p": hashed, "uid": uid})
+                conn.execute(text(
+                    "INSERT INTO logs (username, action, detail) "
+                    "VALUES ('admin', 'システム初期化', '管理者アカウント自動作成')"
+                ))
+                conn.commit()
+                logger.info("管理者アカウントを作成しました")
     except Exception as e:
-        print(f"init_admin スキップ: {e}")
+        logger.warning(f"init_admin スキップ: {e}")
 
+# ============================================================
+# 起動処理
+# ============================================================
+wait_for_db()
+run_migrations()
 init_admin()
 
-app = FastAPI(title="Polonix API", version="0.8.2-beta", docs_url=None, redoc_url=None)
+# ============================================================
+# FastAPIアプリ
+# ============================================================
+app = FastAPI(
+    title="Polonix API",
+    version="0.9.0",
+    docs_url=None,
+    redoc_url=None,
+)
 
 origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
-
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
@@ -101,6 +119,53 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================
+# グローバルエラーハンドラー（レスポンス形式統一）
+# ============================================================
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # 既に統一形式の場合はそのまま返す
+    if isinstance(exc.detail, dict) and "success" in exc.detail:
+        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+    # 旧形式のdetail（文字列）を統一形式に変換
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": {
+                "code": f"HTTP_{exc.status_code}",
+                "message": str(exc.detail)
+            }
+        }
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {request.url} - {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "サーバーエラーが発生しました"
+            }
+        }
+    )
+
+# ============================================================
+# ルーター登録
+# ============================================================
+from auth_routes import router as auth_router
+from users       import router as users_router
+from logs        import router as logs_router
+from notices     import router as notices_router
+from posts       import router as posts_router
+from calendar    import router as calendar_router
+from timetable   import router as timetable_router
+from stats       import router as stats_router
+from feedback    import router as feedback_router
 
 app.include_router(auth_router,      prefix="/auth",      tags=["auth"])
 app.include_router(users_router,     prefix="/users",     tags=["users"])
@@ -112,7 +177,9 @@ app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
 app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
+from response import ok
+
 @app.get("/")
 @app.head("/")
 def root():
-    return {"status": "ok", "message": "Polonix API is running"}
+    return ok({"status": "ok", "version": "0.9.0", "message": "Polonix API is running"})

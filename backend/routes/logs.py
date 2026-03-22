@@ -1,23 +1,17 @@
-import os
-import sys
+"""Polonix v0.9.0 - ログルート（生SQL統一）"""
+import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from models.database import get_db, Log
-from routes.users import require_admin
-from models.database import User
+from sqlalchemy import text
+from database import get_db, rows_to_list
+from users import require_admin
+from response import ok
 
 router = APIRouter()
 
 @router.get("/")
-def get_logs(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    logs = db.query(Log).order_by(Log.created_at.desc()).limit(200).all()
-    return [
-        {
-            "id": l.id,
-            "username": l.username,
-            "action": l.action,
-            "detail": l.detail,
-            "created_at": l.created_at
-        } for l in logs
-    ]
+def get_logs(db=Depends(get_db), _=Depends(require_admin)):
+    rows = db.execute(
+        text("SELECT id,username,action,detail,created_at FROM logs ORDER BY created_at DESC LIMIT 200")
+    ).fetchall()
+    return ok(rows_to_list(rows))

@@ -1,11 +1,12 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+"""Polonix v0.9.0 - フィードバックルート（生SQL統一）"""
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fastapi import APIRouter, Depends
+from sqlalchemy import text
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
-from models.database import get_db, Feedback
-from routes.users import get_current_user
-from models.database import User
+from database import get_db, rows_to_list
+from users import get_current_user, require_admin
+from response import ok, err, E
 
 router = APIRouter()
 
@@ -15,81 +16,49 @@ class FeedbackCreate(BaseModel):
     content: str
     is_anonymous: bool = False
 
-class FeedbackStatusUpdate(BaseModel):
+class StatusUpdate(BaseModel):
     status: str
 
-@router.get("/")
-def get_feedbacks(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="管理者のみ")
-    items = db.query(Feedback).order_by(Feedback.created_at.desc()).all()
-    return [{
-        "id": f.id,
-        "type": f.type,
-        "title": f.title,
-        "content": f.content,
-        "username": f.username if not f.is_anonymous else "匿名",
-        "is_anonymous": f.is_anonymous,
-        "status": f.status,
-        "created_at": f.created_at.isoformat()
-    } for f in items]
-
-@router.get("/mine")
-def get_my_feedbacks(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    items = db.query(Feedback).filter(
-        Feedback.username == current_user.username
-    ).order_by(Feedback.created_at.desc()).all()
-    return [{
-        "id": f.id,
-        "type": f.type,
-        "title": f.title,
-        "content": f.content,
-        "is_anonymous": f.is_anonymous,
-        "status": f.status,
-        "created_at": f.created_at.isoformat()
-    } for f in items]
-
 @router.post("/")
-def create_feedback(body: FeedbackCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not body.title.strip() or not body.content.strip():
-        raise HTTPException(status_code=400, detail="タイトルと内容を入力してください")
-    if len(body.title) > 50:
-        raise HTTPException(status_code=400, detail="タイトルは50文字以内")
-    if len(body.content) > 500:
-        raise HTTPException(status_code=400, detail="内容は500文字以内")
-    f = Feedback(
-        username=current_user.username,
-        type=body.type,
-        title=body.title,
-        content=body.content,
-        is_anonymous=body.is_anonymous,
-        status="open"
+def submit_feedback(body: FeedbackCreate, db=Depends(get_db), current_user=Depends(get_current_user)):
+    if not body.title.strip():
+        err(E.VALIDATION, "タイトルを入力してください")
+    if not body.content.strip():
+        err(E.VALIDATION, "内容を入力してください")
+    if body.type not in ("idea","bug","request","other"):
+        err(E.VALIDATION, "無効な種別です")
+    db.execute(text("""
+        INSERT INTO feedback (username,type,title,content,is_anonymous)
+        VALUES (:u,:t,:ti,:c,:a)
+    """), {"u": current_user.username, "t": body.type, "ti": body.title.strip(),
+          "c": body.content.strip(), "a": body.is_anonymous})
+    return ok({"message": "送信しました。"})
+
+@router.get("/my")
+def get_my_feedback(db=Depends(get_db), current_user=Depends(get_current_user)):
+    rows = db.execute(
+        text("SELECT id,type,title,content,is_anonymous,status,created_at FROM feedback WHERE username=:u ORDER BY created_at DESC"),
+        {"u": current_user.username}
+    ).fetchall()
+    return ok(rows_to_list(rows))
+
+@router.get("/all")
+def get_all_feedback(db=Depends(get_db), _=Depends(require_admin)):
+    rows = db.execute(
+        text("SELECT id,username,type,title,content,is_anonymous,status,created_at FROM feedback ORDER BY created_at DESC")
+    ).fetchall()
+    return ok(rows_to_list(rows))
+
+@router.patch("/{fb_id}/status")
+def update_status(fb_id: int, body: StatusUpdate, db=Depends(get_db), admin=Depends(require_admin)):
+    if body.status not in ("open","in_progress","done"):
+        err(E.VALIDATION, "無効なステータスです")
+    db.execute(
+        text("UPDATE feedback SET status=:s WHERE id=:id"), {"s": body.status, "id": fb_id}
     )
-    db.add(f)
-    db.commit()
-    db.refresh(f)
-    return {"id": f.id, "message": "送信しました"}
+    return ok({"message": "ステータスを更新しました"})
 
-@router.patch("/{feedback_id}/status")
-def update_status(feedback_id: int, body: FeedbackStatusUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="管理者のみ")
-    f = db.query(Feedback).filter(Feedback.id == feedback_id).first()
-    if not f:
-        raise HTTPException(status_code=404, detail="見つかりません")
-    if body.status not in ["open", "in_progress", "done"]:
-        raise HTTPException(status_code=400, detail="無効なステータス")
-    f.status = body.status
-    db.commit()
-    return {"message": "更新しました"}
-
-@router.delete("/{feedback_id}")
-def delete_feedback(feedback_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    f = db.query(Feedback).filter(Feedback.id == feedback_id).first()
-    if not f:
-        raise HTTPException(status_code=404, detail="見つかりません")
-    if current_user.role != "admin" and f.username != current_user.username:
-        raise HTTPException(status_code=403, detail="権限がありません")
-    db.delete(f)
-    db.commit()
-    return {"message": "削除しました"}
+@router.delete("/{fb_id}")
+def delete_feedback(fb_id: int, db=Depends(get_db), _=Depends(require_admin)):
+    db.execute(text("DELETE FROM feedback WHERE id=:id"), {"id": fb_id})
+    return ok({"message": "削除しました"})

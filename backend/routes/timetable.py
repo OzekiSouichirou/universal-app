@@ -1,10 +1,13 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+"""Polonix v0.9.0 - 時間割ルート（生SQL統一）"""
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fastapi import APIRouter, Depends
+from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
-from models.database import get_db, Timetable
-from routes.users import get_current_user
-from models.database import User
+from database import get_db, rows_to_list
+from users import get_current_user
+from response import ok, err, E
 
 router = APIRouter()
 
@@ -18,50 +21,31 @@ class TimetableEntry(BaseModel):
     color: str = "#5b6ef5"
 
 @router.get("/")
-def get_timetable(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    entries = db.query(Timetable).filter(Timetable.username == current_user.username).all()
-    return [{
-        "id": e.id, "day": e.day, "period": e.period,
-        "subject": e.subject, "room": e.room, "teacher": e.teacher,
-        "memo": e.memo, "color": e.color
-    } for e in entries]
+def get_timetable(db=Depends(get_db), current_user=Depends(get_current_user)):
+    rows = db.execute(
+        text("SELECT id,day,period,subject,room,teacher,memo,color FROM timetable WHERE username=:u"),
+        {"u": current_user.username}
+    ).fetchall()
+    return ok(rows_to_list(rows))
 
-@router.post("/")
-def upsert_entry(body: TimetableEntry, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    existing = db.query(Timetable).filter(
-        Timetable.username == current_user.username,
-        Timetable.day == body.day,
-        Timetable.period == body.period
-    ).first()
-    if existing:
-        existing.subject = body.subject
-        existing.room = body.room
-        existing.teacher = body.teacher
-        existing.memo = body.memo
-        existing.color = body.color
-        db.commit()
-        entry = existing
-    else:
-        entry = Timetable(
-            username=current_user.username,
-            day=body.day, period=body.period,
-            subject=body.subject, room=body.room,
-            teacher=body.teacher, memo=body.memo, color=body.color
-        )
-        db.add(entry)
-        db.commit()
-        db.refresh(entry)
-    return {"id": entry.id, "day": entry.day, "period": entry.period,
-            "subject": entry.subject, "room": entry.room, "teacher": entry.teacher,
-            "memo": entry.memo, "color": entry.color}
+@router.put("/")
+def upsert_timetable(body: TimetableEntry, db=Depends(get_db), current_user=Depends(get_current_user)):
+    if not body.subject.strip():
+        err(E.VALIDATION, "科目名を入力してください")
+    db.execute(text("""
+        INSERT INTO timetable (username,day,period,subject,room,teacher,memo,color)
+        VALUES (:u,:d,:p,:s,:r,:t,:m,:c)
+        ON CONFLICT (username,day,period) DO UPDATE
+        SET subject=:s, room=:r, teacher=:t, memo=:m, color=:c
+    """), {"u": current_user.username, "d": body.day, "p": body.period,
+           "s": body.subject.strip(), "r": body.room, "t": body.teacher,
+           "m": body.memo, "c": body.color})
+    return ok({"message": "保存しました"})
 
-@router.delete("/{entry_id}")
-def delete_entry(entry_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    entry = db.query(Timetable).filter(
-        Timetable.id == entry_id, Timetable.username == current_user.username
-    ).first()
-    if not entry:
-        raise HTTPException(status_code=404, detail="見つかりません")
-    db.delete(entry)
-    db.commit()
-    return {"message": "削除しました"}
+@router.delete("/")
+def delete_slot(day: int, period: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    db.execute(
+        text("DELETE FROM timetable WHERE username=:u AND day=:d AND period=:p"),
+        {"u": current_user.username, "d": day, "p": period}
+    )
+    return ok({"message": "削除しました"})

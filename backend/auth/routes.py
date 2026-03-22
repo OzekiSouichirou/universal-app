@@ -1,60 +1,76 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-import sys
-import os
-import random
+"""Polonix v0.9.0 - 認証ルート（生SQL統一・レート制限追加）"""
+import os, sys, string, random, logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.database import get_db, User, Log
-from auth.auth import verify_password, create_access_token
-import bcrypt
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import text
+from pydantic import BaseModel
+from database import get_db
+from auth import verify_password, hash_password, create_access_token
+from response import ok, err, E
+from security import check_rate_limit, RATE, validate_username, validate_password
 
 router = APIRouter()
+logger = logging.getLogger("polonix.auth")
 
-class LoginRequest(BaseModel):
+class LoginBody(BaseModel):
     username: str
     password: str
     remember: bool = False
 
-class RegisterRequest(BaseModel):
+class RegisterBody(BaseModel):
     username: str
     password: str
 
-def generate_user_id(db: Session) -> str:
-    while True:
-        uid = "#" + str(random.randint(0, 99999999)).zfill(8)
-        if not db.query(User).filter(User.user_id == uid).first():
-            return uid
-
 @router.post("/login")
-def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == request.username).first()
+def login(body: LoginBody, request: Request, db=Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit(f"login:{client_ip}", *RATE["login"])
 
-    if not user or not verify_password(request.password, user.hashed_password):
-        db.add(Log(username=request.username, action="ログイン失敗", detail="パスワードまたはユーザー名が違います"))
+    row = db.execute(
+        text("SELECT id, username, hashed_password, role, is_banned FROM users WHERE username=:u"),
+        {"u": body.username}
+    ).fetchone()
+
+    if not row or not verify_password(body.password, row.hashed_password):
+        logger.warning(f"Login failed: {body.username} from {client_ip}")
+        db.execute(
+            text("INSERT INTO logs (username,action,detail) VALUES (:u,'ログイン失敗',:d)"),
+            {"u": body.username, "d": f"IP: {client_ip}"}
+        )
         db.commit()
-        raise HTTPException(status_code=401, detail="ユーザー名またはパスワードが違います")
+        err(E.AUTH_FAILED, "ユーザー名またはパスワードが違います", 401)
 
-    db.add(Log(username=user.username, action="ログイン成功"))
-    db.commit()
-    token = create_access_token({"sub": user.username, "role": user.role}, remember=request.remember)
-    return {"access_token": token, "token_type": "bearer", "role": user.role}
+    if row.is_banned:
+        err(E.BANNED, "このアカウントは利用停止されています", 403)
+
+    token = create_access_token({"sub": row.username}, remember=body.remember)
+    logger.info(f"Login success: {row.username}")
+    return ok({"access_token": token, "token_type": "bearer",
+               "username": row.username, "role": row.role})
 
 @router.post("/register")
-def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    if len(request.username) < 3:
-        raise HTTPException(status_code=400, detail="ユーザー名は3文字以上にしてください")
-    if len(request.password) < 6:
-        raise HTTPException(status_code=400, detail="パスワードは6文字以上にしてください")
+def register(body: RegisterBody, request: Request, db=Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit(f"register:{client_ip}", *RATE["register"])
 
-    existing = db.query(User).filter(User.username == request.username).first()
+    validate_username(body.username)
+    validate_password(body.password)
+
+    existing = db.execute(
+        text("SELECT id FROM users WHERE username=:u"), {"u": body.username}
+    ).fetchone()
     if existing:
-        raise HTTPException(status_code=400, detail="既に使われているユーザー名です")
+        err(E.DUPLICATE, "このユーザー名は既に使用されています")
 
-    hashed = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    uid = generate_user_id(db)
-    user = User(username=request.username, hashed_password=hashed, role="user", user_id=uid)
-    db.add(user)
-    db.add(Log(username=request.username, action="新規登録"))
-    db.commit()
-    return {"message": "登録が完了しました"}
+    uid = "#" + "".join(random.choices(string.digits, k=8))
+    db.execute(
+        text("INSERT INTO users (username,hashed_password,role,user_id) VALUES (:u,:p,'user',:uid)"),
+        {"u": body.username, "p": hash_password(body.password), "uid": uid}
+    )
+    db.execute(
+        text("INSERT INTO logs (username,action) VALUES (:u,'新規登録')"), {"u": body.username}
+    )
+    token = create_access_token({"sub": body.username})
+    logger.info(f"Register: {body.username}")
+    return ok({"access_token": token, "token_type": "bearer",
+               "username": body.username, "role": "user"})
