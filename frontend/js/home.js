@@ -22,7 +22,8 @@ async function init() {
 async function loadNotices() {
   const res = await fetch(`${API}/notices/`, { headers: { 'Authorization': `Bearer ${token}` } });
   const data = await res.json();
-  const notices = Array.isArray(data) ? data : [];
+  // v0.9.0統一レスポンス形式対応
+  const notices = (data && data.success === true) ? (data.data || []) : (Array.isArray(data) ? data : []);
   const list = document.getElementById('notice-list');
   if (notices.length === 0) {
     list.innerHTML = '<li class="notice-item">現在お知らせはありません</li>';
@@ -37,48 +38,54 @@ async function loadNotices() {
 }
 
 async function loadStats() {
-  const res = await fetch(`${API}/stats/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-  if (!res.ok) return;
-  const me = await res.json();
+  try {
+    const res = await fetch(`${API}/stats/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) return;
+    const json = await res.json();
+    // v0.9.0統一レスポンス形式対応
+    const me = (json && json.success === true) ? json.data : json;
 
-  document.getElementById('home-stat-cards').innerHTML = [
-    { label: '自分の投稿数',     value: me.my_posts,    icon: '+' },
-    { label: '受け取ったいいね', value: me.my_likes,    icon: '♡' },
-    { label: '自分のコメント',   value: me.my_comments, icon: '#' },
-    { label: 'レベル',          value: 'Lv.' + me.level, icon: 'Lv' },
-  ].map(c => `
-    <div class="db-stat-card">
-      <span class="db-stat-icon">${c.icon}</span>
-      <div>
-        <div class="db-stat-value">${c.value}</div>
-        <div class="db-stat-label">${c.label}</div>
+    document.getElementById('home-stat-cards').innerHTML = [
+      { label: '自分の投稿数',     value: me.my_posts    ?? '-', icon: '+' },
+      { label: '受け取ったいいね', value: me.my_likes    ?? '-', icon: '♡' },
+      { label: '自分のコメント',   value: me.my_comments ?? '-', icon: '#' },
+      { label: 'レベル',          value: 'Lv.' + (me.level ?? 1), icon: 'Lv' },
+    ].map(c => `
+      <div class="db-stat-card">
+        <span class="db-stat-icon">${c.icon}</span>
+        <div>
+          <div class="db-stat-value">${c.value}</div>
+          <div class="db-stat-label">${c.label}</div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
 
-  const xpWrap = document.getElementById('home-xp-wrap');
-  document.getElementById('home-xp-level').textContent = `Lv.${me.level}`;
-  document.getElementById('home-xp-streak').textContent = `${me.streak}日連続`;
+    document.getElementById('home-xp-level').textContent = `Lv.${me.level ?? 1}`;
+    document.getElementById('home-xp-streak').textContent = `${me.streak ?? 0}日連続`;
 
-  const xpRes = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
-  if (xpRes.ok) {
-    const xp = await xpRes.json();
-    const range = xp.next_level_xp - xp.current_level_xp;
-    const progress = xp.xp - xp.current_level_xp;
-    const pct = range > 0 ? Math.min(100, Math.round(progress / range * 100)) : 100;
-    document.getElementById('home-xp-bar').style.width = pct + '%';
-    document.getElementById('home-xp-label').textContent = `${xp.xp} / ${xp.next_level_xp} XP`;
+    const xpRes = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (xpRes.ok) {
+      const xpJson = await xpRes.json();
+      const xp = (xpJson && xpJson.success === true) ? xpJson.data : xpJson;
+      const range = (xp.next_level_xp ?? 100) - (xp.current_level_xp ?? 0);
+      const progress = (xp.xp ?? 0) - (xp.current_level_xp ?? 0);
+      const pct = range > 0 ? Math.min(100, Math.round(progress / range * 100)) : 100;
+      document.getElementById('home-xp-bar').style.width = pct + '%';
+      document.getElementById('home-xp-label').textContent = `${xp.xp ?? 0} / ${xp.next_level_xp ?? 100} XP`;
+    }
+  } catch(e) {
+    console.warn('loadStats error:', e);
   }
-
 }
 
 
 
 async function loadTodayEvents() {
-  const res = await fetch(`${API}/calendar/events`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(`${API}/calendar/`, { headers: { 'Authorization': `Bearer ${token}` } });
   const el = document.getElementById('home-today-events');
   if (!res.ok) { el.innerHTML = '<p class="db-empty">取得できませんでした</p>'; return; }
-  const events = await res.json();
+  const evJson = await res.json();
+  const events = (evJson && evJson.success === true) ? evJson.data : evJson;
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const items = events.filter(e => (e.date === today || e.date === tomorrow) && !e.is_done);
@@ -115,6 +122,28 @@ async function loadTodayTimetable() {
       </div>
     `;
   }).join('');
+}
+
+async function loadFortune() {
+  try {
+    const res = await fetch(`${API}/users/fortune/today`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const json = await res.json();
+    const f = (json && json.success === true) ? json.data : json;
+    const box = document.getElementById('fortune-box');
+    if (!box) return;
+    document.getElementById('fortune-rank').textContent = f.rank;
+    document.getElementById('fortune-rank').style.color =
+      {'大吉':'#f5a623','中吉':'#3ecf8e','小吉':'#41b4f5',
+       '吉':'#8892b0','末吉':'#b899c0','凶':'#f0476c','大凶':'#b06ef5'}[f.rank] || 'var(--text)';
+    document.getElementById('fortune-msg').textContent = f.msg;
+    const xpEl = document.getElementById('fortune-xp');
+    if (f.xp_gained > 0) { xpEl.textContent = `+${f.xp_gained} XP`; xpEl.style.display = 'block'; }
+    else if (f.already_gained) { xpEl.textContent = '本日取得済み'; xpEl.style.display = 'block'; }
+    box.style.display = 'block';
+  } catch(e) { console.warn('loadFortune error:', e); }
 }
 
 init();
