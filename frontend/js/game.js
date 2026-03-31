@@ -279,19 +279,15 @@ let _isRolling = false;
 async function rollAndShow(count) {
   if (_isRolling) return;
   _isRolling = true;
-
-  // ボタンを無効化
   const btn1 = document.getElementById('gacha-1');
   const btn10 = document.getElementById('gacha-10');
   if (btn1) btn1.disabled = true;
   if (btn10) btn10.disabled = true;
 
   try {
-    // ① フロントで抽選
     const rolls = [];
     for (let i = 0; i < count; i++) rolls.push(gachaRoll());
 
-    // ② バックエンドにまとめて送信（XP消費・かぶり判定・DB登録）
     const res = await fetch(`${API}/users/gacha/roll`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -305,60 +301,69 @@ async function rollAndShow(count) {
     });
 
     if (!res.ok) {
-      const errRaw = await res.json().catch(()=>({}));
-      const errData = (errRaw && errRaw.success === false) ? errRaw : errRaw;
-      let errMsg = errData?.error?.message || errData?.detail || 'エラーが発生しました';
+      const errRaw = await res.json().catch(() => ({}));
+      let errMsg = errRaw?.error?.message || errRaw?.detail || 'エラーが発生しました';
       if (res.status === 429) errMsg = 'リクエストが多すぎます。少し待ってから再試行してください。';
       document.getElementById('gacha-result').innerHTML =
         `<p style="color:var(--red);text-align:center;padding:16px;">${errMsg}</p>`;
       return;
     }
 
-  const raw = await res.json();
-  const data = parseResponse(raw, {});
-  gachaUserXP = data.new_xp ?? gachaUserXP;
-  document.getElementById('gacha-xp').textContent = (gachaUserXP ?? 0).toLocaleString() + ' XP';
+    const raw = await res.json();
+    const data = parseResponse(raw, {});
+    gachaUserXP = data.new_xp ?? gachaUserXP;
+    document.getElementById('gacha-xp').textContent = (gachaUserXP ?? 0).toLocaleString() + ' XP';
 
-  // ③ キャッシュを更新（DBから再取得）
-  await fetchInventoryFromDB(token, API);
+    await fetchInventoryFromDB(token, API);
 
-  // ④ 結果表示
-  const dupCount = data.dup_count;
-  const rc = (r) => GACHA_RARITY[r]?.color || '#888';
-  const el = document.getElementById('gacha-result');
-  el.innerHTML = `
-    ${dupCount > 0 ? `<p class="gacha-dup-notice">🔄 かぶり${dupCount}枚 → +${dupCount} XP！</p>` : ''}
-    <div class="gacha-cards">
-      ${rolls.map((r, i) => {
-        const sr = data.results[i] || {};
-        return `
-        <div class="gacha-card rarity-${r.rarity}" style="--item-color:${rc(r.rarity)};--item-glow:${GACHA_RARITY[r.rarity]?.glow||'transparent'}">
-          <div class="gacha-rarity" style="color:${rc(r.rarity)}">${r.rarity}</div>
-          <div class="gacha-ab-row">
-            <div class="gacha-part ${sr.dupA?'is-dup':''}">
-              <span class="gacha-part-label" style="color:${rc(r.rarityA)}">A [${r.rarityA}]</span>
-              <span class="gacha-part-text">${r.textA}</span>
-              ${sr.dupA?'<span class="gacha-dup-tag">かぶり +1XP</span>':'<span class="gacha-new-tag">NEW</span>'}
+    const dupCount = data.dup_count ?? 0;
+    const rc = (r) => GACHA_RARITY[r]?.color || '#888';
+    const el = document.getElementById('gacha-result');
+    el.innerHTML = `
+      ${dupCount > 0 ? `<p class="gacha-dup-notice">かぶり${dupCount}枚 → +${dupCount} XP！</p>` : ''}
+      <div class="gacha-cards">
+        ${rolls.map((r, i) => {
+          const sr = data.results?.[i] || {};
+          return `
+          <div class="gacha-card rarity-${r.rarity}" style="--item-color:${rc(r.rarity)};--item-glow:${GACHA_RARITY[r.rarity]?.glow||'transparent'}">
+            <div class="gacha-rarity" style="color:${rc(r.rarity)}">${r.rarity}</div>
+            <div class="gacha-ab-row">
+              <div class="gacha-part ${sr.dupA ? 'is-dup' : ''}">
+                <span class="gacha-part-label" style="color:${rc(r.rarityA)}">A [${r.rarityA}]</span>
+                <span class="gacha-part-text">${r.textA}</span>
+                ${sr.dupA ? '<span class="gacha-dup-tag">かぶり +1XP</span>' : '<span class="gacha-new-tag">NEW</span>'}
+              </div>
+              <div class="gacha-part-sep">＋</div>
+              <div class="gacha-part ${sr.dupB ? 'is-dup' : ''}">
+                <span class="gacha-part-label" style="color:${rc(r.rarityB)}">B [${r.rarityB}]</span>
+                <span class="gacha-part-text">${r.textB}</span>
+                ${sr.dupB ? '<span class="gacha-dup-tag">かぶり +1XP</span>' : '<span class="gacha-new-tag">NEW</span>'}
+              </div>
             </div>
-            <div class="gacha-part-sep">＋</div>
-            <div class="gacha-part ${sr.dupB?'is-dup':''}">
-              <span class="gacha-part-label" style="color:${rc(r.rarityB)}">B [${r.rarityB}]</span>
-              <span class="gacha-part-text">${r.textB}</span>
-              ${sr.dupB?'<span class="gacha-dup-tag">かぶり +1XP</span>':'<span class="gacha-new-tag">NEW</span>'}
-            </div>
-          </div>
-          <div class="gacha-preview-title">${r.textA} ${r.textB}</div>
-        </div>`}).join('')}
-    </div>`;
-  renderGachaInventory();
+            <div class="gacha-preview-title">${r.textA} ${r.textB}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    renderGachaInventory();
+
+  } catch (e) {
+    console.error('rollAndShow error:', e);
+    document.getElementById('gacha-result').innerHTML =
+      '<p style="color:var(--red);text-align:center;padding:16px;">エラーが発生しました</p>';
+  } finally {
+    _isRolling = false;
+    if (btn1) btn1.disabled = false;
+    if (btn10) btn10.disabled = false;
+  }
 }
 
 function renderGachaInventory() {
   const el = document.getElementById('gacha-inventory');
+  if (!el) return;
   const invA = getInventoryA();
   const invB = getInventoryB();
-  const order = ['SECR','UR','SSR','SR','R','N'];
-  const sortFn = (a,b) => order.indexOf(a.rarity) - order.indexOf(b.rarity);
+  const order = ['SECR', 'UR', 'SSR', 'SR', 'R', 'N'];
+  const sortFn = (a, b) => order.indexOf(a.rarity) - order.indexOf(b.rarity);
 
   if (invA.length === 0 && invB.length === 0) {
     el.innerHTML = '<p style="color:var(--text-3);text-align:center;padding:16px;">まだ称号がありません</p>';
@@ -371,13 +376,14 @@ function renderGachaInventory() {
       <span class="gacha-inv-name">${i.text}</span>
     </div>`).join('');
   el.innerHTML = `
-    <div class="gacha-inv-section"><div class="gacha-inv-label">A（形容詞）${invA.length}種</div>${mkList(invA,'A','var(--accent-2)')}</div>
-    <div class="gacha-inv-section" style="margin-top:12px;"><div class="gacha-inv-label">B（役割）${invB.length}種</div>${mkList(invB,'B','var(--blue)')}</div>`;
-  } finally {
-    _isRolling = false;
-    if (btn1) btn1.disabled = false;
-    if (btn10) btn10.disabled = false;
-  }
+    <div class="gacha-inv-section">
+      <div class="gacha-inv-label">A（形容詞）${invA.length}種</div>
+      ${mkList(invA, 'A', 'var(--accent-2)')}
+    </div>
+    <div class="gacha-inv-section" style="margin-top:12px;">
+      <div class="gacha-inv-label">B（役割）${invB.length}種</div>
+      ${mkList(invB, 'B', 'var(--blue)')}
+    </div>`;
 }
 
 document.getElementById('gacha-1').addEventListener('click', () => rollAndShow(1));

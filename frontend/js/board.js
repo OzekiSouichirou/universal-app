@@ -249,14 +249,17 @@ function renderPosts(posts) {
   document.querySelectorAll('.like-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
-      const res = await fetch(`${API}/posts/${id}/like`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const _raw2 = await res.json();
-      const data = parseResponse(_raw2, {});
-      btn.querySelector('.like-count').textContent = data.likes;
-      btn.classList.toggle('liked', data.liked);
+      try {
+        const res = await fetch(`${API}/posts/${id}/like`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const raw = await res.json();
+        const data = parseResponse(raw, {});
+        btn.querySelector('.like-count').textContent = data.likes ?? 0;
+        btn.classList.toggle('liked', !!data.liked);
+      } catch(e) { console.warn('like error:', e); }
     });
   });
 
