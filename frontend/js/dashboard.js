@@ -35,12 +35,15 @@ async function init() {
 
 async function loadStats(user) {
   const isAdmin = user.role === 'admin';
+  try {
 
   if (isAdmin) {
     const [adminRes, meRes] = await Promise.all([
       fetch(`${API}/stats/admin`, { headers: { 'Authorization': `Bearer ${token}` } }),
       fetch(`${API}/stats/me`,    { headers: { 'Authorization': `Bearer ${token}` } }),
     ]);
+    if (!adminRes.ok) { console.warn('stats/admin error:', adminRes.status); return; }
+    if (!meRes.ok)    { console.warn('stats/me error:', meRes.status); return; }
     const _raw1 = await adminRes.json();
     const admin = parseResponse(_raw1, {});
     const _raw2 = await meRes.json();
@@ -79,6 +82,7 @@ async function loadStats(user) {
     renderXPChart(me.xp_ranking || []);
     document.getElementById('hourly-card').style.display = 'none';
   }
+  } catch(e) { console.error('loadStats error:', e); }
 }
 
 function renderStatCards(cards) {

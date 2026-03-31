@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -15,9 +22,10 @@ async function init() {
 }
 
 async function loadAll() {
-  const res = await fetch(`${API}/feedback/`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(`${API}/feedback/all`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
-  allItems = await res.json();
+  const aiR = await res.json();
+  allItems = parseResponse(aiR, []);
   renderList();
 }
 
