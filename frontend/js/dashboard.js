@@ -56,8 +56,8 @@ async function loadStats(user) {
     ]);
 
     renderTrendChart(admin.post_trend, '全体の投稿数');
-    renderXPChart(admin.xp_ranking);
-    renderHourlyChart(admin.hourly_posts);
+    renderXPChart(admin.xp_ranking || []);
+    renderHourlyChart(admin.hourly_posts || []);
     document.getElementById('hourly-card').style.display = 'block';
 
   } else {
@@ -76,7 +76,7 @@ async function loadStats(user) {
     ]);
 
     renderTrendChart(me.post_trend, '自分の投稿数');
-    renderXPChart(me.xp_ranking);
+    renderXPChart(me.xp_ranking || []);
     document.getElementById('hourly-card').style.display = 'none';
   }
 }
@@ -118,6 +118,11 @@ function renderTrendChart(data, label) {
 }
 
 function renderXPChart(ranking) {
+  if (!ranking || !Array.isArray(ranking)) {
+    const el = document.getElementById('xp-chart-card');
+    if (el) el.innerHTML = '<p style="color:var(--text-3);text-align:center;padding:24px;">データなし</p>';
+    return;
+  }
   const ctx = document.getElementById('chart-xp').getContext('2d');
   if (chartXP) chartXP.destroy();
   chartXP = new Chart(ctx, {
