@@ -48,7 +48,7 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         GROUP BY hour
         ORDER BY hour
     """)).fetchall()
-    hourly_posts = [{"hour": int(row.hour), "count": int(row.count)} for row in hourly_rows]
+    hourly_posts = [{"hour": int(row.hour), "count": int(row.count or 0)} for row in hourly_rows if row.hour is not None]
 
     return ok({
         "total_users":   int(stats.total_users),
