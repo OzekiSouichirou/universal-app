@@ -28,7 +28,7 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         count = db.execute(
             text("SELECT COUNT(*) AS c FROM posts WHERE DATE(created_at)=:d"), {"d": d}
         ).fetchone().c
-        trend.append({"date": d.strftime("%m/%d"), "count": count})
+        trend.append({"date": d.strftime("%m/%d"), "count": int(count or 0)})
 
     # XPランキング（上位5名）
     xp_rows = db.execute(text("""
@@ -39,7 +39,7 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         ORDER BY COALESCE(x.xp, 0) DESC
         LIMIT 5
     """)).fetchall()
-    xp_ranking = [{"username": r.username, "xp": r.xp, "level": r.level} for r in xp_rows]
+    xp_ranking = [{"username": r.username, "xp": int(r.xp or 0), "level": int(r.level or 1)} for r in xp_rows]
 
     # 時間帯別投稿数
     hourly_rows = db.execute(text("""
@@ -48,7 +48,7 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         GROUP BY hour
         ORDER BY hour
     """)).fetchall()
-    hourly_posts = [{"hour": int(r.hour), "count": r.count} for r in hourly_rows]
+    hourly_posts = [{"hour": int(r.hour), "count": int(r.count)} for r in hourly_rows]
 
     return ok({
         "total_users":   r.total_users,
@@ -82,7 +82,7 @@ def get_me_stats(db=Depends(get_db), current_user=Depends(get_current_user)):
             text("SELECT COUNT(*) AS c FROM posts WHERE username=:u AND DATE(created_at)=:d"),
             {"u": current_user.username, "d": d}
         ).fetchone().c
-        trend.append({"date": d.strftime("%m/%d"), "count": count})
+        trend.append({"date": d.strftime("%m/%d"), "count": int(count or 0)})
 
     return ok({
         "my_posts":    r.my_posts,

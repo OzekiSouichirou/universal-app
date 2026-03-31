@@ -114,12 +114,15 @@ app = FastAPI(
 origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")]
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+# originsが["*"]の場合はallow_credentials=Falseにする（CORS仕様上の制約）
+_allow_credentials = origins != ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_credentials=_allow_credentials,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # ============================================================
