@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 // ===================== タイプデータ =====================
@@ -267,32 +274,45 @@ async function loadGachaXP() {
   document.getElementById('gacha-xp').textContent = gachaUserXP.toLocaleString() + ' XP';
 }
 
+let _isRolling = false;
+
 async function rollAndShow(count) {
-  // ① フロントで抽選
-  const rolls = [];
-  for (let i = 0; i < count; i++) rolls.push(gachaRoll());
+  if (_isRolling) return;
+  _isRolling = true;
 
-  // ② バックエンドにまとめて送信（XP消費・かぶり判定・DB登録）
-  const res = await fetch(`${API}/users/gacha/roll`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      count,
-      results: rolls.map(r => ({
-        rarityA: r.rarityA, textA: r.textA,
-        rarityB: r.rarityB, textB: r.textB,
-      }))
-    })
-  });
+  // ボタンを無効化
+  const btn1 = document.getElementById('gacha-1');
+  const btn10 = document.getElementById('gacha-10');
+  if (btn1) btn1.disabled = true;
+  if (btn10) btn10.disabled = true;
 
-  if (!res.ok) {
-    const errRaw = await res.json().catch(()=>({}));
-    const errData = parseResponse(errRaw, {}) || errRaw;
-    const errMsg = errData?.error?.message || errData?.detail || 'エラーが発生しました';
-    document.getElementById('gacha-result').innerHTML =
-      `<p style="color:var(--red);text-align:center;padding:16px;">${errMsg}</p>`;
-    return;
-  }
+  try {
+    // ① フロントで抽選
+    const rolls = [];
+    for (let i = 0; i < count; i++) rolls.push(gachaRoll());
+
+    // ② バックエンドにまとめて送信（XP消費・かぶり判定・DB登録）
+    const res = await fetch(`${API}/users/gacha/roll`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        count,
+        results: rolls.map(r => ({
+          rarityA: r.rarityA, textA: r.textA,
+          rarityB: r.rarityB, textB: r.textB,
+        }))
+      })
+    });
+
+    if (!res.ok) {
+      const errRaw = await res.json().catch(()=>({}));
+      const errData = (errRaw && errRaw.success === false) ? errRaw : errRaw;
+      let errMsg = errData?.error?.message || errData?.detail || 'エラーが発生しました';
+      if (res.status === 429) errMsg = 'リクエストが多すぎます。少し待ってから再試行してください。';
+      document.getElementById('gacha-result').innerHTML =
+        `<p style="color:var(--red);text-align:center;padding:16px;">${errMsg}</p>`;
+      return;
+    }
 
   const raw = await res.json();
   const data = parseResponse(raw, {});
@@ -353,6 +373,11 @@ function renderGachaInventory() {
   el.innerHTML = `
     <div class="gacha-inv-section"><div class="gacha-inv-label">A（形容詞）${invA.length}種</div>${mkList(invA,'A','var(--accent-2)')}</div>
     <div class="gacha-inv-section" style="margin-top:12px;"><div class="gacha-inv-label">B（役割）${invB.length}種</div>${mkList(invB,'B','var(--blue)')}</div>`;
+  } finally {
+    _isRolling = false;
+    if (btn1) btn1.disabled = false;
+    if (btn10) btn10.disabled = false;
+  }
 }
 
 document.getElementById('gacha-1').addEventListener('click', () => rollAndShow(1));
