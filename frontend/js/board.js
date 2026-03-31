@@ -186,13 +186,46 @@ document.addEventListener('click', (e) => {
   }
 });
 
-async function fetchPosts() {
-  const res = await fetch(`${API}/posts/`, {
+let _searchQuery = '';
+let _searchTimer = null;
+
+async function fetchPosts(q = '') {
+  const url = q.trim() ? `${API}/posts/?q=${encodeURIComponent(q.trim())}` : `${API}/posts/`;
+  const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   const raw = await res.json();
   const data = parseResponse(raw, []);
   renderPosts(Array.isArray(data) ? data : []);
+
+  const status = document.getElementById('search-status');
+  if (status) {
+    if (q.trim()) {
+      status.textContent = `「${q.trim()}」の検索結果: ${Array.isArray(data) ? data.length : 0}件`;
+    } else {
+      status.textContent = '';
+    }
+  }
+}
+
+function initSearch() {
+  const input = document.getElementById('search-input');
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    _searchQuery = input.value;
+    clearBtn.style.display = _searchQuery ? 'block' : 'none';
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => fetchPosts(_searchQuery), 400);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    _searchQuery = '';
+    clearBtn.style.display = 'none';
+    fetchPosts();
+  });
 }
 
 function renderPosts(posts) {

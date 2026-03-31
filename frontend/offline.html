@@ -5,13 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix - オフライン</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .offline-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 16px;
+      text-align: center;
+      padding: 24px;
+    }
+    .offline-icon { font-size: 56px; opacity: 0.4; }
+    .offline-title { font-size: 22px; font-weight: 700; color: var(--text); margin: 0; }
+    .offline-msg { color: var(--text-2); margin: 0; line-height: 1.7; }
+    .offline-btn { margin-top: 12px; padding: 10px 28px; }
+  </style>
 </head>
 <body>
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;text-align:center;padding:24px;">
-    <div style="font-size:48px;color:var(--text-3);">×</div>
-    <h2 style="color:var(--text);margin:0;">オフラインです</h2>
-    <p style="color:var(--text-2);margin:0;">インターネット接続を確認してください。<br>接続が回復すると自動的に再接続されます。</p>
-    <button onclick="location.reload()" class="btn-primary" style="margin-top:8px;">再試行</button>
+  <div class="offline-wrap">
+    <div class="offline-icon">📡</div>
+    <h2 class="offline-title">オフラインです</h2>
+    <p class="offline-msg">
+      インターネット接続を確認してください。<br>
+      接続が回復すると自動的に再接続されます。
+    </p>
+    <button onclick="location.reload()" class="btn-primary offline-btn">再試行</button>
+    <a href="/" style="font-size:13px;color:var(--text-3);margin-top:4px;">ホームへ戻る</a>
   </div>
 </body>
 </html>

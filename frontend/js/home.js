@@ -25,7 +25,7 @@ async function init() {
   document.getElementById('current-user').textContent = user.username;
   document.getElementById('welcome-msg').textContent = `ようこそ、${user.username} さん`;
 
-  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable(), loadFortune()]);
+  await Promise.all([loadNotices(), loadStats(), loadTodayEvents(), loadTodayTimetable(), loadFortune(), loadMissions(), loadExamCountdown()]);
 }
 
 async function loadNotices() {
@@ -154,6 +154,90 @@ async function loadFortune() {
     else if (f.already_gained) { xpEl.textContent = '本日取得済み'; xpEl.style.display = 'block'; }
     box.style.display = 'block';
   } catch(e) { console.warn('loadFortune error:', e); }
+}
+
+async function loadMissions() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const storageKey = `polonix_missions_${today}`;
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+
+    // ログインボーナスは必達成
+    setMission('login', true);
+
+    // 今日の投稿確認
+    const postsData = await fetchData(`${API}/stats/me`, {}, {});
+    const myPosts = postsData?.my_posts ?? 0;
+    const lastPostDate = localStorage.getItem('polonix_last_post_date');
+    const postedToday = lastPostDate === today;
+    setMission('post', postedToday);
+
+    // カレンダーイベント確認（今日作成されたものがあるか）
+    const calendarPostedToday = localStorage.getItem('polonix_calendar_today') === today;
+    setMission('calendar', calendarPostedToday);
+  } catch(e) { console.warn('loadMissions error:', e); }
+}
+
+function setMission(id, done) {
+  const item = document.getElementById(`mission-${id}`);
+  const status = document.getElementById(`ms-${id}`);
+  if (!item || !status) return;
+  if (done) {
+    item.classList.add('done');
+    status.textContent = '達成済み';
+  } else {
+    item.classList.remove('done');
+    status.textContent = '未達成';
+  }
+}
+
+async function loadExamCountdown() {
+  try {
+    const res = await fetch(`${API}/calendar/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const raw = await res.json();
+    const events = parseResponse(raw, []);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    // 未完了の試験イベントを取得・日付順にソート
+    const exams = events
+      .filter(e => e.type === 'exam' && !e.is_done)
+      .map(e => ({ ...e, daysLeft: Math.ceil((new Date(e.date) - today) / 86400000) }))
+      .filter(e => e.daysLeft >= 0)
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+
+    if (exams.length === 0) return;
+
+    const next = exams[0];
+    const color = next.daysLeft <= 3 ? 'var(--red)' : next.daysLeft <= 7 ? 'var(--gold, #f5a623)' : 'var(--accent)';
+
+    // カードをhome-gridの前に挿入
+    const grid = document.querySelector('.home-grid');
+    if (!grid || document.getElementById('exam-countdown')) return;
+
+    const card = document.createElement('div');
+    card.className = 'db-card';
+    card.id = 'exam-countdown';
+    card.style.marginBottom = '12px';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;">直近の試験</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);">${next.title}</div>
+          <div style="font-size:12px;color:var(--text-2);margin-top:2px;">${next.date}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:36px;font-weight:800;color:${color};line-height:1;">${next.daysLeft}</div>
+          <div style="font-size:11px;color:var(--text-3);">日後</div>
+        </div>
+      </div>
+      ${exams.length > 1 ? `<div style="font-size:11px;color:var(--text-3);margin-top:8px;">他 ${exams.length - 1} 件の試験あり</div>` : ''}
+    `;
+    grid.parentNode.insertBefore(card, grid);
+  } catch(e) { console.warn('loadExamCountdown error:', e); }
 }
 
 init();
