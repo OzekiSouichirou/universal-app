@@ -103,7 +103,8 @@ async function loadTodayTimetable() {
   const res = await fetch(`${API}/timetable/`, { headers: { 'Authorization': `Bearer ${token}` } });
   const el = document.getElementById('home-today-tt');
   if (!res.ok) { el.innerHTML = '<p class="db-empty">取得できませんでした</p>'; return; }
-  const all = await res.json();
+  const ttRaw = await res.json();
+  const all = parseResponse(ttRaw, []);
   const dow = new Date().getDay();
   const dayIdx = dow === 0 ? -1 : dow - 1;
   if (dayIdx < 0) { el.innerHTML = '<p class="db-empty">今日は日曜日</p>'; return; }
