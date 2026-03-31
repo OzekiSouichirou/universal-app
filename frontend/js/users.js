@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 document.getElementById('logout-btn').addEventListener('click', logout);
@@ -21,9 +28,10 @@ async function fetchUsers() {
   const res = await fetch(`${API}/users/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
+  if (!res.ok) return;
   const uR = await res.json();
-  const users = parseResponse(uR, []); Array.isArray(data) ? data : [];
-  renderUsers(users);
+  const users = parseResponse(uR, []);
+  renderUsers(Array.isArray(users) ? users : []);
 }
 
 function renderUsers(users) {
