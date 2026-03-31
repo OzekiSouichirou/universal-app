@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let chartTrend = null, chartXP = null, chartHourly = null;
 
@@ -34,8 +41,10 @@ async function loadStats(user) {
       fetch(`${API}/stats/admin`, { headers: { 'Authorization': `Bearer ${token}` } }),
       fetch(`${API}/stats/me`,    { headers: { 'Authorization': `Bearer ${token}` } }),
     ]);
-    const admin = await adminRes.json();
-    const me = await meRes.json();
+    const _raw1 = await adminRes.json();
+    const admin = parseResponse(_raw1, {});
+    const _raw2 = await meRes.json();
+    const me = parseResponse(_raw2, {});
 
     renderStatCards([
       { label: '総ユーザー数', value: admin.total_users, icon: '#' },
@@ -53,7 +62,8 @@ async function loadStats(user) {
 
   } else {
     const res = await fetch(`${API}/stats/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const meR = await res.json();
+    const _raw3 = await res.json();
+    const meR = parseResponse(_raw3, {});
   const me = parseResponse(meR, {});
 
     renderStatCards([
@@ -163,7 +173,8 @@ async function loadTodayEvents() {
   const res = await fetch(`${API}/calendar/`, { headers: { 'Authorization': `Bearer ${token}` } });
   const el = document.getElementById('db-today-events');
   if (!res.ok) { el.innerHTML = '<p class="db-empty">取得できませんでした</p>'; return; }
-  const evR = await res.json();
+  const _raw4 = await res.json();
+  const evR = parseResponse(_raw4, {});
   const events = parseResponse(evR, []);
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -185,7 +196,8 @@ async function loadTodayTimetable() {
   const res = await fetch(`${API}/timetable/`, { headers: { 'Authorization': `Bearer ${token}` } });
   const el = document.getElementById('db-today-tt');
   if (!res.ok) { el.innerHTML = '<p class="db-empty">取得できませんでした</p>'; return; }
-  const all = await res.json();
+  const _raw5 = await res.json();
+  const all = parseResponse(_raw5, {});
   const dow = new Date().getDay();
   const dayIdx = dow === 0 ? -1 : dow - 1;
   if (dayIdx < 0) { el.innerHTML = '<p class="db-empty">今日は日曜日</p>'; return; }

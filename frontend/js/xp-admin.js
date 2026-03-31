@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -14,7 +21,9 @@ async function loadXPList() {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!res.ok) return;
-  const list = await res.json();
+  const _raw1 = await res.json();
+  const lR = parseResponse(_raw1, {});
+  const list = parseResponse(lR, []);
 
   // セレクトボックス更新
   const sel = document.getElementById('xp-target-user');
@@ -90,7 +99,8 @@ async function doGrant() {
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, amount, reason })
   });
-  const data = await res.json();
+  const _raw2 = await res.json();
+  const data = parseResponse(_raw2, {});
   if (res.ok) { showMsg(`✓ ${data.message}　新XP: ${data.new_xp} (Lv.${data.new_level})`); await loadXPList(); }
   else showMsg(data.detail, true);
 }
@@ -105,7 +115,8 @@ async function doRevoke() {
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, amount, reason })
   });
-  const data = await res.json();
+  const _raw3 = await res.json();
+  const data = parseResponse(_raw3, {});
   if (res.ok) { showMsg(`✓ ${data.message}　新XP: ${data.new_xp} (Lv.${data.new_level})`); await loadXPList(); }
   else showMsg(data.detail, true);
 }
@@ -119,7 +130,8 @@ async function doReset() {
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, amount: 0, reason })
   });
-  const data = await res.json();
+  const _raw4 = await res.json();
+  const data = parseResponse(_raw4, {});
   if (res.ok) { showMsg(`✓ ${data.message}`); await loadXPList(); }
   else showMsg(data.detail, true);
 }
@@ -138,7 +150,8 @@ async function loadTitlesList() {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!res.ok) return;
-  titlesList = await res.json();
+  const _raw5 = await res.json();
+  titlesList = parseResponse(_raw5, []);
 
   // セレクトボックス更新
   const sel = document.getElementById('title-target-user');
@@ -185,7 +198,8 @@ async function loadTitlesList() {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: btn.dataset.user, title_a:'', title_b:'', reason:'管理者による削除' })
       });
-      const data = await res.json();
+      const _raw6 = await res.json();
+      const data = parseResponse(_raw6, {});
       showTitleMsg(res.ok ? data.message : data.detail, !res.ok);
       if (res.ok) loadTitlesList();
     });
@@ -233,7 +247,8 @@ document.getElementById('title-grant-btn').addEventListener('click', async () =>
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, title_a, title_b, reason })
   });
-  const data = await res.json();
+  const _raw7 = await res.json();
+  const data = parseResponse(_raw7, {});
   showTitleMsg(res.ok ? data.message : data.detail, !res.ok);
   if (res.ok) { loadTitlesList(); loadXPList(); }
 });
@@ -248,7 +263,8 @@ document.getElementById('title-revoke-btn').addEventListener('click', async () =
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, title_a:'', title_b:'', reason })
   });
-  const data = await res.json();
+  const _raw8 = await res.json();
+  const data = parseResponse(_raw8, {});
   showTitleMsg(res.ok ? data.message : data.detail, !res.ok);
   if (res.ok) { loadTitlesList(); loadXPList(); }
 });

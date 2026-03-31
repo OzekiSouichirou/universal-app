@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let currentUser = null;
 let avatars = {};
@@ -101,7 +108,8 @@ async function init() {
   const avRes = await fetch(`${API}/users/avatars`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  avatars = await avRes.json();
+  const _raw1 = await avRes.json();
+  avatars = parseResponse(_raw1, []);
   fetchPosts();
   fetchNotifications();
 }
@@ -233,7 +241,8 @@ function renderPosts(posts) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
+      const _raw2 = await res.json();
+      const data = parseResponse(_raw2, {});
       btn.querySelector('.like-count').textContent = data.likes;
       btn.classList.toggle('liked', data.liked);
     });
@@ -349,7 +358,8 @@ document.getElementById('post-btn').addEventListener('click', async () => {
     msg.textContent = '';
     fetchPosts();
   } else {
-    const data = await res.json();
+    const _raw3 = await res.json();
+    const data = parseResponse(_raw3, {});
     msg.style.color = '#f0476c';
     msg.textContent = data.detail;
   }

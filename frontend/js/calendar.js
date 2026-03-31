@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 let currentUser = null;
 let allEvents = [];
@@ -51,7 +58,8 @@ async function fetchEvents() {
 async function fetchXP() {
   const res = await fetch(`${API}/calendar/xp`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
-  const xpR = await res.json();
+  const _raw1 = await res.json();
+  const xpR = parseResponse(_raw1, {});
   const xp = parseResponse(xpR, {});
   renderXP(xp);
 }
@@ -204,7 +212,8 @@ function renderDayEvents(dateStr) {
         body: JSON.stringify({ title: ev.title, memo: ev.memo, date: ev.date, type: ev.type, is_done: !ev.is_done })
       });
       if (res.ok) {
-        const data = await res.json();
+        const _raw2 = await res.json();
+        const data = parseResponse(_raw2, {});
         ev.is_done = data.is_done;
         if (data.xp_gained > 0) showXPToast(data.xp_gained);
         renderXP({ xp: data.total_xp, level: data.level, streak: 0, xp_gained_today: 0,
@@ -279,7 +288,8 @@ document.getElementById('ev-save-btn').addEventListener('click', async () => {
       body: JSON.stringify({ title, memo, date, type, is_done: ev.is_done })
     });
     if (res.ok) {
-      const data = await res.json();
+      const _raw3 = await res.json();
+      const data = parseResponse(_raw3, {});
       const idx = allEvents.findIndex(e => e.id === editingEventId);
       allEvents[idx] = { id: data.id, title: data.title, memo: data.memo, date: data.date, type: data.type, is_done: data.is_done };
       selectedDate = date;
@@ -291,7 +301,8 @@ document.getElementById('ev-save-btn').addEventListener('click', async () => {
       body: JSON.stringify({ title, memo, date, type })
     });
     if (res.ok) {
-      const data = await res.json();
+      const _raw4 = await res.json();
+      const data = parseResponse(_raw4, {});
       allEvents.push({ id: data.id, title: data.title, memo: data.memo, date: data.date, type: data.type, is_done: data.is_done });
       if (data.xp_gained > 0) showXPToast(data.xp_gained);
       selectedDate = date;

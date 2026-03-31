@@ -1,3 +1,12 @@
+// parseResponseフォールバック（api.jsが読み込まれていない場合の保険）
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fallback) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fallback;
+    return json != null ? json : fallback;
+  };
+}
+
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 document.getElementById('logout-btn').addEventListener('click', logout);

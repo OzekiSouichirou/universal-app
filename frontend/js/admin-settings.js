@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 
 document.getElementById('logout-btn').addEventListener('click', logout);
@@ -38,7 +45,8 @@ document.getElementById('change-password-btn').addEventListener('click', async (
     body: JSON.stringify({ current_password: current, new_password: newPass })
   });
 
-  const data = await res.json();
+  const _raw1 = await res.json();
+  const data = parseResponse(_raw1, {});
 
   if (res.ok) {
     msg.style.color = '#3ecf8e';

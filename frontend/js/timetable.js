@@ -1,3 +1,10 @@
+if (typeof parseResponse === 'undefined') {
+  window.parseResponse = function(json, fb) {
+    if (json && json.success === true) return json.data;
+    if (json && json.success === false) return fb;
+    return json != null ? json : fb;
+  };
+}
 const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
 const DAYS = ['月','火','水','木','金','土'];
 const PERIODS = 6;
@@ -19,7 +26,8 @@ async function init() {
 async function fetchTimetable() {
   const res = await fetch(`${API}/timetable/`, { headers: { 'Authorization': `Bearer ${token}` } });
   if (!res.ok) return;
-  const ttR = await res.json();
+  const _raw1 = await res.json();
+  const ttR = parseResponse(_raw1, {});
   const data = parseResponse(ttR, []);
   timetableData = {};
   data.forEach(e => { timetableData[`${e.day}-${e.period}`] = e; });
@@ -117,7 +125,8 @@ document.getElementById('tt-save-btn').addEventListener('click', async () => {
     body: JSON.stringify({ day, period, subject, room, teacher, memo, color })
   });
   if (res.ok) {
-    const data = await res.json();
+    const _raw2 = await res.json();
+    const data = parseResponse(_raw2, {});
     timetableData[`${day}-${period}`] = data;
     document.getElementById('tt-modal').classList.add('hidden');
     renderTable();
