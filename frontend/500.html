@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - サーバーエラー</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .error-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 12px;
+      text-align: center;
+      padding: 24px;
+    }
+    .error-code {
+      font-size: 72px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #f0476c, #b06ef5);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      line-height: 1;
+    }
+    .error-title { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+    .error-msg { color: var(--text-2); margin: 0; font-size: 14px; line-height: 1.7; }
+    .error-actions { display: flex; gap: 12px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="error-wrap">
+    <div class="error-code">500</div>
+    <h2 class="error-title">サーバーエラーが発生しました</h2>
+    <p class="error-msg">
+      一時的なエラーです。しばらく待ってから再試行してください。<br>
+      問題が続く場合はご意見箱からご報告ください。
+    </p>
+    <div class="error-actions">
+      <button onclick="location.reload()" class="btn-secondary">再試行</button>
+      <a href="home.html" class="btn-primary" style="text-decoration:none;padding:8px 20px;border-radius:var(--r);">ホームへ</a>
+    </div>
+  </div>
+</body>
+</html>
