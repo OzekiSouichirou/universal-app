@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.get("/admin")
 def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
-    r = db.execute(text("""
+    stats = db.execute(text("""
         SELECT
             (SELECT COUNT(*) FROM users) AS total_users,
             (SELECT COUNT(*) FROM users WHERE role='admin') AS admin_count,
@@ -39,7 +39,7 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         ORDER BY COALESCE(x.xp, 0) DESC
         LIMIT 5
     """)).fetchall()
-    xp_ranking = [{"username": r.username, "xp": int(r.xp or 0), "level": int(r.level or 1)} for r in xp_rows]
+    xp_ranking = [{"username": row.username, "xp": int(row.xp or 0), "level": int(row.level or 1)} for row in xp_rows]
 
     # 時間帯別投稿数
     hourly_rows = db.execute(text("""
@@ -48,14 +48,14 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         GROUP BY hour
         ORDER BY hour
     """)).fetchall()
-    hourly_posts = [{"hour": int(r.hour), "count": int(r.count)} for r in hourly_rows]
+    hourly_posts = [{"hour": int(row.hour), "count": int(row.count)} for row in hourly_rows]
 
     return ok({
-        "total_users":   r.total_users,
-        "admin_count":   r.admin_count,
-        "total_posts":   r.total_posts,
-        "total_comments":r.total_comments,
-        "total_likes":   r.total_likes,
+        "total_users":   int(stats.total_users),
+        "admin_count":   int(stats.admin_count),
+        "total_posts":   int(stats.total_posts),
+        "total_comments":int(stats.total_comments),
+        "total_likes":   int(stats.total_likes),
         "post_trend":    trend,
         "xp_ranking":    xp_ranking,
         "hourly_posts":  hourly_posts,
@@ -63,7 +63,7 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
 
 @router.get("/me")
 def get_me_stats(db=Depends(get_db), current_user=Depends(get_current_user)):
-    r = db.execute(text("""
+    me_stats = db.execute(text("""
         SELECT
             (SELECT COUNT(*) FROM posts WHERE username=:u) AS my_posts,
             (SELECT COUNT(*) FROM likes l JOIN posts p ON l.post_id=p.id WHERE p.username=:u) AS my_likes,
@@ -85,9 +85,9 @@ def get_me_stats(db=Depends(get_db), current_user=Depends(get_current_user)):
         trend.append({"date": d.strftime("%m/%d"), "count": int(count or 0)})
 
     return ok({
-        "my_posts":    r.my_posts,
-        "my_likes":    r.my_likes,
-        "my_comments": r.my_comments,
+        "my_posts":    int(me_stats.my_posts or 0),
+        "my_likes":    int(me_stats.my_likes or 0),
+        "my_comments": int(me_stats.my_comments or 0),
         "xp":          xp_row.xp if xp_row else 0,
         "level":       xp_row.level if xp_row else 1,
         "streak":      xp_row.streak if xp_row else 0,
