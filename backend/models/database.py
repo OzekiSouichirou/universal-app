@@ -1,7 +1,7 @@
 """
 Polonix v0.9.0 - DB接続層
-方針: 生SQL(text())に統一。SQLAlchemy ORMは使用しない。
-接続管理のみをここで行い、スキーマ管理はAlembicで行う。
+生SQL専用。ORM定義なし。
+接続プールの最適化・フォールバック設定追加。
 """
 from sqlalchemy import create_engine, text
 import os
@@ -13,14 +13,22 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    connect_args={"connect_timeout": 30} if DATABASE_URL.startswith("postgresql") else {},
-)
+# 接続プール設定（Render無料枠に最適化）
+_engine_kwargs = {
+    "pool_size": 3,           # 同時接続数（無料枠は上限10）
+    "max_overflow": 5,        # 追加接続
+    "pool_pre_ping": True,    # 接続死活確認
+    "pool_recycle": 300,      # 5分で接続を再作成（タイムアウト防止）
+    "pool_timeout": 30,       # 接続取得タイムアウト
+}
+
+if DATABASE_URL.startswith("postgresql"):
+    _engine_kwargs["connect_args"] = {
+        "connect_timeout": 30,
+        "options": "-c statement_timeout=30000",  # クエリ30秒タイムアウト
+    }
+
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 def get_db():
     """FastAPI Depends用DBコネクション取得"""
@@ -35,11 +43,9 @@ def get_db():
         conn.close()
 
 def row_to_dict(row) -> dict:
-    """SQLAlchemy Rowをdictに変換"""
     if row is None:
         return None
     return dict(row._mapping)
 
 def rows_to_list(rows) -> list:
-    """SQLAlchemy Rowリストをdictリストに変換"""
     return [dict(r._mapping) for r in rows]

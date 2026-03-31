@@ -207,7 +207,19 @@ function renderPosts(posts) {
       <div class="post-header">
         <div class="post-user-info">
           ${avatarHtml(p.username)}
-          <span class="post-username">${p.username}</span>
+          <div class="post-user-meta">
+            <span class="post-username"${p.username === currentUser.username ? ' style="color:var(--accent-2)"' : ''}>${p.username}</span>
+            ${(p.title_a || p.title_b) ? (() => {
+              const RARITY_COLORS = {SECR:'#b06ef5',UR:'#f08cff',SSR:'#f5a623',SR:'#41b4f5',R:'#3ecf8e',N:'#8892b0'};
+              const RARITY_ORDER = ['SECR','UR','SSR','SR','R','N'];
+              // A・Bのうち高レアリティ色を使用
+              const rarities = [p.rarity_a, p.rarity_b].filter(Boolean);
+              const topRarity = rarities.sort((a,b)=>RARITY_ORDER.indexOf(a)-RARITY_ORDER.indexOf(b))[0] || 'N';
+              const color = RARITY_COLORS[topRarity] || '#8892b0';
+              const title = [p.title_a, p.title_b].filter(Boolean).join(' ');
+              return `<span class="post-title-badge" style="color:${color};font-size:11px;margin-left:4px;opacity:0.9;">『${title}』</span>`;
+            })() : ''}
+          </div>
         </div>
         <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})}</span>
       </div>
