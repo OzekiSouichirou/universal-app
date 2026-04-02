@@ -1,8 +1,3 @@
-// ============================================================
-//  Polonix ガチャ データ定義 v0.8.5
-//  AとBを別々に排出。インベントリはDB管理。
-// ============================================================
-
 const GACHA_RARITY = {
   N:    { weight: 50.0, color: '#9ea0a0', label: 'N',    glow: 'rgba(158,160,160,0.3)' },
   R:    { weight: 30.0, color: '#3ecf8e', label: 'R',    glow: 'rgba(62,207,142,0.4)'  },
@@ -30,9 +25,6 @@ const POOL_B = {
   SECR: ['フリーター','浪人生','神の子','開発者','Polonixの主','運命の人','真の管理者','ガチャの申し子','伝説ユーザー','確率曲げし者'],
 };
 
-// ============================================================
-//  ガチャロジック
-// ============================================================
 function gachaPickRarity() {
   const total = Object.values(GACHA_RARITY).reduce((s, r) => s + r.weight, 0);
   let rand = Math.random() * total;
@@ -56,34 +48,20 @@ function gachaRoll() {
   };
 }
 
-// ============================================================
-//  インベントリ管理（DB管理版）
-//  キャッシュはメモリのみ。ページリロードでDBから再取得。
-// ============================================================
+let _invA = null;
+let _invB = null;
 
-let _invCacheA = null;
-let _invCacheB = null;
+function getInventoryA() { return _invA || []; }
+function getInventoryB() { return _invB || []; }
 
-function getInventoryA() { return _invCacheA || []; }
-function getInventoryB() { return _invCacheB || []; }
-
-async function fetchInventoryFromDB(token, apiBase) {
+async function fetchInventoryFromDB() {
   try {
-    const res = await fetch(`${apiBase}/users/gacha/inventory`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) return;
-    const iR = await res.json();
-    const items = parseResponse(iR, []);
-    console.log('[gacha] total items:', items.length);
-    console.log('[gacha] types:', [...new Set(items.map(i => i.type))]);
-    _invCacheA = items.filter(i => i.type === 'A');
-    _invCacheB = items.filter(i => i.type === 'B');
-    console.log('[gacha] A:', _invCacheA.length, 'B:', _invCacheB.length);
+    const items = await api('/users/gacha/inventory');
+    _invA = items.filter(i => i.type === 'A');
+    _invB = items.filter(i => i.type === 'B');
   } catch(e) { console.error('inventory fetch error:', e); }
 }
 
-// 旧localStorageデータをクリア（移行対応）
 (function cleanOldStorage() {
   ['gacha_inventory','gacha_inv_a','gacha_inv_b'].forEach(k => localStorage.removeItem(k));
 })();

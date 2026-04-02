@@ -1,43 +1,22 @@
-// api.jsで定義済みの場合はそちらを使用、なければここで定義
-// API定数はapi.jsで定義。api.jsが読まれていない場合のフォールバック
-var API = (typeof API !== 'undefined' && API)
-  ? API
-  : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:8000'
-    : 'https://polonix-api-sod4.onrender.com');
-
 async function checkAuth(requireAdmin = false) {
-  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+  const t = token();
+  if (!t) { window.location.href = 'index.html'; return null; }
 
-  if (!token) {
-    window.location.href = 'index.html';
-    return null;
-  }
-
-  // Renderスリープ明けのwarmup（/にGETしてから/users/meを叩く）
   try { await fetch(`${API}/`, { method: 'GET' }); } catch (_) {}
 
-  // リトライ付きfetch
   let res = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let i = 0; i < 3; i++) {
     try {
-      res = await fetch(`${API}/users/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      res = await fetch(`${API}/users/me`, { headers: { 'Authorization': `Bearer ${t}` } });
       break;
-    } catch (e) {
-      if (attempt < 2) {
-        await new Promise(r => setTimeout(r, 3000));
-      } else {
-        console.warn('checkAuth: network error after 3 attempts');
-        return null;
-      }
+    } catch {
+      if (i < 2) await new Promise(r => setTimeout(r, 3000));
+      else { console.warn('checkAuth: network error'); return null; }
     }
   }
 
   if (!res) return null;
 
-  // 401 = トークン無効・期限切れ
   if (res.status === 401) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('role');
@@ -47,27 +26,13 @@ async function checkAuth(requireAdmin = false) {
     return null;
   }
 
-  // その他エラーはネットワーク問題として扱う
-  if (!res.ok) {
-    console.warn('checkAuth: server error', res.status);
-    return null;
-  }
+  if (!res.ok) { console.warn('checkAuth: server error', res.status); return null; }
 
   const json = await res.json().catch(() => null);
+  const user = json?.success === true ? json.data : json;
 
-  // v0.9.0統一レスポンス形式 {success:true, data:{...}} に対応
-  // 旧形式（直接オブジェクト）にも対応
-  const user = (json && json.success === true) ? json.data : json;
-
-  if (!user || !user.username) {
-    console.warn('checkAuth: unexpected response', json);
-    return null;
-  }
-
-  if (requireAdmin && user.role !== 'admin') {
-    window.location.href = 'home.html';
-    return null;
-  }
+  if (!user?.username) { console.warn('checkAuth: unexpected response', json); return null; }
+  if (requireAdmin && user.role !== 'admin') { window.location.href = 'home.html'; return null; }
 
   return user;
 }
@@ -79,36 +44,21 @@ function logout() {
   sessionStorage.removeItem('role');
   window.location.href = 'index.html';
 }
-// ハンバーガーメニュー制御
+
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger-btn');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('sidebar-overlay');
   if (!hamburger || !sidebar || !overlay) return;
 
-  function openSidebar() {
-    sidebar.classList.add('open');
-    overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeSidebar() {
-    sidebar.classList.remove('open');
-    overlay.classList.remove('active');
-    document.body.style.overflow = '';
-  }
+  const open  = () => { sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; };
+  const close = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = ''; };
 
-  hamburger.addEventListener('click', () => {
-    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
-  });
-  overlay.addEventListener('click', closeSidebar);
-
-  sidebar.querySelectorAll('nav a').forEach(a => {
-    a.addEventListener('click', closeSidebar);
-  });
+  hamburger.addEventListener('click', () => sidebar.classList.contains('open') ? close() : open());
+  overlay.addEventListener('click', close);
+  sidebar.querySelectorAll('nav a').forEach(a => a.addEventListener('click', close));
 });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
