@@ -206,3 +206,17 @@ app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 @app.head("/")
 def root():
     return ok({"status": "ok", "version": "0.9.2"})
+
+@app.get("/health")
+@app.head("/health")
+def health():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return ok({"status": "ok", "db": "ok"})
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "db": "unavailable"}
+        )
