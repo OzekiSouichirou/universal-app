@@ -1,14 +1,12 @@
-const CACHE_NAME = 'polonix-v0.9.0';
+const CACHE_NAME  = 'polonix-v0.9.2';
 const OFFLINE_URL = '/offline.html';
 
-// キャッシュする静的アセット（JSはクエリ付きで管理するためキャッシュしない）
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
   '/css/style.css',
 ];
 
-// install: 必要最小限のキャッシュのみ
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -17,7 +15,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// activate: 古いキャッシュを全削除
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -28,29 +25,27 @@ self.addEventListener('activate', event => {
   );
 });
 
-// fetch: Network First戦略
-// JSファイル(?v=N付き)は常にネットワークから取得
-// その他はネットワーク優先、失敗時にキャッシュ
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.origin !== location.origin) return;
 
-  // JSファイルはキャッシュしない（?v=Nで管理）
+  // 外部オリジン・APIはスルー
+  if (url.origin !== location.origin) return;
+  if (url.hostname.includes('onrender.com')) return;
+
+  // JSファイルはキャッシュしない（?v=N で管理）
   if (url.pathname.endsWith('.js')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // APIリクエストはキャッシュしない
-  if (url.pathname.startsWith('/api') || url.hostname.includes('onrender.com')) return;
-
+  // Network First: 成功したレスポンスをキャッシュ、失敗時にフォールバック
   event.respondWith(
     fetch(event.request)
       .then(res => {
         if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, res.clone()));
         }
         return res;
       })

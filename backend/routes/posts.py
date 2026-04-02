@@ -1,10 +1,4 @@
-"""
-Polonix v0.9.0 - 投稿ルート
-- 生SQL統一
-- APIレスポンス統一
-- レート制限
-- 投稿検索追加
-"""
+"""Polonix v0.9.2 - 投稿ルート"""
 import os, sys, logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -21,6 +15,9 @@ from security import check_rate_limit, RATE, validate_post_content
 router = APIRouter()
 logger = logging.getLogger("polonix.posts")
 
+# 連鎖削除で使用するテーブルのホワイトリスト
+_POST_RELATED_TABLES = frozenset(["likes", "comments", "notifications"])
+
 class PostCreate(BaseModel):
     content: str
     image: Optional[str] = None
@@ -30,49 +27,42 @@ class CommentCreate(BaseModel):
 
 @router.get("/")
 def get_posts(
-    q: Optional[str] = Query(None, description="検索キーワード"),
+    q: Optional[str] = Query(None),
     limit: int = Query(100, le=100),
     db=Depends(get_db),
     current_user=Depends(get_current_user)
 ):
+    base_sql = """
+        SELECT p.id, p.username, p.content, p.image, p.created_at,
+               u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b,
+               COUNT(DISTINCT l.id) AS likes,
+               MAX(CASE WHEN l.username=:me THEN 1 ELSE 0 END) AS liked,
+               COUNT(DISTINCT c.id) AS comment_count
+        FROM posts p
+        LEFT JOIN users u ON u.username = p.username
+        LEFT JOIN likes l ON l.post_id = p.id
+        LEFT JOIN comments c ON c.post_id = p.id
+        {where}
+        GROUP BY p.id, u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b
+        ORDER BY p.created_at DESC
+        LIMIT :limit
+    """
     if q and q.strip():
-        keyword = f"%{q.strip()}%"
-        rows = db.execute(text("""
-            SELECT p.id, p.username, p.content, p.image, p.created_at,
-                   u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b,
-                   COUNT(DISTINCT l.id) AS likes,
-                   MAX(CASE WHEN l.username=:me THEN 1 ELSE 0 END) AS liked,
-                   COUNT(DISTINCT c.id) AS comment_count
-            FROM posts p
-            LEFT JOIN users u ON u.username = p.username
-            LEFT JOIN likes l ON l.post_id = p.id
-            LEFT JOIN comments c ON c.post_id = p.id
-            WHERE p.content ILIKE :kw
-            GROUP BY p.id, u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b
-            ORDER BY p.created_at DESC
-            LIMIT :limit
-        """), {"me": current_user.username, "kw": keyword, "limit": limit}).fetchall()
+        rows = db.execute(
+            text(base_sql.format(where="WHERE p.content ILIKE :kw")),
+            {"me": current_user.username, "kw": f"%{q.strip()}%", "limit": limit}
+        ).fetchall()
     else:
-        rows = db.execute(text("""
-            SELECT p.id, p.username, p.content, p.image, p.created_at,
-                   u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b,
-                   COUNT(DISTINCT l.id) AS likes,
-                   MAX(CASE WHEN l.username=:me THEN 1 ELSE 0 END) AS liked,
-                   COUNT(DISTINCT c.id) AS comment_count
-            FROM posts p
-            LEFT JOIN users u ON u.username = p.username
-            LEFT JOIN likes l ON l.post_id = p.id
-            LEFT JOIN comments c ON c.post_id = p.id
-            GROUP BY p.id, u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b
-            ORDER BY p.created_at DESC
-            LIMIT :limit
-        """), {"me": current_user.username, "limit": limit}).fetchall()
+        rows = db.execute(
+            text(base_sql.format(where="")),
+            {"me": current_user.username, "limit": limit}
+        ).fetchall()
 
     result = []
     for r in rows:
         d = row_to_dict(r)
-        d["liked"] = bool(d.get("liked", 0))
-        d["title"] = d.pop("selected_title", "") or ""
+        d["liked"]   = bool(d.get("liked", 0))
+        d["title"]   = d.pop("selected_title", "") or ""
         d["title_a"] = d.pop("selected_title_a", "") or ""
         d["title_b"] = d.pop("selected_title_b", "") or ""
         result.append(d)
@@ -102,7 +92,7 @@ def delete_post(post_id: int, db=Depends(get_db), current_user=Depends(get_curre
         err(E.NOT_FOUND, "投稿が見つかりません", 404)
     if row.username != current_user.username and current_user.role != "admin":
         err(E.FORBIDDEN, "削除権限がありません", 403)
-    for table in ["likes", "comments", "notifications"]:
+    for table in _POST_RELATED_TABLES:
         db.execute(text(f"DELETE FROM {table} WHERE post_id=:id"), {"id": post_id})
     db.execute(text("DELETE FROM posts WHERE id=:id"), {"id": post_id})
     return ok({"message": "投稿を削除しました"})
@@ -122,7 +112,6 @@ def toggle_like(post_id: int, db=Depends(get_db), current_user=Depends(get_curre
             text("INSERT INTO likes (post_id,username) VALUES (:p,:u) ON CONFLICT DO NOTHING"),
             {"p": post_id, "u": current_user.username}
         )
-        # 投稿者への通知
         post = db.execute(text("SELECT username FROM posts WHERE id=:id"), {"id": post_id}).fetchone()
         if post and post.username != current_user.username:
             db.execute(text("""
@@ -148,7 +137,7 @@ def get_comments(post_id: int, db=Depends(get_db), _=Depends(get_current_user)):
     result = []
     for r in rows:
         d = row_to_dict(r)
-        d["title"] = d.pop("selected_title", "") or ""
+        d["title"]   = d.pop("selected_title", "") or ""
         d["title_a"] = d.pop("selected_title_a", "") or ""
         result.append(d)
     return ok(result)
@@ -170,6 +159,19 @@ def add_comment(post_id: int, body: CommentCreate, db=Depends(get_db), current_u
             VALUES (:u,'comment',:p,:f)
         """), {"u": post.username, "p": post_id, "f": current_user.username})
     return ok({"message": "コメントを投稿しました"})
+
+@router.delete("/{post_id}/comments/{comment_id}")
+def delete_comment(post_id: int, comment_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
+    row = db.execute(
+        text("SELECT username FROM comments WHERE id=:id AND post_id=:p"),
+        {"id": comment_id, "p": post_id}
+    ).fetchone()
+    if not row:
+        err(E.NOT_FOUND, "コメントが見つかりません", 404)
+    if row.username != current_user.username and current_user.role != "admin":
+        err(E.FORBIDDEN, "削除権限がありません", 403)
+    db.execute(text("DELETE FROM comments WHERE id=:id"), {"id": comment_id})
+    return ok({"message": "コメントを削除しました"})
 
 @router.get("/notifications/list")
 def get_notifications(db=Depends(get_db), current_user=Depends(get_current_user)):

@@ -1,10 +1,4 @@
-"""
-Polonix v0.9.0 - ユーザー管理ルート
-- 生SQL統一
-- APIレスポンス形式統一
-- レート制限・バリデーション適用
-- BAN機能追加
-"""
+"""Polonix v0.9.2 - ユーザー管理ルート"""
 import os, sys, string, random, logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -34,6 +28,30 @@ def calc_level(xp: int) -> int:
         if xp >= LEVEL_THRESHOLDS[i]:
             return i + 1
     return 1
+
+# ホワイトリスト: 連鎖削除で使用するテーブル名
+_CASCADE_POST_TABLES = frozenset(["likes", "comments", "notifications"])
+_CASCADE_USER_TABLES = frozenset([
+    "posts", "likes", "comments", "notifications",
+    "calendar_events", "timetable", "user_xp", "feedback", "gacha_inventory"
+])
+_ORPHAN_TABLES = frozenset([
+    "calendar_events", "timetable", "user_xp", "feedback", "gacha_inventory"
+])
+
+def _delete_user_data(db, uname: str):
+    """ユーザー関連データを連鎖削除（ホワイトリスト方式）"""
+    post_ids = [r.id for r in db.execute(
+        text("SELECT id FROM posts WHERE username = :u"), {"u": uname}
+    ).fetchall()]
+    if post_ids:
+        # IN句をバインドパラメータ化
+        placeholders = ",".join(f":pid{i}" for i in range(len(post_ids)))
+        params = {f"pid{i}": pid for i, pid in enumerate(post_ids)}
+        for table in _CASCADE_POST_TABLES:
+            db.execute(text(f"DELETE FROM {table} WHERE post_id IN ({placeholders})"), params)
+    for table in _CASCADE_USER_TABLES:
+        db.execute(text(f"DELETE FROM {table} WHERE username = :u"), {"u": uname})
 
 # ============================================================
 # 認証依存関数
@@ -97,9 +115,6 @@ class TitleManage(BaseModel):
 class GachaRollRequest(BaseModel):
     count: int
     results: list
-
-class GachaSpendXP(BaseModel):
-    count: int
 
 # ============================================================
 # /me 系エンドポイント（/{id}より前に定義）
@@ -182,18 +197,7 @@ def delete_avatar(db=Depends(get_db), current_user=Depends(get_current_user)):
 @router.delete("/me")
 def delete_me(db=Depends(get_db), current_user=Depends(get_current_user)):
     uname = current_user.username
-    # 関連データを連鎖削除
-    post_ids = [r.id for r in db.execute(
-        text("SELECT id FROM posts WHERE username = :u"), {"u": uname}
-    ).fetchall()]
-    if post_ids:
-        id_list = ",".join(str(i) for i in post_ids)
-        for table in ["likes", "comments", "notifications"]:
-            db.execute(text(f"DELETE FROM {table} WHERE post_id IN ({id_list})"))
-    for table in ["posts", "likes", "comments", "notifications",
-                  "calendar_events", "timetable", "user_xp", "feedback",
-                  "gacha_inventory"]:
-        db.execute(text(f"DELETE FROM {table} WHERE username = :u"), {"u": uname})
+    _delete_user_data(db, uname)
     db.execute(text("DELETE FROM users WHERE id = :id"), {"id": current_user.id})
     db.execute(
         text("INSERT INTO logs (username, action) VALUES (:u, 'アカウント削除')"),
@@ -263,6 +267,8 @@ def get_users(db=Depends(get_db), _=Depends(require_admin)):
 def create_user(body: UserCreate, db=Depends(get_db), _=Depends(require_admin)):
     validate_username(body.username)
     validate_password(body.password)
+    if body.role not in ("user", "admin"):
+        err(E.INVALID_INPUT, "roleはuserまたはadminのみ指定できます")
     existing = db.execute(
         text("SELECT id FROM users WHERE username = :u"), {"u": body.username}
     ).fetchone()
@@ -285,17 +291,7 @@ def delete_user(user_id: int, db=Depends(get_db), _=Depends(require_admin)):
     if not row:
         err(E.NOT_FOUND, "ユーザーが見つかりません", 404)
     uname = row.username
-    post_ids = [r.id for r in db.execute(
-        text("SELECT id FROM posts WHERE username = :u"), {"u": uname}
-    ).fetchall()]
-    if post_ids:
-        id_list = ",".join(str(i) for i in post_ids)
-        for table in ["likes", "comments", "notifications"]:
-            db.execute(text(f"DELETE FROM {table} WHERE post_id IN ({id_list})"))
-    for table in ["posts", "likes", "comments", "notifications",
-                  "calendar_events", "timetable", "user_xp", "feedback",
-                  "gacha_inventory"]:
-        db.execute(text(f"DELETE FROM {table} WHERE username = :u"), {"u": uname})
+    _delete_user_data(db, uname)
     db.execute(text("DELETE FROM users WHERE id = :id"), {"id": user_id})
     db.execute(
         text("INSERT INTO logs (username, action, detail) VALUES ('admin', 'ユーザー削除', :d)"),
@@ -342,10 +338,10 @@ def cleanup_orphan_data(db=Depends(get_db), admin=Depends(require_admin)):
     existing = [r.username for r in db.execute(text("SELECT username FROM users")).fetchall()]
     if not existing:
         return ok({"deleted": 0})
-    placeholders = ",".join([f":u{i}" for i in range(len(existing))])
+    placeholders = ",".join(f":u{i}" for i in range(len(existing)))
     params = {f"u{i}": u for i, u in enumerate(existing)}
     deleted = 0
-    for table in ["calendar_events", "timetable", "user_xp", "feedback", "gacha_inventory"]:
+    for table in _ORPHAN_TABLES:
         result = db.execute(
             text(f"DELETE FROM {table} WHERE username NOT IN ({placeholders})"), params
         )
@@ -387,8 +383,7 @@ def grant_xp(body: XPManage, db=Depends(get_db), admin=Depends(require_admin)):
     if not row:
         err(E.NOT_FOUND, "ユーザーが見つかりません", 404)
     xp_row = db.execute(text("SELECT xp FROM user_xp WHERE username = :u"), {"u": body.username}).fetchone()
-    current_xp = xp_row.xp if xp_row else 0
-    new_xp, new_level = _update_xp(db, body.username, current_xp + body.amount)
+    new_xp, new_level = _update_xp(db, body.username, (xp_row.xp if xp_row else 0) + body.amount)
     db.execute(
         text("INSERT INTO logs (username, action, detail) VALUES (:a, 'XP配布', :d)"),
         {"a": admin.username, "d": f"{body.username} +{body.amount}XP ({body.reason})"}
@@ -400,8 +395,7 @@ def revoke_xp(body: XPManage, db=Depends(get_db), admin=Depends(require_admin)):
     if body.amount <= 0:
         err(E.INVALID_INPUT, "没収量は1以上にしてください")
     xp_row = db.execute(text("SELECT xp FROM user_xp WHERE username = :u"), {"u": body.username}).fetchone()
-    current_xp = xp_row.xp if xp_row else 0
-    new_xp, new_level = _update_xp(db, body.username, max(0, current_xp - body.amount))
+    new_xp, new_level = _update_xp(db, body.username, max(0, (xp_row.xp if xp_row else 0) - body.amount))
     db.execute(
         text("INSERT INTO logs (username, action, detail) VALUES (:a, 'XP没収', :d)"),
         {"a": admin.username, "d": f"{body.username} -{body.amount}XP ({body.reason})"}
@@ -442,7 +436,7 @@ def grant_title(body: TitleManage, db=Depends(get_db), admin=Depends(require_adm
         text("INSERT INTO logs (username, action, detail) VALUES (:a, '称号付与', :d)"),
         {"a": admin.username, "d": f"{body.username} → {new_title} ({body.reason})"}
     )
-    return ok({"message": f"称号を設定しました", "title": new_title})
+    return ok({"message": "称号を設定しました", "title": new_title})
 
 @router.post("/titles/revoke")
 def revoke_title(body: TitleManage, db=Depends(get_db), admin=Depends(require_admin)):
@@ -484,7 +478,6 @@ def gacha_roll(body: GachaRollRequest, request: Request, db=Depends(get_db), cur
     if current_xp < cost:
         err(E.XP_INSUFFICIENT, f"XPが足りません（必要：{cost}XP、所持：{current_xp}XP）")
 
-    # 既存インベントリ
     existing_a = {r.text for r in db.execute(
         text("SELECT text FROM gacha_inventory WHERE username=:u AND type='A'"),
         {"u": current_user.username}
@@ -551,13 +544,13 @@ def clear_user_gacha_inventory(username: str, db=Depends(get_db), admin=Depends(
 import random as _random
 
 FORTUNE_TABLE = [
-    {"rank":"大吉","emoji":"","xp":50,"weight":5,  "msgs":["今日は最高の一日。全力でいこう。","絶好調の予感。チャンスをつかもう。","いい一日になりそうだ。"]},
-    {"rank":"中吉","emoji":"","xp":20,"weight":20, "msgs":["いい感じの一日になりそう。","ほどよく順調。無理せず進もう。","なんとなく調子がいい日。"]},
-    {"rank":"小吉","emoji":"","xp":10,"weight":30, "msgs":["まあまあの一日。コツコツやろう。","小さな幸運が積み重なる日。","地道な努力が実を結ぶ兆し。"]},
-    {"rank":"吉",  "emoji":"","xp": 5,"weight":25, "msgs":["普通に良い日。平和が一番。","特別なことはないが安定した日。","焦らずのんびりいこう。"]},
-    {"rank":"末吉","emoji":"","xp": 2,"weight":12, "msgs":["今日は慎重に。でも諦めないで。","ちょっと注意が必要な日かも。","下積みの日。明日への糧にしよう。"]},
-    {"rank":"凶",  "emoji":"","xp": 1,"weight": 6, "msgs":["厳しい一日かも。でも乗り越えろ。","逆境こそ成長のチャンス。","今日を乗り切れば明日は良くなる。"]},
-    {"rank":"大凶","emoji":"","xp": 0,"weight": 2, "msgs":["底を打ったら後は上がるだけ。","大凶を引いた勇者。伝説の幕開け。","珍しい一日。記念日にしよう。"]},
+    {"rank":"大吉","xp":50,"weight":5,  "msgs":["今日は最高の一日。全力でいこう。","絶好調の予感。チャンスをつかもう。","いい一日になりそうだ。"]},
+    {"rank":"中吉","xp":20,"weight":20, "msgs":["いい感じの一日になりそう。","ほどよく順調。無理せず進もう。","なんとなく調子がいい日。"]},
+    {"rank":"小吉","xp":10,"weight":30, "msgs":["まあまあの一日。コツコツやろう。","小さな幸運が積み重なる日。","地道な努力が実を結ぶ兆し。"]},
+    {"rank":"吉",  "xp": 5,"weight":25, "msgs":["普通に良い日。平和が一番。","特別なことはないが安定した日。","焦らずのんびりいこう。"]},
+    {"rank":"末吉","xp": 2,"weight":12, "msgs":["今日は慎重に。でも諦めないで。","ちょっと注意が必要な日かも。","下積みの日。明日への糧にしよう。"]},
+    {"rank":"凶",  "xp": 1,"weight": 6, "msgs":["厳しい一日かも。でも乗り越えろ。","逆境こそ成長のチャンス。","今日を乗り切れば明日は良くなる。"]},
+    {"rank":"大凶","xp": 0,"weight": 2, "msgs":["底を打ったら後は上がるだけ。","大凶を引いた勇者。伝説の幕開け。","珍しい一日。記念日にしよう。"]},
 ]
 
 @router.get("/fortune/today")
@@ -595,9 +588,9 @@ def get_fortune_today(db=Depends(get_db), current_user=Depends(get_current_user)
         xp_gained = fortune["xp"]
 
     return ok({
-        "rank":         fortune["rank"],
-        "msg":          msg,
-        "xp":           fortune["xp"],
-        "xp_gained":    xp_gained,
+        "rank":          fortune["rank"],
+        "msg":           msg,
+        "xp":            fortune["xp"],
+        "xp_gained":     xp_gained,
         "already_gained": bool(already),
     })
