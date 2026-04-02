@@ -157,8 +157,8 @@ def get_comments(post_id: int, db=Depends(get_db), _=Depends(get_current_user)):
 def add_comment(post_id: int, body: CommentCreate, db=Depends(get_db), current_user=Depends(get_current_user)):
     if not body.content or not body.content.strip():
         err(E.VALIDATION, "コメント内容を入力してください")
-    if len(body.content) > 300:
-        err(E.VALIDATION, "コメントは300文字以内にしてください")
+    if len(body.content) > 200:
+        err(E.VALIDATION, "コメントは200文字以内にしてください")
     db.execute(
         text("INSERT INTO comments (post_id,username,content) VALUES (:p,:u,:c)"),
         {"p": post_id, "u": current_user.username, "c": body.content.strip()}

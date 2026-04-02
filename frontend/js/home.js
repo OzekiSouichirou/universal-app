@@ -158,21 +158,19 @@ async function loadFortune() {
 
 async function loadMissions() {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const storageKey = `polonix_missions_${today}`;
-    const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
-
-    // ログインボーナスは必達成
     setMission('login', true);
 
-    // 今日の投稿確認
     const postsData = await fetchData(`${API}/stats/me`, {}, {});
-    const myPosts = postsData?.my_posts ?? 0;
-    const lastPostDate = localStorage.getItem('polonix_last_post_date');
-    const postedToday = lastPostDate === today;
-    setMission('post', postedToday);
+    const today = new Date().toISOString().slice(0, 10);
+    const trend = postsData?.post_trend || [];
+    const todayEntry = trend.find(t => {
+      const mm = String(new Date().getMonth() + 1).padStart(2, '0');
+      const dd = String(new Date().getDate()).padStart(2, '0');
+      return t.date === `${mm}/${dd}`;
+    });
+    const postedToday = todayEntry && todayEntry.count > 0;
+    setMission('post', !!postedToday);
 
-    // カレンダーイベント確認（今日作成されたものがあるか）
     const calendarPostedToday = localStorage.getItem('polonix_calendar_today') === today;
     setMission('calendar', calendarPostedToday);
   } catch(e) { console.warn('loadMissions error:', e); }

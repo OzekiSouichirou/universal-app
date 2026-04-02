@@ -109,7 +109,7 @@ async function init() {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   const _raw1 = await avRes.json();
-  avatars = parseResponse(_raw1, []);
+  avatars = parseResponse(_raw1, {});
   fetchPosts();
   fetchNotifications();
 }
