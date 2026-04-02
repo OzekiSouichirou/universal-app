@@ -13,13 +13,13 @@ import bcrypt
 import logging
 import random
 import string
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from sqlalchemy import text
-from models.database import engine
+from models.database import engine, get_db
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -209,10 +209,9 @@ def root():
 
 @app.get("/health")
 @app.head("/health")
-def health():
+def health(db=Depends(get_db)):
     try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+        db.execute(text("SELECT 1"))
         return ok({"status": "ok", "db": "ok"})
     except Exception as e:
         logger.error(f"Health check failed: {e}")
