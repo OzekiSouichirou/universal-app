@@ -23,8 +23,7 @@ function headers(extra = {}) {
 }
 
 // ============================================================
-// JWTトークン自動リフレッシュ
-// 残り30分以下になったら自動で延長する
+// JWTトークン自動リフレッシュ（残り30分以下で延長）
 // ============================================================
 function _tokenExp() {
   const t = token();
@@ -38,9 +37,7 @@ function _tokenExp() {
 async function _refreshIfNeeded() {
   const exp = _tokenExp();
   if (!exp) return;
-  const remaining = exp - Date.now();
-  if (remaining > 30 * 60 * 1000) return; // 残り30分超なら不要
-
+  if (exp - Date.now() > 30 * 60 * 1000) return;
   try {
     const res = await fetch(`${API}/auth/refresh`, {
       method: 'POST',
@@ -49,14 +46,11 @@ async function _refreshIfNeeded() {
     if (!res.ok) return;
     const json = await res.json();
     if (json?.success && json.data?.access_token) {
-      const newToken = json.data.access_token;
-      if (localStorage.getItem('access_token')) {
-        localStorage.setItem('access_token', newToken);
-      } else {
-        sessionStorage.setItem('access_token', newToken);
-      }
+      const t = json.data.access_token;
+      if (localStorage.getItem('access_token')) localStorage.setItem('access_token', t);
+      else sessionStorage.setItem('access_token', t);
     }
-  } catch { /* リフレッシュ失敗は無視（次回ログイン時に対処） */ }
+  } catch { /* リフレッシュ失敗は無視 */ }
 }
 
 // ============================================================
@@ -64,28 +58,23 @@ async function _refreshIfNeeded() {
 // ============================================================
 async function api(path, options = {}) {
   await _refreshIfNeeded();
-
   let res;
   try {
     res = await fetch(`${API}${path}`, { headers: headers(), ...options });
   } catch {
     throw new ApiError('NETWORK_ERROR', 'ネットワークエラーが発生しました。接続を確認してください。', 0);
   }
-
   const json = await res.json().catch(() => null);
-
   if (json && typeof json.success !== 'undefined') {
     if (json.success) return json.data;
     const e = json.error || {};
     if (res.status === 401) {
-      localStorage.removeItem('access_token');
-      sessionStorage.removeItem('access_token');
+      localStorage.removeItem('access_token'); sessionStorage.removeItem('access_token');
       window.location.href = 'index.html';
     }
     if (res.status === 429) toast('リクエストが多すぎます。しばらく待ってから再試行してください。', 'error');
     throw new ApiError(e.code || 'UNKNOWN', e.message || 'エラーが発生しました', res.status);
   }
-
   if (!res.ok) {
     const msg = json?.detail || `HTTP ${res.status}`;
     throw new ApiError(`HTTP_${res.status}`, typeof msg === 'string' ? msg : JSON.stringify(msg), res.status);
@@ -115,26 +104,76 @@ function toast(message, type = 'info') {
 }
 
 // ============================================================
-// PWAインストールプロンプト
+// PWAインストール（全OS・ブラウザ対応）
 // ============================================================
 let _installPrompt = null;
 
+const _ua          = navigator.userAgent.toLowerCase();
+const _isIos       = /iphone|ipad|ipod/.test(_ua);
+const _isSafari    = _isIos && /safari/.test(_ua) && !/crios|fxios/.test(_ua);
+const _isStandalone = window.navigator.standalone === true
+  || window.matchMedia('(display-mode: standalone)').matches;
+
+// iOS Safari: インストール手順モーダルを表示
+function _showIosGuide() {
+  if (document.getElementById('pwa-ios-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'pwa-ios-modal';
+  modal.innerHTML = `
+    <div class="pwa-modal-overlay" id="pwa-modal-overlay">
+      <div class="pwa-modal-box">
+        <div class="pwa-modal-title">📲 ホーム画面に追加</div>
+        <ol class="pwa-modal-steps">
+          <li>画面下部の <strong>共有ボタン（□↑）</strong> をタップ</li>
+          <li>「<strong>ホーム画面に追加</strong>」を選択</li>
+          <li>右上の「<strong>追加</strong>」をタップ</li>
+        </ol>
+        <button class="pwa-modal-close" id="pwa-modal-close">閉じる</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('pwa-modal-close').addEventListener('click', () => modal.remove());
+  document.getElementById('pwa-modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) modal.remove();
+  });
+}
+
+// beforeinstallprompt対応ブラウザ（Chrome/Edge/Firefox Android/Samsung等）
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _installPrompt = e;
-  const btn = document.getElementById('pwa-install-btn');
-  if (btn) btn.style.display = 'block';
+  if (!_isStandalone) _showInstallBtn();
 });
 
 window.addEventListener('appinstalled', () => {
   _installPrompt = null;
-  const btn = document.getElementById('pwa-install-btn');
-  if (btn) btn.style.display = 'none';
+  _hideInstallBtn();
   toast('アプリをインストールしました！', 'success');
 });
 
+function _showInstallBtn() {
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'block';
+}
+
+function _hideInstallBtn() {
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+// iOS Safariでインストール案内を表示
+if (_isSafari && !_isStandalone) {
+  window.addEventListener('DOMContentLoaded', _showInstallBtn);
+}
+
+// インストールボタンのクリック処理
 function pwaInstall() {
-  if (!_installPrompt) return;
-  _installPrompt.prompt();
-  _installPrompt.userChoice.then(() => { _installPrompt = null; });
+  if (_installPrompt) {
+    // Chrome/Android等: ネイティブプロンプトを表示
+    _installPrompt.prompt();
+    _installPrompt.userChoice.then(() => { _installPrompt = null; });
+  } else if (_isSafari) {
+    // iOS Safari: 手順モーダルを表示
+    _showIosGuide();
+  }
 }
