@@ -1,6 +1,4 @@
-"""
-Polonix v0.9.0 - 認証ユーティリティ
-"""
+"""Polonix v0.9.3 - 認証ユーティリティ"""
 import bcrypt
 import os
 import logging
@@ -19,8 +17,8 @@ if not SECRET_KEY:
     SECRET_KEY = "polonix-dev-secret-change-in-production"
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES     = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 180))
-REMEMBER_TOKEN_EXPIRE_MINUTES   = 60 * 24 * 7  # 7日
+ACCESS_TOKEN_EXPIRE_MINUTES   = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 180))
+REMEMBER_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7日
 
 def verify_password(plain: str, hashed: str) -> bool:
     try:
@@ -36,6 +34,7 @@ def create_access_token(data: dict, remember: bool = False) -> str:
     minutes = REMEMBER_TOKEN_EXPIRE_MINUTES if remember else ACCESS_TOKEN_EXPIRE_MINUTES
     expire = datetime.utcnow() + timedelta(minutes=minutes)
     to_encode["exp"] = expire
+    to_encode["remember"] = remember
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_token(token: str) -> dict:

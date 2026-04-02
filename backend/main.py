@@ -106,7 +106,7 @@ init_admin()
 # ============================================================
 app = FastAPI(
     title="Polonix API",
-    version="0.9.2",
+    version="0.9.3",
     docs_url=None,
     redoc_url=None,
 )
@@ -205,7 +205,7 @@ app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 @app.get("/")
 @app.head("/")
 def root():
-    return ok({"status": "ok", "version": "0.9.2"})
+    return ok({"status": "ok", "version": "0.9.3"})
 
 @app.get("/health")
 @app.head("/health")

@@ -1,4 +1,21 @@
+// ============================================================
+// ローディングスピナー制御
+// ============================================================
+function showSpinner() {
+  const el = document.getElementById('page-spinner');
+  if (el) el.style.display = 'flex';
+}
+
+function hideSpinner() {
+  const el = document.getElementById('page-spinner');
+  if (el) el.style.display = 'none';
+}
+
+// ============================================================
+// 認証
+// ============================================================
 async function checkAuth(requireAdmin = false) {
+  showSpinner();
   const t = token();
   if (!t) { window.location.href = 'index.html'; return null; }
 
@@ -11,11 +28,11 @@ async function checkAuth(requireAdmin = false) {
       break;
     } catch {
       if (i < 2) await new Promise(r => setTimeout(r, 3000));
-      else { console.warn('checkAuth: network error'); return null; }
+      else { console.warn('checkAuth: network error'); hideSpinner(); return null; }
     }
   }
 
-  if (!res) return null;
+  if (!res) { hideSpinner(); return null; }
 
   if (res.status === 401) {
     localStorage.removeItem('access_token');
@@ -26,14 +43,15 @@ async function checkAuth(requireAdmin = false) {
     return null;
   }
 
-  if (!res.ok) { console.warn('checkAuth: server error', res.status); return null; }
+  if (!res.ok) { console.warn('checkAuth: server error', res.status); hideSpinner(); return null; }
 
   const json = await res.json().catch(() => null);
   const user = json?.success === true ? json.data : json;
 
-  if (!user?.username) { console.warn('checkAuth: unexpected response', json); return null; }
+  if (!user?.username) { console.warn('checkAuth: unexpected response', json); hideSpinner(); return null; }
   if (requireAdmin && user.role !== 'admin') { window.location.href = 'home.html'; return null; }
 
+  hideSpinner();
   return user;
 }
 
@@ -45,6 +63,9 @@ function logout() {
   window.location.href = 'index.html';
 }
 
+// ============================================================
+// ハンバーガーメニュー
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger-btn');
   const sidebar   = document.getElementById('sidebar');
@@ -57,6 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
   hamburger.addEventListener('click', () => sidebar.classList.contains('open') ? close() : open());
   overlay.addEventListener('click', close);
   sidebar.querySelectorAll('nav a').forEach(a => a.addEventListener('click', close));
+
+  // PWAインストールボタン
+  const installBtn = document.getElementById('pwa-install-btn');
+  if (installBtn) installBtn.addEventListener('click', pwaInstall);
 });
 
 if ('serviceWorker' in navigator) {

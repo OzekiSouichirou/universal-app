@@ -1,16 +1,20 @@
-"""Polonix v0.9.0 - 認証ルート（生SQL統一・レート制限追加）"""
+"""Polonix v0.9.3 - 認証ルート"""
 import os, sys, string, random, logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import text
 from pydantic import BaseModel
 from models.database import get_db
-from auth.auth import verify_password, hash_password, create_access_token
+from auth.auth import verify_password, hash_password, create_access_token, decode_token, SECRET_KEY, ALGORITHM
 from response import ok, err, E
 from security import check_rate_limit, RATE, validate_username, validate_password
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt, JWTError
+from datetime import datetime
 
 router = APIRouter()
 logger = logging.getLogger("polonix.auth")
+security = HTTPBearer()
 
 class LoginBody(BaseModel):
     username: str
@@ -74,3 +78,31 @@ def register(body: RegisterBody, request: Request, db=Depends(get_db)):
     logger.info(f"Register: {body.username}")
     return ok({"access_token": token, "token_type": "bearer",
                "username": body.username, "role": "user"})
+
+@router.post("/refresh")
+def refresh(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db=Depends(get_db)
+):
+    """有効なトークンを受け取り、期限を延長した新トークンを発行"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        err(E.UNAUTHORIZED, "トークンが無効です", 401)
+
+    username = payload.get("sub")
+    remember = payload.get("remember", False)
+
+    # ユーザーが存在しBANされていないか確認
+    row = db.execute(
+        text("SELECT username, role, is_banned FROM users WHERE username=:u"),
+        {"u": username}
+    ).fetchone()
+    if not row:
+        err(E.UNAUTHORIZED, "ユーザーが見つかりません", 401)
+    if row.is_banned:
+        err(E.BANNED, "このアカウントは利用停止されています", 403)
+
+    new_token = create_access_token({"sub": username}, remember=remember)
+    logger.info(f"Token refreshed: {username}")
+    return ok({"access_token": new_token, "token_type": "bearer"})
