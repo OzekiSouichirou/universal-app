@@ -3466,6 +3466,7 @@ body {
   padding: 16px;
 }
 .crop-modal.hidden { display: none; }
+.hidden { display: none !important; }
 .crop-modal-box {
   background: var(--surface);
   border: 1px solid var(--border-2);

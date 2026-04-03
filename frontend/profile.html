@@ -125,36 +125,6 @@
       </div>
     </div>
   </div>
-  <!-- アイコントリミングモーダル -->
-  <div id="crop-modal" class="crop-modal hidden">
-    <div class="crop-modal-box">
-      <div class="crop-modal-title">アイコンをトリミング</div>
-      <div class="crop-container">
-        <div class="crop-viewport">
-          <img id="crop-img" src="" alt="">
-          <div class="crop-overlay">
-            <div class="crop-circle" id="crop-circle"></div>
-          </div>
-        </div>
-        <div class="crop-controls">
-          <label>ズーム</label>
-          <input type="range" id="crop-zoom" min="1" max="3" step="0.01" value="1">
-          <label style="margin-top:10px;">位置（横）</label>
-          <input type="range" id="crop-x" min="0" max="100" step="0.5" value="50">
-          <label style="margin-top:10px;">位置（縦）</label>
-          <input type="range" id="crop-y" min="0" max="100" step="0.5" value="50">
-        </div>
-      </div>
-      <div class="crop-preview-wrap">
-        <canvas id="crop-preview-canvas" width="80" height="80"></canvas>
-        <span style="font-size:12px;color:var(--text-3);">プレビュー</span>
-      </div>
-      <div class="crop-actions">
-        <button class="btn-secondary" id="crop-cancel-btn">キャンセル</button>
-        <button class="btn-primary" id="crop-apply-btn">この位置で確定</button>
-      </div>
-    </div>
-  </div>
 
   <script src="js/api.js?v=16"></script>
   <script src="js/auth.js?v=16"></script>
