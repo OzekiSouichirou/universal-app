@@ -33,7 +33,8 @@ logger = logging.getLogger("polonix")
 # ============================================================
 # DB起動待機（Renderスリープ対応）
 # ============================================================
-def wait_for_db(retries: int = 10, delay: int = 5) -> bool:
+def wait_for_db(retries: int = 5, delay: int = 2) -> bool:
+    # Neonはサスペンドからの復帰が速いため短いリトライで十分
     for i in range(retries):
         try:
             with engine.connect() as conn:
