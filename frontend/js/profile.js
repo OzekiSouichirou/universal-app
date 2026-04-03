@@ -28,7 +28,7 @@ function hideAvatar() {
 }
 
 // ============================================================
-// アイコントリミングモーダル
+// アイコントリミング（canvas ドラッグ方式）
 // ============================================================
 let _cropImg   = null;
 let _cropScale = 1;
@@ -38,11 +38,7 @@ let _dragStart = null;
 
 function openCropModal(file) {
   const url = URL.createObjectURL(file);
-  const modal = document.getElementById('crop-modal');
-  const canvas = document.getElementById('crop-canvas');
-  const ctx = canvas.getContext('2d');
-  const img = new Image();
-
+  const img  = new Image();
   img.onload = () => {
     _cropImg   = img;
     _cropScale = 1;
@@ -50,7 +46,7 @@ function openCropModal(file) {
     _cropY     = 0;
     document.getElementById('crop-scale').value = 100;
     drawCrop();
-    modal.classList.remove('hidden');
+    document.getElementById('crop-modal').classList.remove('hidden');
     URL.revokeObjectURL(url);
   };
   img.src = url;
@@ -58,28 +54,21 @@ function openCropModal(file) {
 
 function drawCrop() {
   const canvas = document.getElementById('crop-canvas');
-  const ctx    = canvas.getContext('2d');
-  const size   = canvas.width; // 256px
+  if (!canvas || !_cropImg) return;
+  const ctx  = canvas.getContext('2d');
+  const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
-
-  // 背景
   ctx.fillStyle = '#0d1117';
   ctx.fillRect(0, 0, size, size);
-
   const w = _cropImg.width  * _cropScale;
   const h = _cropImg.height * _cropScale;
-  const x = size / 2 + _cropX - w / 2;
-  const y = size / 2 + _cropY - h / 2;
-  ctx.drawImage(_cropImg, x, y, w, h);
-
-  // 円形マスクのガイド
+  ctx.drawImage(_cropImg, size/2 + _cropX - w/2, size/2 + _cropY - h/2, w, h);
   ctx.save();
   ctx.beginPath();
   ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(91,110,245,0.8)';
   ctx.lineWidth   = 2;
   ctx.stroke();
-  // 外側を暗くする
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.rect(0, 0, size, size);
   ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2, true);
@@ -87,137 +76,156 @@ function drawCrop() {
   ctx.restore();
 }
 
-// ズームスライダー
-document.getElementById('crop-scale').addEventListener('input', e => {
-  _cropScale = parseInt(e.target.value) / 100;
-  drawCrop();
-});
+// ============================================================
+// DOMContentLoaded後にイベント登録
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
 
-// ドラッグ操作
-const cropCanvas = document.getElementById('crop-canvas');
+  // ズームスライダー
+  document.getElementById('crop-scale').addEventListener('input', e => {
+    _cropScale = parseInt(e.target.value) / 100;
+    drawCrop();
+  });
 
-function getPos(e) {
-  const r = cropCanvas.getBoundingClientRect();
-  const src = e.touches ? e.touches[0] : e;
-  return { x: src.clientX - r.left, y: src.clientY - r.top };
-}
+  // ドラッグ
+  const canvas = document.getElementById('crop-canvas');
 
-cropCanvas.addEventListener('mousedown',  e => { _dragStart = getPos(e); });
-cropCanvas.addEventListener('touchstart', e => { e.preventDefault(); _dragStart = getPos(e); }, { passive: false });
-
-cropCanvas.addEventListener('mousemove', e => {
-  if (!_dragStart) return;
-  const p = getPos(e);
-  _cropX += p.x - _dragStart.x;
-  _cropY += p.y - _dragStart.y;
-  _dragStart = p;
-  drawCrop();
-});
-cropCanvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (!_dragStart) return;
-  const p = getPos(e);
-  _cropX += p.x - _dragStart.x;
-  _cropY += p.y - _dragStart.y;
-  _dragStart = p;
-  drawCrop();
-}, { passive: false });
-
-cropCanvas.addEventListener('mouseup',   () => { _dragStart = null; });
-cropCanvas.addEventListener('touchend',  () => { _dragStart = null; });
-cropCanvas.addEventListener('mouseleave',() => { _dragStart = null; });
-
-document.getElementById('crop-cancel-btn').addEventListener('click', () => {
-  document.getElementById('crop-modal').classList.add('hidden');
-  document.getElementById('avatar-input').value = '';
-});
-
-document.getElementById('crop-save-btn').addEventListener('click', async () => {
-  const canvas  = document.getElementById('crop-canvas');
-  const out     = document.createElement('canvas');
-  out.width = out.height = 256;
-  const ctx = out.getContext('2d');
-
-  // 円形にクリップして書き出し
-  ctx.beginPath();
-  ctx.arc(128, 128, 128, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(canvas, 0, 0);
-
-  const dataUrl = out.toDataURL('image/jpeg', 0.85);
-  const msg     = document.getElementById('avatar-msg');
-
-  if (dataUrl.length > 2 * 1024 * 1024) {
-    msg.style.color = '#f0476c'; msg.textContent = '画像が大きすぎます。ズームを下げてください';
-    return;
+  function getPos(e) {
+    const r   = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
   }
 
-  document.getElementById('crop-modal').classList.add('hidden');
-  msg.style.color = '#7a87aa'; msg.textContent = '保存中...';
+  canvas.addEventListener('mousedown',  e => { _dragStart = getPos(e); });
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); _dragStart = getPos(e); }, { passive: false });
+  canvas.addEventListener('mousemove', e => {
+    if (!_dragStart) return;
+    const p = getPos(e);
+    _cropX += p.x - _dragStart.x; _cropY += p.y - _dragStart.y;
+    _dragStart = p; drawCrop();
+  });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!_dragStart) return;
+    const p = getPos(e);
+    _cropX += p.x - _dragStart.x; _cropY += p.y - _dragStart.y;
+    _dragStart = p; drawCrop();
+  }, { passive: false });
+  canvas.addEventListener('mouseup',    () => { _dragStart = null; });
+  canvas.addEventListener('touchend',   () => { _dragStart = null; });
+  canvas.addEventListener('mouseleave', () => { _dragStart = null; });
 
-  try {
-    await api('/users/me/avatar', { method: 'PATCH', body: JSON.stringify({ avatar: dataUrl }) });
-    showAvatar(dataUrl);
-    msg.style.color = '#3ecf8e'; msg.textContent = 'アバターを更新しました';
-  } catch(e) {
-    msg.style.color = '#f0476c'; msg.textContent = e.message || '保存に失敗しました';
+  // キャンセル
+  document.getElementById('crop-cancel-btn').addEventListener('click', () => {
+    document.getElementById('crop-modal').classList.add('hidden');
+    document.getElementById('avatar-input').value = '';
+  });
+
+  // 保存
+  document.getElementById('crop-save-btn').addEventListener('click', async () => {
+    const src = document.getElementById('crop-canvas');
+    const out = document.createElement('canvas');
+    out.width = out.height = 256;
+    const ctx = out.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(128, 128, 128, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(src, 0, 0);
+    const dataUrl = out.toDataURL('image/jpeg', 0.85);
+    const msg     = document.getElementById('avatar-msg');
+    if (dataUrl.length > 2 * 1024 * 1024) {
+      msg.style.color = '#f0476c'; msg.textContent = '画像が大きすぎます。ズームを下げてください'; return;
+    }
+    document.getElementById('crop-modal').classList.add('hidden');
+    msg.style.color = '#7a87aa'; msg.textContent = '保存中...';
+    try {
+      await api('/users/me/avatar', { method: 'PATCH', body: JSON.stringify({ avatar: dataUrl }) });
+      showAvatar(dataUrl);
+      msg.style.color = '#3ecf8e'; msg.textContent = 'アバターを更新しました';
+    } catch(e) {
+      msg.style.color = '#f0476c'; msg.textContent = e.message || '保存に失敗しました';
+    }
+    document.getElementById('avatar-input').value = '';
+  });
+
+  // アバターアップロード
+  document.getElementById('avatar-upload-btn').addEventListener('click', () => {
+    document.getElementById('avatar-input').click();
+  });
+
+  document.getElementById('avatar-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const msg     = document.getElementById('avatar-msg');
+    const allowed = ['image/jpeg','image/png','image/gif','image/heic','image/heif'];
+    const isHeif  = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+    if (!allowed.includes(file.type) && !isHeif) {
+      msg.style.color = '#f0476c'; msg.textContent = 'JPEG・PNG・GIF・HEIFのみ対応しています'; return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      msg.style.color = '#f0476c'; msg.textContent = 'ファイルサイズは5MB以内にしてください'; return;
+    }
+    openCropModal(file);
+  });
+
+  // アバター削除
+  document.getElementById('avatar-delete-btn').addEventListener('click', async () => {
+    if (!confirm('アバターを削除しますか？')) return;
+    const msg = document.getElementById('avatar-msg');
+    try {
+      await api('/users/me/avatar', { method: 'DELETE' });
+      hideAvatar();
+      msg.style.color = '#3ecf8e'; msg.textContent = 'アバターを削除しました';
+    } catch(e) {
+      msg.style.color = '#f0476c'; msg.textContent = e.message || '削除に失敗しました';
+    }
+  });
+
+  // パスワード変更
+  document.getElementById('change-password-btn').addEventListener('click', async () => {
+    const current = document.getElementById('current-password').value.trim();
+    const newPass = document.getElementById('new-password').value.trim();
+    const confirm = document.getElementById('confirm-password').value.trim();
+    const msg     = document.getElementById('password-msg');
+    if (!current || !newPass || !confirm) { msg.style.color='#f0476c'; msg.textContent='すべての項目を入力してください'; return; }
+    if (newPass !== confirm)              { msg.style.color='#f0476c'; msg.textContent='新しいパスワードが一致しません'; return; }
+    try {
+      await api('/users/me/password', { method:'PATCH', body:JSON.stringify({ current_password:current, new_password:newPass }) });
+      msg.style.color = '#3ecf8e'; msg.textContent = 'パスワードを変更しました';
+      ['current-password','new-password','confirm-password'].forEach(id => document.getElementById(id).value = '');
+    } catch(e) { msg.style.color='#f0476c'; msg.textContent=e.message||'パスワード変更に失敗しました'; }
+  });
+
+  // アカウント削除
+  document.getElementById('delete-account-btn').addEventListener('click', async () => {
+    if (!confirm('本当にアカウントを削除しますか？\nこの操作は取り消せません。')) return;
+    if (!confirm('最終確認です。\nアカウントと全データが完全に削除されます。\n本当によろしいですか？')) return;
+    try {
+      await api('/users/me', { method:'DELETE' });
+      alert('アカウントを削除しました。ご利用ありがとうございました。');
+      logout();
+    } catch(e) { alert(e.message || '削除に失敗しました'); }
+  });
+
+  // プロフィール保存
+  const saveBtn = document.getElementById('save-profile-btn');
+  const saveMsg = document.getElementById('profile-save-msg');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const bio    = (document.getElementById('bio-input')?.value || '').trim();
+      const titleA = selectedTitleA || '';
+      const titleB = selectedTitleB || '';
+      const title  = (titleA && titleB) ? `${titleA} ${titleB}` : (titleA || titleB);
+      try {
+        await api('/users/me/profile', { method:'PATCH', body:JSON.stringify({ bio, selected_title:title, selected_title_a:titleA, selected_title_b:titleB, selected_badges:'[]' }) });
+        if (saveMsg) { saveMsg.style.color='var(--green)'; saveMsg.textContent='プロフィールを保存しました'; }
+        setTimeout(() => { if (saveMsg) saveMsg.textContent=''; }, 3000);
+        renderEquipGrid(); renderPreview();
+      } catch(e) {
+        if (saveMsg) { saveMsg.style.color='var(--red)'; saveMsg.textContent=e.message||'保存に失敗しました'; }
+      }
+    });
   }
-  document.getElementById('avatar-input').value = '';
-});
-
-document.getElementById('avatar-upload-btn').addEventListener('click', () => {
-  document.getElementById('avatar-input').click();
-});
-
-document.getElementById('avatar-input').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const msg = document.getElementById('avatar-msg');
-  const allowed = ['image/jpeg','image/png','image/gif','image/heic','image/heif'];
-  const isHeif  = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
-  if (!allowed.includes(file.type) && !isHeif) {
-    msg.style.color = '#f0476c'; msg.textContent = 'JPEG・PNG・GIF・HEIFのみ対応しています'; return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    msg.style.color = '#f0476c'; msg.textContent = 'ファイルサイズは5MB以内にしてください'; return;
-  }
-  openCropModal(file);
-});
-
-document.getElementById('avatar-delete-btn').addEventListener('click', async () => {
-  if (!confirm('アバターを削除しますか？')) return;
-  const msg = document.getElementById('avatar-msg');
-  try {
-    await api('/users/me/avatar', { method: 'DELETE' });
-    hideAvatar();
-    msg.style.color = '#3ecf8e'; msg.textContent = 'アバターを削除しました';
-  } catch(e) {
-    msg.style.color = '#f0476c'; msg.textContent = e.message || '削除に失敗しました';
-  }
-});
-
-document.getElementById('change-password-btn').addEventListener('click', async () => {
-  const current = document.getElementById('current-password').value.trim();
-  const newPass = document.getElementById('new-password').value.trim();
-  const confirm = document.getElementById('confirm-password').value.trim();
-  const msg     = document.getElementById('password-msg');
-  if (!current || !newPass || !confirm) { msg.style.color='#f0476c'; msg.textContent='すべての項目を入力してください'; return; }
-  if (newPass !== confirm)              { msg.style.color='#f0476c'; msg.textContent='新しいパスワードが一致しません'; return; }
-  try {
-    await api('/users/me/password', { method:'PATCH', body:JSON.stringify({ current_password:current, new_password:newPass }) });
-    msg.style.color = '#3ecf8e'; msg.textContent = 'パスワードを変更しました';
-    ['current-password','new-password','confirm-password'].forEach(id => document.getElementById(id).value = '');
-  } catch(e) { msg.style.color='#f0476c'; msg.textContent=e.message||'パスワード変更に失敗しました'; }
-});
-
-document.getElementById('delete-account-btn').addEventListener('click', async () => {
-  if (!confirm('本当にアカウントを削除しますか？\nこの操作は取り消せません。')) return;
-  if (!confirm('最終確認です。\nアカウントと全データが完全に削除されます。\n本当によろしいですか？')) return;
-  try {
-    await api('/users/me', { method:'DELETE' });
-    alert('アカウントを削除しました。ご利用ありがとうございました。');
-    logout();
-  } catch(e) { alert(e.message || '削除に失敗しました'); }
 });
 
 // ============================================================
@@ -295,25 +303,5 @@ function renderPreview() {
     </div>
   </div>`;
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  const saveBtn = document.getElementById('save-profile-btn');
-  const msg     = document.getElementById('profile-save-msg');
-  if (!saveBtn) return;
-  saveBtn.addEventListener('click', async () => {
-    const bio    = (document.getElementById('bio-input')?.value || '').trim();
-    const titleA = selectedTitleA || '';
-    const titleB = selectedTitleB || '';
-    const title  = (titleA && titleB) ? `${titleA} ${titleB}` : (titleA || titleB);
-    try {
-      await api('/users/me/profile', { method:'PATCH', body:JSON.stringify({ bio, selected_title:title, selected_title_a:titleA, selected_title_b:titleB, selected_badges:'[]' }) });
-      if (msg) { msg.style.color='var(--green)'; msg.textContent='プロフィールを保存しました'; }
-      setTimeout(() => { if (msg) msg.textContent=''; }, 3000);
-      renderEquipGrid(); renderPreview();
-    } catch(e) {
-      if (msg) { msg.style.color='var(--red)'; msg.textContent=e.message||'保存に失敗しました'; }
-    }
-  });
-});
 
 init();
