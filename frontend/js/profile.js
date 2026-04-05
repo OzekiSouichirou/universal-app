@@ -127,12 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 保存
   document.getElementById('crop-save-btn').addEventListener('click', async () => {
-    const src = document.getElementById('crop-canvas');
+    // crop-canvasのオーバーレイを含まず、画像だけを書き出す
     const out = document.createElement('canvas');
     out.width = out.height = 256;
     const ctx = out.getContext('2d');
-    // 円形クリップなしでそのまま書き出し（avatar-previewのborder-radius:50%で円形表示）
-    ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, 256, 256);
+    const size = 256;
+    const w = _cropImg.width  * _cropScale;
+    const h = _cropImg.height * _cropScale;
+    ctx.drawImage(_cropImg, size/2 + _cropX - w/2, size/2 + _cropY - h/2, w, h);
     const dataUrl = out.toDataURL('image/jpeg', 0.85);
     const msg     = document.getElementById('avatar-msg');
     if (dataUrl.length > 2 * 1024 * 1024) {
