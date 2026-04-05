@@ -30,48 +30,44 @@ function hideAvatar() {
 
 // ============================================================
 // アイコントリミング
-// 状態: 画像のcanvas上での描画位置(ox,oy)とスケールのみで管理
-// ox,oy = canvas上での画像左上座標
+// canvasは常に256x256固定。CSSでの縮小なし。
+// 状態: _ox/_oy = canvas上の画像左上座標、_scale = 拡大倍率
 // ============================================================
+const CSIZE = 256;
 let _img   = null;
 let _scale = 1;
-let _ox    = 0;   // 画像左上のcanvas上X座標
-let _oy    = 0;   // 画像左上のcanvas上Y座標
+let _ox    = 0;
+let _oy    = 0;
 let _drag  = null;
 
-const CANVAS_SIZE = 256;
-
 function render() {
-  const canvas = document.getElementById('crop-canvas');
-  if (!canvas || !_img) return;
-  const ctx  = canvas.getContext('2d');
-  const size = canvas.width;
-  ctx.clearRect(0, 0, size, size);
+  const c   = document.getElementById('crop-canvas');
+  if (!c || !_img) return;
+  const ctx = c.getContext('2d');
+  // 背景
   ctx.fillStyle = '#0d1117';
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillRect(0, 0, CSIZE, CSIZE);
+  // 画像
   ctx.drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
-  // 円形ガイド
+  // 円形ガイド（表示用のみ）
   ctx.save();
   ctx.beginPath();
-  ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2);
+  ctx.arc(CSIZE/2, CSIZE/2, CSIZE/2 - 1, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(91,110,245,0.9)';
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.rect(0, 0, size, size);
-  ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2, true);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.rect(0, 0, CSIZE, CSIZE);
+  ctx.arc(CSIZE/2, CSIZE/2, CSIZE/2 - 1, 0, Math.PI * 2, true);
   ctx.fill();
   ctx.restore();
 }
 
+// 保存用: renderと同じ座標で画像のみ（ガイドなし）
 function exportCrop() {
-  const canvas = document.getElementById('crop-canvas');
-  const size   = canvas.width;
-  // renderと全く同じ座標・スケールで画像のみ書き出し（ガイドなし）
   const out = document.createElement('canvas');
-  out.width = out.height = size;
-  const ctx = out.getContext('2d');
-  ctx.drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
+  out.width = out.height = CSIZE;
+  out.getContext('2d').drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
   return out.toDataURL('image/jpeg', 0.9);
 }
 
@@ -79,80 +75,66 @@ function openCropModal(file) {
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => {
-    _img = img;
-
-    // canvasの実際の表示サイズを取得してHTML属性に反映
-    // → getBoundingClientRectで取得するにはモーダルを先に表示する必要がある
-    const modal = document.getElementById('crop-modal');
-    modal.classList.remove('hidden');
-
-    // モーダル表示後にcanvasサイズを確定
-    requestAnimationFrame(() => {
-      const canvas  = document.getElementById('crop-canvas');
-      const rect    = canvas.getBoundingClientRect();
-      const dpr     = window.devicePixelRatio || 1;
-      // canvasの内部解像度をCSS表示サイズ×dprに合わせる
-      // ただし最大256pxに制限（サイズ大きすぎると容量オーバー）
-      const size    = Math.min(Math.round(rect.width), 256);
-      canvas.width  = size;
-      canvas.height = size;
-
-      _scale = Math.max(size / img.width, size / img.height);
-      _ox    = (size - img.width  * _scale) / 2;
-      _oy    = (size - img.height * _scale) / 2;
-
-      const slider = document.getElementById('crop-scale');
-      slider.min   = Math.round(_scale * 50);
-      slider.max   = Math.round(_scale * 400);
-      slider.value = Math.round(_scale * 100);
-
-      render();
-      URL.revokeObjectURL(url);
-    });
+    _img   = img;
+    // 画像をcanvasにフィットさせる初期スケール
+    _scale = Math.max(CSIZE / img.width, CSIZE / img.height);
+    // 画像をcanvas中央に配置
+    _ox = (CSIZE - img.width  * _scale) / 2;
+    _oy = (CSIZE - img.height * _scale) / 2;
+    // スライダー設定
+    const s = document.getElementById('crop-scale');
+    s.min   = Math.round(_scale * 50);
+    s.max   = Math.round(_scale * 400);
+    s.value = Math.round(_scale * 100);
+    render();
+    document.getElementById('crop-modal').classList.remove('hidden');
+    URL.revokeObjectURL(url);
   };
   img.src = url;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const canvas = document.getElementById('crop-canvas');
+  const c = document.getElementById('crop-canvas');
 
+  // ズーム: 画像中心を固定してスケール変更
   document.getElementById('crop-scale').addEventListener('input', e => {
-    const newScale = parseInt(e.target.value) / 100;
-    // 画像の中心座標を保持したままスケール変更
-    const cx = _ox + (_img.width  * _scale) / 2;
-    const cy = _oy + (_img.height * _scale) / 2;
-    _scale = newScale;
-    _ox = cx - (_img.width  * _scale) / 2;
-    _oy = cy - (_img.height * _scale) / 2;
+    if (!_img) return;
+    const ns = parseInt(e.target.value) / 100;
+    const cx = _ox + _img.width  * _scale / 2;
+    const cy = _oy + _img.height * _scale / 2;
+    _scale = ns;
+    _ox = cx - _img.width  * _scale / 2;
+    _oy = cy - _img.height * _scale / 2;
     render();
   });
 
-  // ドラッグ（CSS座標→canvas座標に変換）
-  function clientToCanvas(e) {
-    const r = canvas.getBoundingClientRect();
+  // ドラッグ: canvasのHTML属性サイズ=CSIZE、CSSも同じ256pxなのでscale=1
+  // → 変換不要。マウス/タッチのcanvas内座標をそのまま使う
+  function pos(e) {
+    const r = c.getBoundingClientRect();
     const s = e.touches ? e.touches[0] : e;
-    return {
-      x: (s.clientX - r.left) * (canvas.width  / r.width),
-      y: (s.clientY - r.top)  * (canvas.height / r.height)
-    };
+    // CSS表示サイズがHTMLサイズと異なる場合のみ補正が必要
+    const rx = CSIZE / r.width;
+    const ry = CSIZE / r.height;
+    return { x: (s.clientX - r.left) * rx, y: (s.clientY - r.top) * ry };
   }
 
-  canvas.addEventListener('mousedown',  e => { _drag = clientToCanvas(e); });
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); _drag = clientToCanvas(e); }, { passive: false });
-
-  function onMove(e) {
+  c.addEventListener('mousedown',  e => { _drag = pos(e); });
+  c.addEventListener('touchstart', e => { e.preventDefault(); _drag = pos(e); }, { passive: false });
+  c.addEventListener('mousemove', e => {
     if (!_drag) return;
-    const p = clientToCanvas(e);
-    _ox += p.x - _drag.x;
-    _oy += p.y - _drag.y;
-    _drag = p;
-    render();
-  }
-  canvas.addEventListener('mousemove', onMove);
-  canvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e); }, { passive: false });
-  canvas.addEventListener('mouseup',    () => { _drag = null; });
-  canvas.addEventListener('touchend',   () => { _drag = null; });
-  canvas.addEventListener('mouseleave', () => { _drag = null; });
+    const p = pos(e);
+    _ox += p.x - _drag.x; _oy += p.y - _drag.y; _drag = p; render();
+  });
+  c.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!_drag) return;
+    const p = pos(e);
+    _ox += p.x - _drag.x; _oy += p.y - _drag.y; _drag = p; render();
+  }, { passive: false });
+  c.addEventListener('mouseup',    () => { _drag = null; });
+  c.addEventListener('touchend',   () => { _drag = null; });
+  c.addEventListener('mouseleave', () => { _drag = null; });
 
   // キャンセル
   document.getElementById('crop-cancel-btn').addEventListener('click', () => {
@@ -160,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('avatar-input').value = '';
   });
 
-  // 保存
+  // 保存: exportCropはrenderと同じ計算なので必ず一致する
   document.getElementById('crop-save-btn').addEventListener('click', async () => {
     const dataUrl = exportCrop();
     const msg     = document.getElementById('avatar-msg');
@@ -183,11 +165,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('avatar-upload-btn').addEventListener('click', () => {
     document.getElementById('avatar-input').click();
   });
-
   document.getElementById('avatar-input').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
-    const msg     = document.getElementById('avatar-msg');
+    const msg = document.getElementById('avatar-msg');
     const allowed = ['image/jpeg','image/png','image/gif','image/heic','image/heif'];
     const isHeif  = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
     if (!allowed.includes(file.type) && !isHeif) {
@@ -205,11 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const msg = document.getElementById('avatar-msg');
     try {
       await api('/users/me/avatar', { method: 'DELETE' });
-      hideAvatar();
-      msg.style.color = '#3ecf8e'; msg.textContent = 'アバターを削除しました';
-    } catch(e) {
-      msg.style.color = '#f0476c'; msg.textContent = e.message || '削除に失敗しました';
-    }
+      hideAvatar(); msg.style.color = '#3ecf8e'; msg.textContent = 'アバターを削除しました';
+    } catch(e) { msg.style.color = '#f0476c'; msg.textContent = e.message || '削除に失敗しました'; }
   });
 
   // パスワード変更
@@ -218,8 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const newPass = document.getElementById('new-password').value.trim();
     const confirm = document.getElementById('confirm-password').value.trim();
     const msg     = document.getElementById('password-msg');
-    if (!current || !newPass || !confirm) { msg.style.color='#f0476c'; msg.textContent='すべての項目を入力してください'; return; }
-    if (newPass !== confirm)              { msg.style.color='#f0476c'; msg.textContent='新しいパスワードが一致しません'; return; }
+    if (!current||!newPass||!confirm) { msg.style.color='#f0476c'; msg.textContent='すべての項目を入力してください'; return; }
+    if (newPass !== confirm)          { msg.style.color='#f0476c'; msg.textContent='新しいパスワードが一致しません'; return; }
     try {
       await api('/users/me/password', { method:'PATCH', body:JSON.stringify({ current_password:current, new_password:newPass }) });
       msg.style.color = '#3ecf8e'; msg.textContent = 'パスワードを変更しました';
@@ -233,8 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('最終確認です。\nアカウントと全データが完全に削除されます。\n本当によろしいですか？')) return;
     try {
       await api('/users/me', { method:'DELETE' });
-      alert('アカウントを削除しました。ご利用ありがとうございました。');
-      logout();
+      alert('アカウントを削除しました。ご利用ありがとうございました。'); logout();
     } catch(e) { alert(e.message || '削除に失敗しました'); }
   });
 
@@ -252,9 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saveMsg) { saveMsg.style.color='var(--green)'; saveMsg.textContent='プロフィールを保存しました'; }
         setTimeout(() => { if (saveMsg) saveMsg.textContent=''; }, 3000);
         renderEquipGrid(); renderPreview();
-      } catch(e) {
-        if (saveMsg) { saveMsg.style.color='var(--red)'; saveMsg.textContent=e.message||'保存に失敗しました'; }
-      }
+      } catch(e) { if (saveMsg) { saveMsg.style.color='var(--red)'; saveMsg.textContent=e.message||'保存に失敗しました'; } }
     });
   }
 });
@@ -276,8 +251,7 @@ async function buildEquipUI(user) {
     if (bioCount) bioCount.textContent = `${bioInput.value.length} / 200`;
     bioInput.addEventListener('input', () => { if (bioCount) bioCount.textContent = `${bioInput.value.length} / 200`; });
   }
-  renderEquipGrid();
-  renderPreview();
+  renderEquipGrid(); renderPreview();
 }
 
 function renderEquipGrid() {
@@ -289,34 +263,25 @@ function renderEquipGrid() {
   if (!list) return;
   if (!invA.length && !invB.length) {
     list.innerHTML = '<p style="font-size:12px;color:var(--text-3);">まだ称号がありません。ゲーム関連ページでガチャを引いてください！</p>';
-    const badge = document.getElementById('badge-list');
-    if (badge) badge.innerHTML = '';
-    return;
+    const badge = document.getElementById('badge-list'); if (badge) badge.innerHTML = ''; return;
   }
   const mkBtn = (item, type, sel) => {
     const col = (typeof GACHA_RARITY !== 'undefined' && GACHA_RARITY[item.rarity]?.color) || '#888';
-    return `<button class="equip-btn ${sel === item.text ? 'equipped' : ''}"
-      data-text="${item.text.replace(/"/g,'&quot;')}" data-type="${type}" style="--item-color:${col}">
+    return `<button class="equip-btn ${sel===item.text?'equipped':''}" data-text="${item.text.replace(/"/g,'&quot;')}" data-type="${type}" style="--item-color:${col}">
       <span class="equip-rarity" style="color:${col}">${item.rarity}</span>
-      <span class="equip-name">${item.text}</span>
-    </button>`;
+      <span class="equip-name">${item.text}</span></button>`;
   };
   list.innerHTML = `
-    <div class="equip-group">
-      <div class="equip-group-label" style="color:var(--accent-2);">A（形容詞）</div>
-      <div class="equip-btn-wrap">${[...invA].sort(sort).map(i => mkBtn(i,'A',selectedTitleA)).join('')}</div>
-    </div>
-    <div class="equip-group" style="margin-top:10px;">
-      <div class="equip-group-label" style="color:var(--blue);">B（役割）</div>
-      <div class="equip-btn-wrap">${[...invB].sort(sort).map(i => mkBtn(i,'B',selectedTitleB)).join('')}</div>
-    </div>`;
-  const badge = document.getElementById('badge-list');
-  if (badge) badge.innerHTML = '';
+    <div class="equip-group"><div class="equip-group-label" style="color:var(--accent-2);">A（形容詞）</div>
+    <div class="equip-btn-wrap">${[...invA].sort(sort).map(i=>mkBtn(i,'A',selectedTitleA)).join('')}</div></div>
+    <div class="equip-group" style="margin-top:10px;"><div class="equip-group-label" style="color:var(--blue);">B（役割）</div>
+    <div class="equip-btn-wrap">${[...invB].sort(sort).map(i=>mkBtn(i,'B',selectedTitleB)).join('')}</div></div>`;
+  const badge = document.getElementById('badge-list'); if (badge) badge.innerHTML = '';
   document.querySelectorAll('.equip-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const { type, text } = btn.dataset;
-      if (type === 'A') selectedTitleA = selectedTitleA === text ? '' : text;
-      if (type === 'B') selectedTitleB = selectedTitleB === text ? '' : text;
+      if (type==='A') selectedTitleA = selectedTitleA===text?'':text;
+      if (type==='B') selectedTitleB = selectedTitleB===text?'':text;
       renderEquipGrid(); renderPreview();
     });
   });
@@ -326,13 +291,9 @@ function renderPreview() {
   const preview = document.getElementById('equip-preview');
   if (!preview) return;
   if (!selectedTitleA && !selectedTitleB) { preview.innerHTML = ''; return; }
-  const full = `${selectedTitleA || '???'} ${selectedTitleB || '???'}`;
-  preview.innerHTML = `<div class="equip-preview-inner">
-    <div class="equip-preview-label">プレビュー（二つ名）</div>
-    <div class="equip-preview-content">
-      <span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">${full}</span>
-    </div>
-  </div>`;
+  const full = `${selectedTitleA||'???'} ${selectedTitleB||'???'}`;
+  preview.innerHTML = `<div class="equip-preview-inner"><div class="equip-preview-label">プレビュー（二つ名）</div>
+    <div class="equip-preview-content"><span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">${full}</span></div></div>`;
 }
 
 init();
