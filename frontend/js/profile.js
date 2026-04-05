@@ -44,6 +44,8 @@ function render() {
   const c   = document.getElementById('crop-canvas');
   if (!c || !_img) return;
   const ctx = c.getContext('2d');
+  console.log('[render] canvas.width:', c.width, 'canvas.height:', c.height, 'CSS:', c.getBoundingClientRect().width, 'x', c.getBoundingClientRect().height);
+  console.log('[render] _ox:', _ox, '_oy:', _oy, '_scale:', _scale);
   // 背景
   ctx.fillStyle = '#0d1117';
   ctx.fillRect(0, 0, CSIZE, CSIZE);
@@ -68,7 +70,12 @@ function exportCrop() {
   const out = document.createElement('canvas');
   out.width = out.height = CSIZE;
   out.getContext('2d').drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
-  return out.toDataURL('image/jpeg', 0.9);
+  // デバッグ: 保存時の座標を確認
+  console.log('[exportCrop] _ox:', _ox, '_oy:', _oy, '_scale:', _scale, 'imgW:', _img.width, 'imgH:', _img.height);
+  const dataUrl = out.toDataURL('image/jpeg', 0.9);
+  // デバッグ: 保存画像をコンソールに表示
+  console.log('[exportCrop] result preview:', dataUrl.substring(0, 100));
+  return dataUrl;
 }
 
 function openCropModal(file) {
