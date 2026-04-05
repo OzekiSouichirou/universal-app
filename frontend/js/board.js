@@ -151,6 +151,7 @@ let _searchQuery = '';
 let _searchTimer = null;
 
 async function fetchPosts(q = '') {
+  avatars = await api('/users/avatars').catch(() => ({}));
   const path = q.trim() ? `/posts/?q=${encodeURIComponent(q.trim())}` : '/posts/';
   const posts = await api(path).catch(() => []);
   renderPosts(Array.isArray(posts) ? posts : []);
