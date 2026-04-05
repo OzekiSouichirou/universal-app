@@ -131,10 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const out = document.createElement('canvas');
     out.width = out.height = 256;
     const ctx = out.getContext('2d');
-    ctx.beginPath();
-    ctx.arc(128, 128, 128, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(src, 0, 0);
+    // 円形クリップなしでそのまま書き出し（avatar-previewのborder-radius:50%で円形表示）
+    ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, 256, 256);
     const dataUrl = out.toDataURL('image/jpeg', 0.85);
     const msg     = document.getElementById('avatar-msg');
     if (dataUrl.length > 2 * 1024 * 1024) {
