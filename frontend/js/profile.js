@@ -15,7 +15,11 @@ async function init() {
 
 function showAvatar(dataUrl) {
   const img = document.getElementById('avatar-img');
-  img.src = dataUrl; img.style.display = 'block';
+  img.src = dataUrl;
+  img.style.display = 'block';
+  img.style.width   = '100%';
+  img.style.height  = '100%';
+  img.style.objectFit = 'cover';
   document.getElementById('avatar-initial').style.display = 'none';
   document.getElementById('avatar-delete-btn').style.display = 'inline-block';
 }
