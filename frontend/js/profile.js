@@ -16,10 +16,7 @@ async function init() {
 function showAvatar(dataUrl) {
   const img = document.getElementById('avatar-img');
   img.src = dataUrl;
-  img.style.display = 'block';
-  img.style.width   = '100%';
-  img.style.height  = '100%';
-  img.style.objectFit = 'cover';
+  img.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover;';
   document.getElementById('avatar-initial').style.display = 'none';
   document.getElementById('avatar-delete-btn').style.display = 'inline-block';
 }
@@ -32,102 +29,112 @@ function hideAvatar() {
 }
 
 // ============================================================
-// アイコントリミング（canvas ドラッグ方式）
+// アイコントリミング
+// 状態: 画像のcanvas上での描画位置(ox,oy)とスケールのみで管理
+// ox,oy = canvas上での画像左上座標
 // ============================================================
-let _cropImg   = null;
-let _cropScale = 1;
-let _cropX     = 0;
-let _cropY     = 0;
-let _dragStart = null;
+let _img   = null;
+let _scale = 1;
+let _ox    = 0;   // 画像左上のcanvas上X座標
+let _oy    = 0;   // 画像左上のcanvas上Y座標
+let _drag  = null;
+
+const CANVAS_SIZE = 256;
+
+function render() {
+  const canvas = document.getElementById('crop-canvas');
+  if (!canvas || !_img) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
+  // 円形ガイド
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE/2 - 2, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(91,110,245,0.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.rect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.arc(CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE/2 - 2, 0, Math.PI * 2, true);
+  ctx.fill();
+  ctx.restore();
+}
+
+function exportCrop() {
+  // renderと同じ座標で画像のみ書き出し（ガイドなし）
+  const out = document.createElement('canvas');
+  out.width = out.height = CANVAS_SIZE;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
+  return out.toDataURL('image/jpeg', 0.9);
+}
 
 function openCropModal(file) {
   const url = URL.createObjectURL(file);
-  const img  = new Image();
+  const img = new Image();
   img.onload = () => {
-    _cropImg = img;
-    _cropX   = 0;
-    _cropY   = 0;
-    // 画像がcanvas(256px)に収まる初期スケールを自動計算
-    const canvas = document.getElementById('crop-canvas');
-    const size   = canvas ? canvas.width : 256;
-    _cropScale   = Math.max(size / img.width, size / img.height);
-    // スライダーの初期値（100=1倍基準ではなく実スケールに合わせる）
-    document.getElementById('crop-scale').value = Math.round(_cropScale * 100);
-    drawCrop();
+    _img   = img;
+    // 初期スケール: 画像がcanvasにちょうど収まるサイズ
+    _scale = Math.max(CANVAS_SIZE / img.width, CANVAS_SIZE / img.height);
+    // 初期位置: 画像をcanvas中央に配置
+    _ox = (CANVAS_SIZE - img.width  * _scale) / 2;
+    _oy = (CANVAS_SIZE - img.height * _scale) / 2;
+    // スライダー: 初期値をfitスケール×100に設定
+    const slider = document.getElementById('crop-scale');
+    slider.min   = Math.round(_scale * 50);   // fitの50%
+    slider.max   = Math.round(_scale * 400);  // fitの400%
+    slider.value = Math.round(_scale * 100);
+    render();
     document.getElementById('crop-modal').classList.remove('hidden');
     URL.revokeObjectURL(url);
   };
   img.src = url;
 }
 
-function drawCrop() {
-  const canvas = document.getElementById('crop-canvas');
-  if (!canvas || !_cropImg) return;
-  const ctx  = canvas.getContext('2d');
-  const size = canvas.width;
-  ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = '#0d1117';
-  ctx.fillRect(0, 0, size, size);
-  const w = _cropImg.width  * _cropScale;
-  const h = _cropImg.height * _cropScale;
-  ctx.drawImage(_cropImg, size/2 + _cropX - w/2, size/2 + _cropY - h/2, w, h);
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(91,110,245,0.8)';
-  ctx.lineWidth   = 2;
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.rect(0, 0, size, size);
-  ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2, true);
-  ctx.fill();
-  ctx.restore();
-}
-
-// ============================================================
-// DOMContentLoaded後にイベント登録
-// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('crop-canvas');
 
   // ズームスライダー
   document.getElementById('crop-scale').addEventListener('input', e => {
-    _cropScale = parseInt(e.target.value) / 100;
-    drawCrop();
+    const newScale = parseInt(e.target.value) / 100;
+    // 画像の中心を固定してズーム
+    const cx = _ox + (_img.width  * _scale) / 2;
+    const cy = _oy + (_img.height * _scale) / 2;
+    _scale = newScale;
+    _ox = cx - (_img.width  * _scale) / 2;
+    _oy = cy - (_img.height * _scale) / 2;
+    render();
   });
 
-  // ドラッグ
-  const canvas = document.getElementById('crop-canvas');
-
-  function getPos(e) {
-    const r    = canvas.getBoundingClientRect();
-    const src  = e.touches ? e.touches[0] : e;
-    // CSS表示サイズとcanvas内部サイズの比率を適用
-    const scaleX = canvas.width  / r.width;
-    const scaleY = canvas.height / r.height;
+  // ドラッグ（CSS座標→canvas座標に変換）
+  function clientToCanvas(e) {
+    const r = canvas.getBoundingClientRect();
+    const s = e.touches ? e.touches[0] : e;
     return {
-      x: (src.clientX - r.left) * scaleX,
-      y: (src.clientY - r.top)  * scaleY
+      x: (s.clientX - r.left) * (CANVAS_SIZE / r.width),
+      y: (s.clientY - r.top)  * (CANVAS_SIZE / r.height)
     };
   }
 
-  canvas.addEventListener('mousedown',  e => { _dragStart = getPos(e); });
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); _dragStart = getPos(e); }, { passive: false });
-  canvas.addEventListener('mousemove', e => {
-    if (!_dragStart) return;
-    const p = getPos(e);
-    _cropX += p.x - _dragStart.x; _cropY += p.y - _dragStart.y;
-    _dragStart = p; drawCrop();
-  });
-  canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if (!_dragStart) return;
-    const p = getPos(e);
-    _cropX += p.x - _dragStart.x; _cropY += p.y - _dragStart.y;
-    _dragStart = p; drawCrop();
-  }, { passive: false });
-  canvas.addEventListener('mouseup',    () => { _dragStart = null; });
-  canvas.addEventListener('touchend',   () => { _dragStart = null; });
-  canvas.addEventListener('mouseleave', () => { _dragStart = null; });
+  canvas.addEventListener('mousedown',  e => { _drag = clientToCanvas(e); });
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); _drag = clientToCanvas(e); }, { passive: false });
+
+  function onMove(e) {
+    if (!_drag) return;
+    const p = clientToCanvas(e);
+    _ox += p.x - _drag.x;
+    _oy += p.y - _drag.y;
+    _drag = p;
+    render();
+  }
+  canvas.addEventListener('mousemove', onMove);
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e); }, { passive: false });
+  canvas.addEventListener('mouseup',    () => { _drag = null; });
+  canvas.addEventListener('touchend',   () => { _drag = null; });
+  canvas.addEventListener('mouseleave', () => { _drag = null; });
 
   // キャンセル
   document.getElementById('crop-cancel-btn').addEventListener('click', () => {
@@ -137,15 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 保存
   document.getElementById('crop-save-btn').addEventListener('click', async () => {
-    // crop-canvasのオーバーレイを含まず、画像だけを書き出す
-    const out = document.createElement('canvas');
-    out.width = out.height = 256;
-    const ctx = out.getContext('2d');
-    const size = 256;
-    const w = _cropImg.width  * _cropScale;
-    const h = _cropImg.height * _cropScale;
-    ctx.drawImage(_cropImg, size/2 + _cropX - w/2, size/2 + _cropY - h/2, w, h);
-    const dataUrl = out.toDataURL('image/jpeg', 0.85);
+    const dataUrl = exportCrop();
     const msg     = document.getElementById('avatar-msg');
     if (dataUrl.length > 2 * 1024 * 1024) {
       msg.style.color = '#f0476c'; msg.textContent = '画像が大きすぎます。ズームを下げてください'; return;
