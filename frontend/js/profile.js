@@ -44,11 +44,15 @@ function openCropModal(file) {
   const url = URL.createObjectURL(file);
   const img  = new Image();
   img.onload = () => {
-    _cropImg   = img;
-    _cropScale = 1;
-    _cropX     = 0;
-    _cropY     = 0;
-    document.getElementById('crop-scale').value = 100;
+    _cropImg = img;
+    _cropX   = 0;
+    _cropY   = 0;
+    // 画像がcanvas(256px)に収まる初期スケールを自動計算
+    const canvas = document.getElementById('crop-canvas');
+    const size   = canvas ? canvas.width : 256;
+    _cropScale   = Math.max(size / img.width, size / img.height);
+    // スライダーの初期値（100=1倍基準ではなく実スケールに合わせる）
+    document.getElementById('crop-scale').value = Math.round(_cropScale * 100);
     drawCrop();
     document.getElementById('crop-modal').classList.remove('hidden');
     URL.revokeObjectURL(url);
@@ -95,9 +99,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('crop-canvas');
 
   function getPos(e) {
-    const r   = canvas.getBoundingClientRect();
-    const src = e.touches ? e.touches[0] : e;
-    return { x: src.clientX - r.left, y: src.clientY - r.top };
+    const r    = canvas.getBoundingClientRect();
+    const src  = e.touches ? e.touches[0] : e;
+    // CSS表示サイズとcanvas内部サイズの比率を適用
+    const scaleX = canvas.width  / r.width;
+    const scaleY = canvas.height / r.height;
+    return {
+      x: (src.clientX - r.left) * scaleX,
+      y: (src.clientY - r.top)  * scaleY
+    };
   }
 
   canvas.addEventListener('mousedown',  e => { _dragStart = getPos(e); });
