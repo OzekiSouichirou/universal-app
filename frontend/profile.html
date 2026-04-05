@@ -109,19 +109,17 @@
   </div>
   <!-- アイコントリミングモーダル -->
   <div id="crop-modal" class="hidden">
-    <div class="crop-overlay">
-      <div class="crop-box">
-        <div class="crop-title">アイコンを調整</div>
-        <canvas id="crop-canvas" width="256" height="256"></canvas>
-        <div class="crop-controls">
-          <label class="crop-scale-label">ズーム</label>
-          <input type="range" id="crop-scale" min="10" max="500" value="100">
-        </div>
-        <p class="crop-hint">ドラッグで位置を調整できます</p>
-        <div class="crop-actions">
-          <button class="btn-secondary" id="crop-cancel-btn">キャンセル</button>
-          <button class="btn-primary" id="crop-save-btn">保存</button>
-        </div>
+    <div class="crop-box">
+      <div class="crop-title">アイコンを調整</div>
+      <canvas id="crop-canvas" width="256" height="256"></canvas>
+      <div class="crop-controls">
+        <label class="crop-scale-label">ズーム</label>
+        <input type="range" id="crop-scale" min="10" max="500" value="100">
+      </div>
+      <p class="crop-hint">ドラッグで位置を調整できます</p>
+      <div class="crop-actions">
+        <button class="btn-secondary" id="crop-cancel-btn">キャンセル</button>
+        <button class="btn-primary" id="crop-save-btn">保存</button>
       </div>
     </div>
   </div>

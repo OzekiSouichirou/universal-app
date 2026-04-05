@@ -3390,6 +3390,18 @@ body {
 /* ============================================================
    アイコントリミングモーダル
    ============================================================ */
+/* crop-modal本体をposition:fixedに */
+#crop-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+#crop-modal.hidden { display: none !important; }
 .crop-overlay {
   position: fixed;
   inset: 0;
@@ -3420,10 +3432,13 @@ body {
 #crop-canvas {
   border-radius: 50%;
   cursor: grab;
-  border: 2px solid var(--border);
+  border: 2px solid var(--accent);
   touch-action: none;
   width: 256px;
   height: 256px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  display: block;
 }
 #crop-canvas:active { cursor: grabbing; }
 .crop-controls {

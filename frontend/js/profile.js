@@ -44,29 +44,32 @@ const CANVAS_SIZE = 256;
 function render() {
   const canvas = document.getElementById('crop-canvas');
   if (!canvas || !_img) return;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  const ctx  = canvas.getContext('2d');
+  const size = canvas.width;
+  ctx.clearRect(0, 0, size, size);
   ctx.fillStyle = '#0d1117';
-  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.fillRect(0, 0, size, size);
   ctx.drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
   // 円形ガイド
   ctx.save();
   ctx.beginPath();
-  ctx.arc(CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE/2 - 2, 0, Math.PI * 2);
+  ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(91,110,245,0.9)';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.rect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  ctx.arc(CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE/2 - 2, 0, Math.PI * 2, true);
+  ctx.rect(0, 0, size, size);
+  ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2, true);
   ctx.fill();
   ctx.restore();
 }
 
 function exportCrop() {
-  // renderと同じ座標で画像のみ書き出し（ガイドなし）
+  const canvas = document.getElementById('crop-canvas');
+  const size   = canvas.width;
+  // renderと全く同じ座標・スケールで画像のみ書き出し（ガイドなし）
   const out = document.createElement('canvas');
-  out.width = out.height = CANVAS_SIZE;
+  out.width = out.height = size;
   const ctx = out.getContext('2d');
   ctx.drawImage(_img, _ox, _oy, _img.width * _scale, _img.height * _scale);
   return out.toDataURL('image/jpeg', 0.9);
@@ -76,20 +79,36 @@ function openCropModal(file) {
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => {
-    _img   = img;
-    // 初期スケール: 画像がcanvasにちょうど収まるサイズ
-    _scale = Math.max(CANVAS_SIZE / img.width, CANVAS_SIZE / img.height);
-    // 初期位置: 画像をcanvas中央に配置
-    _ox = (CANVAS_SIZE - img.width  * _scale) / 2;
-    _oy = (CANVAS_SIZE - img.height * _scale) / 2;
-    // スライダー: 初期値をfitスケール×100に設定
-    const slider = document.getElementById('crop-scale');
-    slider.min   = Math.round(_scale * 50);   // fitの50%
-    slider.max   = Math.round(_scale * 400);  // fitの400%
-    slider.value = Math.round(_scale * 100);
-    render();
-    document.getElementById('crop-modal').classList.remove('hidden');
-    URL.revokeObjectURL(url);
+    _img = img;
+
+    // canvasの実際の表示サイズを取得してHTML属性に反映
+    // → getBoundingClientRectで取得するにはモーダルを先に表示する必要がある
+    const modal = document.getElementById('crop-modal');
+    modal.classList.remove('hidden');
+
+    // モーダル表示後にcanvasサイズを確定
+    requestAnimationFrame(() => {
+      const canvas  = document.getElementById('crop-canvas');
+      const rect    = canvas.getBoundingClientRect();
+      const dpr     = window.devicePixelRatio || 1;
+      // canvasの内部解像度をCSS表示サイズ×dprに合わせる
+      // ただし最大256pxに制限（サイズ大きすぎると容量オーバー）
+      const size    = Math.min(Math.round(rect.width), 256);
+      canvas.width  = size;
+      canvas.height = size;
+
+      _scale = Math.max(size / img.width, size / img.height);
+      _ox    = (size - img.width  * _scale) / 2;
+      _oy    = (size - img.height * _scale) / 2;
+
+      const slider = document.getElementById('crop-scale');
+      slider.min   = Math.round(_scale * 50);
+      slider.max   = Math.round(_scale * 400);
+      slider.value = Math.round(_scale * 100);
+
+      render();
+      URL.revokeObjectURL(url);
+    });
   };
   img.src = url;
 }
@@ -97,10 +116,9 @@ function openCropModal(file) {
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('crop-canvas');
 
-  // ズームスライダー
   document.getElementById('crop-scale').addEventListener('input', e => {
     const newScale = parseInt(e.target.value) / 100;
-    // 画像の中心を固定してズーム
+    // 画像の中心座標を保持したままスケール変更
     const cx = _ox + (_img.width  * _scale) / 2;
     const cy = _oy + (_img.height * _scale) / 2;
     _scale = newScale;
@@ -114,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const r = canvas.getBoundingClientRect();
     const s = e.touches ? e.touches[0] : e;
     return {
-      x: (s.clientX - r.left) * (CANVAS_SIZE / r.width),
-      y: (s.clientY - r.top)  * (CANVAS_SIZE / r.height)
+      x: (s.clientX - r.left) * (canvas.width  / r.width),
+      y: (s.clientY - r.top)  * (canvas.height / r.height)
     };
   }
 
