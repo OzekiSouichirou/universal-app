@@ -1144,9 +1144,9 @@ body {
 
 .avatar-preview img {
   width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
+  height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .avatar-actions {
