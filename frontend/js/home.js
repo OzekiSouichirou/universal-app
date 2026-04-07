@@ -114,6 +114,10 @@ async function loadMissions() {
     const entry    = me?.post_trend?.find(t => t.date === todayLabel);
     setMission('post', !!(entry?.count > 0));
     const cal = await api('/calendar/').catch(() => []); const hasCalToday = Array.isArray(cal) && cal.some(e => e.created_at && e.created_at.startsWith(todayStr)); setMission('calendar', hasCalToday);
+    const grades = await api('/grades/').catch(() => []);
+    setMission('grade', Array.isArray(grades) && grades.some(g => g.date === todayStr));
+    const tasks = await api('/tasks/').catch(() => []);
+    setMission('task', Array.isArray(tasks) && tasks.length > 0);
   } catch(e) { console.warn('loadMissions error:', e); }
 }
 
@@ -250,10 +254,7 @@ function saveWidgetOrder() {
 
 document.addEventListener('DOMContentLoaded', initWidgetSort);
 
-
-// ============================================================
-// 通知リアルタイムポーリング（30秒ごと）
-// ============================================================
+// 通知リアルタイムポーリング（30秒）
 let _lastNotifCount = 0;
 async function pollNotifications() {
   try {
@@ -262,7 +263,7 @@ async function pollNotifications() {
     const unread = notifs.filter(n => !n.is_read).length;
     if (unread > _lastNotifCount && _lastNotifCount >= 0) {
       const diff = unread - _lastNotifCount;
-      if (diff > 0 && _lastNotifCount > 0) toast(`${diff}件の新しい通知があります`, 'info');
+      if (diff > 0 && _lastNotifCount > 0) toast(`${diff}件の新しい通知があります`);
     }
     _lastNotifCount = unread;
   } catch(_) {}

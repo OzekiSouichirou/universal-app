@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix - 掲示板</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body>
   <div id="page-spinner"><div class="spinner-ring"></div><p class="spinner-text">読み込み中...</p></div>
@@ -18,8 +20,7 @@
           <li class="active"><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
           <li><a href="timetable.html">時間割</a></li>
-          <li><a href="tasks.html">課題管理</a></li>
-          <li><a href="grades.html">成績管理</a></li>
+          <li><a href="study.html">学習管理</a></li>
           <li><a href="game.html">ゲーム関連</a></li>
           <li><a href="profile.html">プロフィール</a></li>
           <li><a href="feedback.html">ご意見箱</a></li>
@@ -53,22 +54,10 @@
           <div id="image-preview"></div>
           <div class="post-form-footer">
             <span id="char-count">0 / 500</span>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <select id="post-tag-select" style="background:var(--bg-sub);color:var(--text-2);border:1px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:12px;">
-                <option value="">タグなし</option>
-                <option value="数学">数学</option>
-                <option value="英語">英語</option>
-                <option value="物理">物理</option>
-                <option value="化学">化学</option>
-                <option value="生物">生物</option>
-                <option value="歴史">歴史</option>
-                <option value="国語">国語</option>
-                <option value="情報">情報</option>
-                <option value="体育">体育</option>
-                <option value="その他">その他</option>
-              </select>
+            <div style="display:flex;gap:8px;align-items:center;">
               <button id="image-attach-btn" class="btn-secondary btn-icon" title="画像を添付">+</button>
               <input type="file" id="image-input" accept="image/*" style="display:none;">
+              <select id="post-tag-select" style="background:var(--bg-sub);color:var(--text-2);border:1px solid var(--border);border-radius:var(--r);padding:5px 8px;font-size:12px;"><option value="">タグなし</option><option value="数学">数学</option><option value="英語">英語</option><option value="物理">物理</option><option value="化学">化学</option><option value="生物">生物</option><option value="歴史">歴史</option><option value="国語">国語</option><option value="情報">情報</option><option value="体育">体育</option><option value="その他">その他</option></select>
               <button id="post-btn" class="btn-primary">投稿する</button>
             </div>
           </div>
@@ -94,9 +83,9 @@
   <script src="js/board.js?v=17"></script>
   <nav class="bottom-nav">
     <a href="home.html"><span>🏠</span><span>ホーム</span></a>
-    <a href="board.html"><span>📋</span><span>掲示板</span></a>
+    <a href="board.html" class="active"><span>📋</span><span>掲示板</span></a>
     <a href="calendar.html"><span>📅</span><span>カレンダー</span></a>
-    <a href="tasks.html"><span>✅</span><span>課題</span></a>
+    <a href="study.html"><span>📚</span><span>学習</span></a>
     <a href="profile.html"><span>👤</span><span>プロフィール</span></a>
   </nav>
 </body>

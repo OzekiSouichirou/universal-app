@@ -3565,14 +3565,7 @@ body {
    ホームウィジェット並べ替え
    ============================================================ */
 .home-widget {
-  cursor: grab;
-  user-select: none;
-  transition: opacity 0.2s, transform 0.15s;
-}
-.home-widget:active { cursor: grabbing; }
-.home-widget.dragging {
-  opacity: 0.4;
-  transform: scale(0.98);
+  transition: opacity 0.2s;
 }
 
 /* ============================================================
@@ -3675,7 +3668,7 @@ body {
     background: var(--surface);
     border-top: 1px solid var(--border);
     z-index: 100;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
   }
   .bottom-nav a {
     flex: 1;
@@ -3683,18 +3676,19 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8px 4px 6px;
+    padding: 10px 4px 8px;
     font-size: 10px;
     color: var(--text-3);
     text-decoration: none;
     gap: 3px;
     transition: color var(--t);
+    min-height: 56px;
   }
   .bottom-nav a.active,
   .bottom-nav a:hover { color: var(--accent); }
-  .bottom-nav a span:first-child { font-size: 20px; line-height: 1; }
+  .bottom-nav a span:first-child { font-size: 22px; line-height: 1; }
   /* ボトムナビ分のパディング */
-  .main-content { padding-bottom: 64px; }
+  .main-content { padding-bottom: 80px; }
 }
 
 /* ============================================================
@@ -3726,3 +3720,31 @@ body {
 }
 .bookmark-btn:hover { opacity: 0.8; }
 .bookmark-btn.bookmarked { opacity: 1; }
+
+/* ============================================================
+   学習管理タブ
+   ============================================================ */
+.study-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.study-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--t);
+  margin-bottom: -1px;
+}
+.study-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.study-tab:hover { color: var(--text); }
