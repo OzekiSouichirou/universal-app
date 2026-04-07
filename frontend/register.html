@@ -5,20 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix - 新規登録</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <div class="login-wrapper">
     <div class="login-box">
+      <img src="icons/icon-192.png" alt="Polonix" class="login-icon">
       <h1>Polonix</h1>
-      <p>v0.7.5-β | 新規アカウント登録</p>
-      <input type="text" id="username" placeholder="ユーザー名（3文字以上）">
-      <input type="password" id="password" placeholder="パスワード（6文字以上）">
-      <input type="password" id="confirm-password" placeholder="パスワード（確認）">
+      <p>v0.9.4-β ｜ 新規アカウント登録</p>
+      <input type="text" id="username" placeholder="ユーザー名（3文字以上）" autocomplete="username">
+      <input type="password" id="password" placeholder="パスワード（6文字以上）" autocomplete="new-password">
+      <input type="password" id="confirm-password" placeholder="パスワード（確認）" autocomplete="new-password">
       <button id="register-btn">登録する</button>
       <p id="error-msg"></p>
       <p class="login-link">アカウントをお持ちの方は <a href="index.html">ログイン</a></p>
     </div>
   </div>
-  <script src="js/register.js"></script>
+  <script src="js/api.js?v=16"></script>
+  <script src="js/register.js?v=16"></script>
 </body>
 </html>

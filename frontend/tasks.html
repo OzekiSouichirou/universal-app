@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - 課題管理</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+</head>
+<body>
+  <div id="page-spinner"><div class="spinner-ring"></div><p class="spinner-text">読み込み中...</p></div>
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.4-β</span></div>
+      <nav>
+        <ul>
+          <li><a href="home.html">ホーム</a></li>
+          <li><a href="board.html">掲示板</a></li>
+          <li><a href="calendar.html">カレンダー</a></li>
+          <li><a href="timetable.html">時間割</a></li>
+          <li class="active"><a href="tasks.html">課題管理</a></li>
+          <li><a href="grades.html">成績管理</a></li>
+          <li><a href="game.html">ゲーム関連</a></li>
+          <li><a href="profile.html">プロフィール</a></li>
+          <li><a href="feedback.html">ご意見箱</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+        <button id="pwa-install-btn">📲 アプリをインストール</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <h2>課題管理</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+
+        <div class="db-card" style="margin-bottom:16px;">
+          <div class="db-card-title" style="margin-bottom:12px;">課題を追加</div>
+          <input type="text" id="task-title" placeholder="課題タイトル（必須）" maxlength="100">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+            <input type="text" id="task-subject" placeholder="科目名（任意）" maxlength="50">
+            <input type="date" id="task-due">
+            <select id="task-priority">
+              <option value="high">🔴 高</option>
+              <option value="medium" selected>🟡 中</option>
+              <option value="low">🟢 低</option>
+            </select>
+          </div>
+          <input type="text" id="task-memo" placeholder="メモ（任意）" maxlength="100" style="margin-top:10px;">
+          <button id="task-add-btn" class="btn-primary" style="margin-top:12px;width:100%;">追加</button>
+          <p id="task-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="task-filter-btn active" data-status="all">すべて</button>
+          <button class="task-filter-btn" data-status="pending">未着手</button>
+          <button class="task-filter-btn" data-status="in_progress">進行中</button>
+          <button class="task-filter-btn" data-status="done">完了</button>
+        </div>
+
+        <div id="tasks-list"></div>
+
+      </section>
+    </main>
+  </div>
+
+  <div id="task-edit-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3>課題を編集</h3>
+      <input type="hidden" id="edit-task-id">
+      <input type="text" id="edit-task-title" placeholder="タイトル">
+      <input type="text" id="edit-task-subject" placeholder="科目名">
+      <input type="date" id="edit-task-due">
+      <select id="edit-task-priority">
+        <option value="high">🔴 高</option>
+        <option value="medium">🟡 中</option>
+        <option value="low">🟢 低</option>
+      </select>
+      <input type="text" id="edit-task-memo" placeholder="メモ">
+      <div class="modal-buttons">
+        <button id="edit-task-save-btn" class="btn-primary">保存</button>
+        <button id="edit-task-cancel-btn" class="btn-secondary">キャンセル</button>
+        <button id="edit-task-delete-btn" class="btn-danger">削除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js?v=16"></script>
+  <script src="js/auth.js?v=16"></script>
+  <script src="js/tasks.js?v=16"></script>
+</body>
+</html>

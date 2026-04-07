@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polonix - 成績管理</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="page-spinner"><div class="spinner-ring"></div><p class="spinner-text">読み込み中...</p></div>
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.4-β</span></div>
+      <nav>
+        <ul>
+          <li><a href="home.html">ホーム</a></li>
+          <li><a href="board.html">掲示板</a></li>
+          <li><a href="calendar.html">カレンダー</a></li>
+          <li><a href="timetable.html">時間割</a></li>
+          <li><a href="tasks.html">課題管理</a></li>
+          <li class="active"><a href="grades.html">成績管理</a></li>
+          <li><a href="game.html">ゲーム関連</a></li>
+          <li><a href="profile.html">プロフィール</a></li>
+          <li><a href="feedback.html">ご意見箱</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn">ログアウト</button>
+        <button id="pwa-install-btn">📲 アプリをインストール</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
+        <h2>成績管理</h2>
+        <span id="current-user"></span>
+      </header>
+      <section class="content-area">
+
+        <div class="db-card" style="margin-bottom:16px;">
+          <div class="db-card-title" style="margin-bottom:12px;">成績を追加</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <input type="text" id="grade-subject" placeholder="科目名" maxlength="50">
+            <input type="date" id="grade-date">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+            <input type="number" id="grade-score" placeholder="得点" min="0" step="0.1">
+            <input type="number" id="grade-max" placeholder="満点" min="1" step="0.1" value="100">
+            <select id="grade-type">
+              <option value="exam">試験</option>
+              <option value="quiz">小テスト</option>
+              <option value="report">レポート</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <input type="text" id="grade-memo" placeholder="メモ（任意）" maxlength="100" style="margin-top:10px;">
+          <button id="grade-add-btn" class="btn-primary" style="margin-top:12px;width:100%;">追加</button>
+          <p id="grade-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
+        </div>
+
+        <div class="db-card" style="margin-bottom:16px;">
+          <div class="db-card-title" style="margin-bottom:12px;">科目別平均</div>
+          <canvas id="grades-chart" height="200"></canvas>
+        </div>
+
+        <div class="db-card">
+          <div class="db-card-title" style="margin-bottom:12px;">成績一覧</div>
+          <div id="grades-list"></div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <div id="grade-edit-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3>成績を編集</h3>
+      <input type="hidden" id="edit-grade-id">
+      <input type="text" id="edit-grade-subject" placeholder="科目名">
+      <input type="date" id="edit-grade-date">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <input type="number" id="edit-grade-score" placeholder="得点" step="0.1">
+        <input type="number" id="edit-grade-max" placeholder="満点" step="0.1">
+      </div>
+      <select id="edit-grade-type">
+        <option value="exam">試験</option>
+        <option value="quiz">小テスト</option>
+        <option value="report">レポート</option>
+        <option value="other">その他</option>
+      </select>
+      <input type="text" id="edit-grade-memo" placeholder="メモ">
+      <div class="modal-buttons">
+        <button id="edit-grade-save-btn" class="btn-primary">保存</button>
+        <button id="edit-grade-cancel-btn" class="btn-secondary">キャンセル</button>
+        <button id="edit-grade-delete-btn" class="btn-danger">削除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js?v=16"></script>
+  <script src="js/auth.js?v=16"></script>
+  <script src="js/grades.js?v=16"></script>
+</body>
+</html>

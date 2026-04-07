@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix - ホーム</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#5b6ef5">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -14,13 +16,15 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.3-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.4-β</span></div>
       <nav>
         <ul>
           <li class="active"><a href="home.html">ホーム</a></li>
           <li><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
           <li><a href="timetable.html">時間割</a></li>
+          <li><a href="tasks.html">課題管理</a></li>
+          <li><a href="grades.html">成績管理</a></li>
           <li><a href="game.html">ゲーム関連</a></li>
           <li><a href="profile.html">プロフィール</a></li>
           <li><a href="feedback.html">ご意見箱</a></li>
@@ -57,64 +61,77 @@
           </div>
         </div>
 
-        <div id="fortune-box" class="db-card" style="display:none;margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:22px;">🎋</span>
-            <div>
-              <span id="fortune-rank" style="font-size:16px;font-weight:700;"></span>
-              <span id="fortune-xp" style="font-size:11px;margin-left:8px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:8px;display:none;"></span>
-            </div>
-          </div>
-          <p id="fortune-msg" style="margin-top:6px;font-size:13px;color:var(--text-2);"></p>
-        </div>
+        <!-- 並べ替え可能なウィジェットコンテナ -->
+        <div id="widget-container">
 
-        <div class="db-card" id="mission-box" style="margin-bottom:12px;">
-          <div class="db-card-title" style="margin-bottom:10px;">デイリーミッション</div>
-          <div id="mission-list" style="display:flex;flex-direction:column;gap:8px;">
-            <div class="mission-item" id="mission-post">
-              <span class="mission-icon">📝</span>
-              <span class="mission-label">今日投稿する</span>
-              <span class="mission-xp">+10 XP</span>
-              <span class="mission-status" id="ms-post">未達成</span>
-            </div>
-            <div class="mission-item" id="mission-calendar">
-              <span class="mission-icon">📅</span>
-              <span class="mission-label">カレンダーにイベントを追加</span>
-              <span class="mission-xp">+5 XP</span>
-              <span class="mission-status" id="ms-calendar">未達成</span>
-            </div>
-            <div class="mission-item" id="mission-login">
-              <span class="mission-icon">✅</span>
-              <span class="mission-label">ログインボーナス</span>
-              <span class="mission-xp">+5 XP</span>
-              <span class="mission-status" id="ms-login">達成済み</span>
+          <div class="home-widget" data-widget="fortune" draggable="true">
+            <div id="fortune-box" class="db-card" style="display:none;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:22px;">🎋</span>
+                <div>
+                  <span id="fortune-rank" style="font-size:16px;font-weight:700;"></span>
+                  <span id="fortune-xp" style="font-size:11px;margin-left:8px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:8px;display:none;"></span>
+                </div>
+              </div>
+              <p id="fortune-msg" style="margin-top:6px;font-size:13px;color:var(--text-2);"></p>
             </div>
           </div>
-        </div>
 
-        <div class="home-grid">
-          <div class="db-card">
-            <div class="db-card-title">今日・明日の予定</div>
-            <div id="home-today-events" class="db-list"></div>
+          <div class="home-widget" data-widget="mission" draggable="true">
+            <div class="db-card" id="mission-box">
+              <div class="db-card-title" style="margin-bottom:10px;">デイリーミッション</div>
+              <div id="mission-list" style="display:flex;flex-direction:column;gap:8px;">
+                <div class="mission-item" id="mission-post">
+                  <span class="mission-icon">📝</span>
+                  <span class="mission-label">今日投稿する</span>
+                  <span class="mission-xp">+10 XP</span>
+                  <span class="mission-status" id="ms-post">未達成</span>
+                </div>
+                <div class="mission-item" id="mission-calendar">
+                  <span class="mission-icon">📅</span>
+                  <span class="mission-label">カレンダーにイベントを追加</span>
+                  <span class="mission-xp">+5 XP</span>
+                  <span class="mission-status" id="ms-calendar">未達成</span>
+                </div>
+                <div class="mission-item" id="mission-login">
+                  <span class="mission-icon">✅</span>
+                  <span class="mission-label">ログインボーナス</span>
+                  <span class="mission-xp">+5 XP</span>
+                  <span class="mission-status" id="ms-login">達成済み</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="db-card">
-            <div class="db-card-title">今日の時間割</div>
-            <div id="home-today-tt" class="db-list"></div>
-          </div>
-        </div>
 
-        <div class="notice-area">
-          <h4>お知らせ</h4>
-          <ul id="notice-list">
-            <li class="notice-item">現在お知らせはありません</li>
-          </ul>
+          <div class="home-widget" data-widget="schedule" draggable="true">
+            <div class="home-grid">
+              <div class="db-card">
+                <div class="db-card-title">今日・明日の予定</div>
+                <div id="home-today-events" class="db-list"></div>
+              </div>
+              <div class="db-card">
+                <div class="db-card-title">今日の時間割</div>
+                <div id="home-today-tt" class="db-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-widget" data-widget="notices" draggable="true">
+            <div class="notice-area">
+              <h4>お知らせ</h4>
+              <ul id="notice-list">
+                <li class="notice-item">現在お知らせはありません</li>
+              </ul>
+            </div>
+          </div>
+
         </div>
 
       </section>
     </main>
   </div>
-  <script src="js/api.js?v=15"></script>
-  <script src="js/auth.js?v=15"></script>
-  <script src="js/home.js?v=15"></script>
+  <script src="js/api.js?v=16"></script>
+  <script src="js/auth.js?v=16"></script>
+  <script src="js/home.js?v=16"></script>
 </body>
 </html>

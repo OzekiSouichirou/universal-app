@@ -160,6 +160,35 @@ def create_tables():
         is_active BOOLEAN NOT NULL DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS grades (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(30) NOT NULL,
+        subject VARCHAR(100) NOT NULL,
+        score NUMERIC(5,1) NOT NULL,
+        max_score NUMERIC(5,1) NOT NULL DEFAULT 100,
+        grade_type VARCHAR(20) NOT NULL DEFAULT 'exam',
+        memo TEXT,
+        date VARCHAR(10) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(30) NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        subject VARCHAR(100),
+        due_date VARCHAR(10) NOT NULL,
+        priority VARCHAR(10) NOT NULL DEFAULT 'medium',
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        memo TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS bookmarks (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(30) NOT NULL,
+        post_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(username, post_id)
+    );
     """
     try:
         with engine.connect() as conn:
@@ -326,6 +355,13 @@ app.include_router(calendar_router,  prefix="/calendar",  tags=["calendar"])
 app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
 app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
+
+from routes.grades    import router as grades_router
+from routes.tasks     import router as tasks_router
+from routes.bookmarks import router as bookmarks_router
+app.include_router(grades_router,    prefix="/grades",    tags=["grades"])
+app.include_router(tasks_router,     prefix="/tasks",     tags=["tasks"])
+app.include_router(bookmarks_router, prefix="/bookmarks", tags=["bookmarks"])
 
 @app.get("/")
 @app.head("/")

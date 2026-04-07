@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <div class="login-wrapper">
     <div class="login-box">
+      <img src="icons/icon-192.png" alt="Polonix" class="login-icon">
       <h1>Polonix</h1>
-      <p>v0.9.0 ｜ ログイン</p>
-      <input type="text" id="username" placeholder="ユーザー名">
-      <input type="password" id="password" placeholder="パスワード">
+      <p>v0.9.4-β ｜ ログイン</p>
+      <input type="text" id="username" placeholder="ユーザー名" autocomplete="username">
+      <input type="password" id="password" placeholder="パスワード" autocomplete="current-password">
       <div class="remember-box">
         <input type="checkbox" id="remember">
         <label for="remember">ログインしたままにする</label>
@@ -22,7 +26,7 @@
       <p class="login-link">アカウントをお持ちでない方は <a href="register.html">新規登録</a></p>
     </div>
   </div>
-  <script src="js/api.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/api.js?v=16"></script>
+  <script src="js/main.js?v=16"></script>
 </body>
 </html>
