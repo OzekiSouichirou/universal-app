@@ -1270,6 +1270,10 @@ body {
     width: 100%;
     padding: 9px;
   }
+  /* サイドバーのフッターをボトムナビの上に表示 */
+  .sidebar {
+    padding-bottom: 80px;
+  }
 
   /* ===== メインコンテンツ：全幅 ===== */
   .main-content {

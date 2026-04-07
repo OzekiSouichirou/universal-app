@@ -166,93 +166,6 @@ async function loadExamCountdown() {
 
 init();
 
-// ============================================================
-// ウィジェット並べ替え（ドラッグ&ドロップ）
-// ============================================================
-const WIDGET_ORDER_KEY = 'polonix_widget_order';
-
-function initWidgetSort() {
-  const container = document.getElementById('widget-container');
-  if (!container) return;
-
-  // 保存済み順序を復元
-  const saved = localStorage.getItem(WIDGET_ORDER_KEY);
-  if (saved) {
-    try {
-      const order = JSON.parse(saved);
-      order.forEach(id => {
-        const el = container.querySelector(`[data-widget="${id}"]`);
-        if (el) container.appendChild(el);
-      });
-    } catch(_) {}
-  }
-
-  let dragging = null;
-
-  container.querySelectorAll('.home-widget').forEach(widget => {
-    widget.addEventListener('dragstart', e => {
-      dragging = widget;
-      widget.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    widget.addEventListener('dragend', () => {
-      widget.classList.remove('dragging');
-      dragging = null;
-      saveWidgetOrder();
-    });
-    widget.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (!dragging || dragging === widget) return;
-      const rect = widget.getBoundingClientRect();
-      const mid  = rect.top + rect.height / 2;
-      if (e.clientY < mid) {
-        container.insertBefore(dragging, widget);
-      } else {
-        container.insertBefore(dragging, widget.nextSibling);
-      }
-    });
-  });
-
-  // タッチ対応（モバイル）
-  let touchTarget = null;
-  let touchClone  = null;
-
-  container.querySelectorAll('.home-widget').forEach(widget => {
-    widget.addEventListener('touchstart', e => {
-      touchTarget = widget;
-      widget.classList.add('dragging');
-    }, { passive: true });
-
-    widget.addEventListener('touchmove', e => {
-      e.preventDefault();
-      if (!touchTarget) return;
-      const touch = e.touches[0];
-      const els   = document.elementsFromPoint(touch.clientX, touch.clientY);
-      const over  = els.find(el => el.classList.contains('home-widget') && el !== touchTarget);
-      if (over) {
-        const rect = over.getBoundingClientRect();
-        const mid  = rect.top + rect.height / 2;
-        if (touch.clientY < mid) container.insertBefore(touchTarget, over);
-        else container.insertBefore(touchTarget, over.nextSibling);
-      }
-    }, { passive: false });
-
-    widget.addEventListener('touchend', () => {
-      if (touchTarget) touchTarget.classList.remove('dragging');
-      touchTarget = null;
-      saveWidgetOrder();
-    });
-  });
-}
-
-function saveWidgetOrder() {
-  const container = document.getElementById('widget-container');
-  if (!container) return;
-  const order = [...container.querySelectorAll('.home-widget')].map(el => el.dataset.widget);
-  localStorage.setItem(WIDGET_ORDER_KEY, JSON.stringify(order));
-}
-
-document.addEventListener('DOMContentLoaded', initWidgetSort);
 
 // 通知リアルタイムポーリング（30秒）
 let _lastNotifCount = 0;
@@ -261,9 +174,8 @@ async function pollNotifications() {
     const notifs = await api('/posts/notifications/list').catch(() => null);
     if (!notifs) return;
     const unread = notifs.filter(n => !n.is_read).length;
-    if (unread > _lastNotifCount && _lastNotifCount >= 0) {
-      const diff = unread - _lastNotifCount;
-      if (diff > 0 && _lastNotifCount > 0) toast(`${diff}件の新しい通知があります`);
+    if (unread > _lastNotifCount && _lastNotifCount > 0) {
+      toast(`${unread - _lastNotifCount}件の新しい通知があります`);
     }
     _lastNotifCount = unread;
   } catch(_) {}
