@@ -298,3 +298,51 @@ async function init() {
 }
 
 init();
+
+// ============================================================
+// 貧乏度チェッカー
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const calcBtn = document.getElementById('poverty-calc-btn');
+  if (!calcBtn) return;
+
+  calcBtn.addEventListener('click', () => {
+    const expense = parseFloat(document.getElementById('poverty-expense').value) || 0;
+    const income  = parseFloat(document.getElementById('poverty-income').value) || 0;
+    const ramen   = parseFloat(document.getElementById('poverty-ramen').value) || 900;
+    const result  = document.getElementById('poverty-result');
+    const meter   = document.getElementById('poverty-meter');
+    const breakdown = document.getElementById('poverty-breakdown');
+
+    if (expense <= 0) { toast('支出を入力してください', 'error'); return; }
+
+    const ramenCount  = Math.round(expense / ramen);
+    const balance     = income - expense;
+    const savingRate  = income > 0 ? Math.round((balance / income) * 100) : 0;
+    const povertyPct  = income > 0 ? Math.min(100, Math.round((expense / income) * 100)) : 100;
+
+    const level = povertyPct >= 90 ? { label: '🚨 緊急事態', color: 'var(--red)', msg: '今すぐバイトを増やしてください' }
+      : povertyPct >= 70 ? { label: '😰 貧乏レベル高', color: '#f5a623', msg: '外食を控えましょう' }
+      : povertyPct >= 50 ? { label: '😅 まあまあ', color: 'var(--accent)', msg: 'もう少し節約できます' }
+      : { label: '😊 余裕あり', color: 'var(--green)', msg: 'いい感じです！' };
+
+    meter.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:15px;font-weight:700;color:${level.color}">${level.label}</span>
+        <span style="font-size:13px;color:var(--text-2);">${povertyPct}%</span>
+      </div>
+      <div style="background:var(--border);border-radius:99px;height:10px;overflow:hidden;">
+        <div style="width:${povertyPct}%;height:100%;background:${level.color};border-radius:99px;transition:width 0.5s;"></div>
+      </div>
+      <p style="font-size:12px;color:var(--text-3);margin-top:6px;">${level.msg}</p>`;
+
+    breakdown.innerHTML = `
+      🍜 今月の支出は <b>ラーメン ${ramenCount.toLocaleString()} 杯分</b><br>
+      💰 収支： <b style="color:${balance >= 0 ? 'var(--green)' : 'var(--red)'}">
+        ${balance >= 0 ? '+' : ''}${balance.toLocaleString()}円</b><br>
+      📊 貯蓄率： <b>${savingRate}%</b>
+      ${balance < 0 ? '<br>⚠️ <span style="color:var(--red)">収入より支出が多いです！</span>' : ''}`;
+
+    result.style.display = 'block';
+  });
+});

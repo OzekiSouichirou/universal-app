@@ -58,6 +58,8 @@ def run_migrations():
         ("users",    "selected_title_b", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_b VARCHAR(100)"),
         ("users",    "is_banned",        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
         ("user_xp",  "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
+        ("timetable","start_time",       "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS start_time VARCHAR(5)"),
+        ("posts",    "tag",              "ALTER TABLE posts ADD COLUMN IF NOT EXISTS tag VARCHAR(30)"),
     ]
     try:
         with engine.connect() as conn:
@@ -199,10 +201,17 @@ app.include_router(notices_router,   prefix="/notices",   tags=["notices"])
 app.include_router(posts_router,     prefix="/posts",     tags=["posts"])
 app.include_router(calendar_router,  prefix="/calendar",  tags=["calendar"])
 app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
+
+from routes.grades    import router as grades_router
+from routes.tasks     import router as tasks_router
+from routes.bookmarks import router as bookmarks_router
+app.include_router(grades_router,    prefix="/grades",    tags=["grades"])
+app.include_router(tasks_router,     prefix="/tasks",     tags=["tasks"])
+app.include_router(bookmarks_router, prefix="/bookmarks", tags=["bookmarks"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
 app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
 @app.get("/")
 @app.head("/")
 def root():
-    return ok({"status": "ok", "version": "0.9.0"})
+    return ok({"status": "ok", "version": "0.9.5"})

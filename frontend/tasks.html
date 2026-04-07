@@ -13,7 +13,7 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.4-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.5-β</span></div>
       <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
@@ -53,7 +53,11 @@
             </select>
           </div>
           <input type="text" id="task-memo" placeholder="メモ（任意）" maxlength="100" style="margin-top:10px;">
-          <button id="task-add-btn" class="btn-primary" style="margin-top:12px;width:100%;">追加</button>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin-top:10px;">
+            <input type="checkbox" id="task-sync-cal" checked>
+            カレンダーにも自動登録する
+          </label>
+          <button id="task-add-btn" class="btn-primary" style="margin-top:10px;width:100%;">追加</button>
           <p id="task-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
         </div>
 
@@ -91,8 +95,15 @@
     </div>
   </div>
 
-  <script src="js/api.js?v=16"></script>
-  <script src="js/auth.js?v=16"></script>
-  <script src="js/tasks.js?v=16"></script>
+  <script src="js/api.js?v=17"></script>
+  <script src="js/auth.js?v=17"></script>
+  <script src="js/tasks.js?v=17"></script>
+  <nav class="bottom-nav">
+    <a href="home.html"><span>🏠</span><span>ホーム</span></a>
+    <a href="board.html"><span>📋</span><span>掲示板</span></a>
+    <a href="calendar.html"><span>📅</span><span>カレンダー</span></a>
+    <a href="tasks.html"><span>✅</span><span>課題</span></a>
+    <a href="profile.html"><span>👤</span><span>プロフィール</span></a>
+  </nav>
 </body>
 </html>

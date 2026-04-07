@@ -2,8 +2,11 @@ let currentUser = null;
 let avatars = {};
 let selectedImage = null;
 let bookmarks = new Set();
+let bookmarks = new Set();
 
 document.getElementById('logout-btn').addEventListener('click', logout);
+
+const TAGS = ['数学','英語','物理','化学','生物','歴史','国語','情報','体育','その他'];
 
 const textarea  = document.getElementById('post-content');
 const charCount = document.getElementById('char-count');
@@ -154,6 +157,7 @@ let _searchQuery = '';
 let _searchTimer = null;
 
 async function fetchPosts(q = '') {
+  avatars = await api('/users/avatars').catch(() => ({}));
   const path = q.trim() ? `/posts/?q=${encodeURIComponent(q.trim())}` : '/posts/';
   const posts = await api(path).catch(() => []);
   renderPosts(Array.isArray(posts) ? posts : []);
@@ -206,12 +210,16 @@ function renderPosts(posts) {
               ${titleBadge}
             </div>
           </div>
-          <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone:'Asia/Tokyo'})}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${p.tag ? `<span class="post-tag-badge">${p.tag}</span>` : ''}
+            <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone:'Asia/Tokyo'})}</span>
+          </div>
         </div>
         <div class="post-content">${escapeHtml(p.content)}</div>
         ${p.image ? `<div class="post-image"><img src="${p.image}" alt="投稿画像" loading="lazy"></div>` : ''}
         <div class="post-footer">
           <button class="like-btn ${p.liked ? 'liked' : ''}" data-id="${p.id}">♥ <span class="like-count">${p.likes}</span></button>
+          <button class="bookmark-btn ${bookmarks.has(p.id) ? 'bookmarked' : ''}" data-id="${p.id}" title="ブックマーク">🔖</button>
           <button class="comment-toggle-btn" data-id="${p.id}">💬 <span class="comment-count">${p.comment_count}</span></button>
           <button class="bookmark-btn ${bookmarks.has(p.id) ? 'bookmarked' : ''}" data-id="${p.id}" title="ブックマーク">🔖</button>
           ${p.username === currentUser.username || currentUser.role === 'admin' ? `<button class="delete-post-btn" data-id="${p.id}">削除</button>` : ''}
@@ -252,6 +260,23 @@ function renderPosts(posts) {
           toast('ブックマークしました', 'success');
         }
       } catch(e) { toast(e.message||'失敗しました', 'error'); }
+    });
+  });
+
+  document.querySelectorAll('.bookmark-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = parseInt(btn.dataset.id);
+      try {
+        if (bookmarks.has(id)) {
+          await api(`/bookmarks/${id}`, { method:'DELETE' });
+          bookmarks.delete(id); btn.classList.remove('bookmarked');
+          toast('ブックマークを解除しました');
+        } else {
+          await api(`/bookmarks/${id}`, { method:'POST' });
+          bookmarks.add(id); btn.classList.add('bookmarked');
+          toast('ブックマークしました', 'success');
+        }
+      } catch(e) { toast(e.message||'失敗しました','error'); }
     });
   });
 
@@ -322,7 +347,8 @@ document.getElementById('post-btn').addEventListener('click', async () => {
   const msg     = document.getElementById('post-msg');
   if (!content) { msg.style.color = '#f0476c'; msg.textContent = '内容を入力してください'; return; }
   try {
-    await api('/posts/', { method: 'POST', body: JSON.stringify({ content, image: selectedImage }) });
+    const tag = document.getElementById('post-tag-select')?.value || null;
+    await api('/posts/', { method: 'POST', body: JSON.stringify({ content, image: selectedImage, tag }) });
     textarea.value = ''; charCount.textContent = '0 / 500';
     selectedImage = null; document.getElementById('image-preview').innerHTML = ''; msg.textContent = '';
     fetchPosts();

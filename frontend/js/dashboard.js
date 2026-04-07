@@ -23,12 +23,13 @@ async function loadStats(user) {
         { label: '総投稿数',      value: admin.total_posts,    icon: '+' },
         { label: '総コメント数',  value: admin.total_comments, icon: '#' },
         { label: '総いいね数',    value: admin.total_likes,    icon: '♡' },
-        { label: '自分の投稿',    value: me.my_posts,          icon: '+' },
-        { label: `Lv.${me.level} / ${me.xp}XP`, value: me.streak+'日', icon: 'Lv' },
+        { label: '成績記録数',    value: admin.total_grades ?? '-', icon: '📊' },
+        { label: `課題(未完了/超過)`, value: `${admin.total_tasks??0}/${admin.overdue_tasks??0}`, icon: '📋' },
       ]);
       renderTrendChart(admin.post_trend, '全体の投稿数');
       renderXPChart(admin.xp_ranking || []);
       renderHourlyChart(admin.hourly_posts || []);
+      if (admin.activity) renderActivityChart(admin.activity, 'アクティブユーザー数（30日）');
       document.getElementById('hourly-card').style.display = 'block';
     } else {
       const me = await api('/stats/me');
@@ -37,10 +38,11 @@ async function loadStats(user) {
         { label: '受け取ったいいね', value: me.my_likes,   icon: '♡' },
         { label: '自分のコメント',  value: me.my_comments, icon: '#' },
         { label: 'レベル',          value: 'Lv.'+me.level, icon: 'Lv' },
-        { label: 'XP',             value: me.xp,           icon: 'XP' },
-        { label: '連続ログイン',    value: me.streak+'日',  icon: '+' },
+        { label: '成績記録数',      value: me.my_grades ?? 0, icon: '📊' },
+        { label: '未完了課題',      value: me.my_tasks ?? 0,  icon: '📋' },
       ]);
       renderTrendChart(me.post_trend, '自分の投稿数');
+      if (me.activity) renderActivityChart(me.activity, 'アクティビティ（30日）');
       renderXPChart([]);
       document.getElementById('hourly-card').style.display = 'none';
     }
@@ -167,3 +169,28 @@ async function checkServer() {
 }
 
 init();
+
+function renderActivityChart(data, label) {
+  const card = document.getElementById('activity-card');
+  if (!card) return;
+  card.style.display = 'block';
+  const ctx = document.getElementById('activity-chart')?.getContext('2d');
+  if (!ctx) return;
+  if (window._actChart) window._actChart.destroy();
+  window._actChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.date),
+      datasets: [{ label, data: data.map(d => d.count),
+        backgroundColor: 'rgba(91,110,245,0.6)', borderRadius: 3 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min:0, ticks:{color:'#8892b0'}, grid:{color:'#1e2640'} },
+        x: { ticks:{color:'#8892b0', maxTicksLimit:10}, grid:{display:false} }
+      }
+    }
+  });
+}

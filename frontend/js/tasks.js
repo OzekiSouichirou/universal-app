@@ -91,6 +91,15 @@ document.getElementById('task-add-btn').addEventListener('click', async () => {
   if (!due)   { msg.style.color='var(--red)'; msg.textContent='締切日を入力してください'; return; }
   try {
     await api('/tasks/', { method:'POST', body:JSON.stringify({ title, subject:subject||null, due_date:due, priority, memo:memo||null }) });
+    // カレンダーにも自動登録
+    if (document.getElementById('task-sync-cal')?.checked) {
+      try {
+        await api('/calendar/', { method:'POST', body:JSON.stringify({
+          title: `【課題】${title}${subject?' ('+subject+')':''}`,
+          date: due, type: 'deadline', memo: memo||null
+        })});
+      } catch(_) {}
+    }
     msg.style.color='var(--green)'; msg.textContent='追加しました';
     document.getElementById('task-title').value   = '';
     document.getElementById('task-subject').value = '';

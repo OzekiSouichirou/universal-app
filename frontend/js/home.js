@@ -249,3 +249,22 @@ function saveWidgetOrder() {
 }
 
 document.addEventListener('DOMContentLoaded', initWidgetSort);
+
+
+// ============================================================
+// 通知リアルタイムポーリング（30秒ごと）
+// ============================================================
+let _lastNotifCount = 0;
+async function pollNotifications() {
+  try {
+    const notifs = await api('/posts/notifications/list').catch(() => null);
+    if (!notifs) return;
+    const unread = notifs.filter(n => !n.is_read).length;
+    if (unread > _lastNotifCount && _lastNotifCount >= 0) {
+      const diff = unread - _lastNotifCount;
+      if (diff > 0 && _lastNotifCount > 0) toast(`${diff}件の新しい通知があります`, 'info');
+    }
+    _lastNotifCount = unread;
+  } catch(_) {}
+}
+setInterval(pollNotifications, 30000);

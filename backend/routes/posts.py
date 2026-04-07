@@ -21,6 +21,7 @@ _POST_RELATED_TABLES = frozenset(["likes", "comments", "notifications"])
 class PostCreate(BaseModel):
     content: str
     image: Optional[str] = None
+    tag: Optional[str] = None
 
 class CommentCreate(BaseModel):
     content: str
@@ -33,7 +34,7 @@ def get_posts(
     current_user=Depends(get_current_user)
 ):
     base_sql = """
-        SELECT p.id, p.username, p.content, p.image, p.created_at,
+        SELECT p.id, p.username, p.content, p.image, p.tag, p.created_at,
                u.avatar, u.selected_title, u.selected_title_a, u.selected_title_b,
                COUNT(DISTINCT l.id) AS likes,
                MAX(CASE WHEN l.username=:me THEN 1 ELSE 0 END) AS liked,
