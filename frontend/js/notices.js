@@ -45,7 +45,7 @@ async function load() {
     btn.addEventListener('click', async () => {
       if (!confirm('このお知らせを削除しますか？')) return;
       try { await api(`/notices/${btn.dataset.id}`, { method:'DELETE' }); load(); }
-      catch(e) { console.warn('delete error:', e); }
+      catch(e) { toast(e.message||'削除に失敗しました', 'error'); }
     });
   });
 }
@@ -73,8 +73,9 @@ document.getElementById('modal-submit').addEventListener('click', async () => {
       await api('/notices/', { method:'POST', body:JSON.stringify({ title, content }) });
     }
     document.getElementById('modal').classList.add('hidden');
+    toast(editingId ? '更新しました' : '追加しました', 'success');
     load();
-  } catch(e) { console.warn('save error:', e); }
+  } catch(e) { toast(e.message||'保存に失敗しました', 'error'); }
 });
 
 init();

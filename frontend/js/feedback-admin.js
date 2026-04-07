@@ -51,7 +51,7 @@ function render() {
         if (item) { item.status = sel.value; }
         sel.closest('.fb-item').querySelector('.fb-status').textContent = STATUS_LABELS[sel.value];
         sel.closest('.fb-item').querySelector('.fb-status').style.color = STATUS_COLORS[sel.value];
-      } catch(e) { console.warn('status error:', e); }
+      } catch(e) { toast(e?.message||'操作に失敗しました', 'error'); }
     });
   });
 
@@ -63,7 +63,7 @@ function render() {
         await api(`/feedback/${id}`, { method:'DELETE' });
         allItems = allItems.filter(f => f.id!==id);
         render();
-      } catch(e) { console.warn('delete error:', e); }
+      } catch(e) { toast(e?.message||'操作に失敗しました', 'error'); }
     });
   });
 }
