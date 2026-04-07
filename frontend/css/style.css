@@ -2057,16 +2057,16 @@ body {
 }
 .tt-table th {
   padding: 8px 4px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-2);
+  color: var(--text);
   text-align: center;
   border-bottom: 1px solid var(--border);
 }
 .tt-period-col {
   width: 44px;
   font-size: 12px !important;
-  color: var(--text-3) !important;
+  color: var(--text-2) !important;
 }
 .tt-cell {
   height: 72px;
@@ -2083,8 +2083,8 @@ body {
 }
 .tt-cell:hover { background: var(--surface-2); }
 .tt-empty-plus {
-  color: var(--text-3);
-  font-size: 18px;
+  color: var(--text-2);
+  font-size: 20px;
   line-height: 1;
 }
 .tt-subject {

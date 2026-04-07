@@ -153,7 +153,8 @@ document.getElementById('tt-delete-btn').addEventListener('click', async () => {
 
 // 設定パネル
 document.getElementById('tt-settings-btn').addEventListener('click', () => {
-  document.getElementById('tt-settings-panel').classList.toggle('hidden');
+  const panel = document.getElementById('tt-settings-panel');
+  panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
 });
 
 document.getElementById('tt-periods-select').addEventListener('change', e => {
