@@ -11,7 +11,7 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.3-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.4-β</span></div>
       <nav>
         <ul>
           <li><a href="home.html">ホーム</a></li>
@@ -32,18 +32,32 @@
       <header class="top-bar">
         <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
         <h2>時間割</h2>
-        <span id="current-user"></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button id="tt-settings-btn" class="btn-secondary" style="padding:6px 12px;font-size:12px;">⚙️ 設定</button>
+          <span id="current-user"></span>
+        </div>
       </header>
       <section class="content-area">
+        <!-- 設定パネル -->
+        <div id="tt-settings-panel" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+          <label style="font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:8px;">
+            表示時限数
+            <select id="tt-periods-select" style="background:var(--bg-sub);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;font-size:13px;">
+              <option value="4">4限</option>
+              <option value="5">5限</option>
+              <option value="6" selected>6限</option>
+              <option value="7">7限</option>
+              <option value="8">8限</option>
+            </select>
+          </label>
+          <label style="font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="tt-show-sun"> 日曜日を表示
+          </label>
+        </div>
         <div class="tt-today-banner" id="tt-today-banner"></div>
         <div class="table-scroll">
           <table class="tt-table" id="tt-table">
-            <thead>
-              <tr>
-                <th class="tt-period-col"></th>
-                <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
-              </tr>
-            </thead>
+            <thead id="tt-thead"></thead>
             <tbody id="tt-body"></tbody>
           </table>
         </div>
@@ -55,6 +69,7 @@
     <div class="modal-box">
       <h3 id="tt-modal-title">授業を登録</h3>
       <input type="text" id="tt-subject" placeholder="科目名（必須）" maxlength="30">
+      <input type="time" id="tt-start-time" placeholder="開始時刻" style="color:var(--text);background:var(--bg-sub);border:1px solid var(--border-2);border-radius:var(--r);padding:10px 14px;font-size:14px;width:100%;">
       <input type="text" id="tt-room" placeholder="教室（例：A棟301）" maxlength="20">
       <input type="text" id="tt-teacher" placeholder="教員名" maxlength="20">
       <textarea id="tt-memo" placeholder="メモ" rows="2"></textarea>

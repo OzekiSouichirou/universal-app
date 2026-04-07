@@ -174,13 +174,14 @@ def create_tables():
 # ============================================================
 def run_migrations():
     MIGRATIONS = [
-        ("users",    "bio",              "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(200)"),
-        ("users",    "selected_title",   "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title VARCHAR(200)"),
-        ("users",    "selected_badges",  "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_badges TEXT"),
-        ("users",    "selected_title_a", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_a VARCHAR(100)"),
-        ("users",    "selected_title_b", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_b VARCHAR(100)"),
-        ("users",    "is_banned",        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
-        ("user_xp",  "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
+        ("users",     "bio",              "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(200)"),
+        ("users",     "selected_title",   "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title VARCHAR(200)"),
+        ("users",     "selected_badges",  "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_badges TEXT"),
+        ("users",     "selected_title_a", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_a VARCHAR(100)"),
+        ("users",     "selected_title_b", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_b VARCHAR(100)"),
+        ("users",     "is_banned",        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
+        ("user_xp",   "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
+        ("timetable", "start_time",       "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS start_time VARCHAR(5)"),
     ]
     try:
         with engine.connect() as conn:
@@ -329,7 +330,7 @@ app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 @app.get("/")
 @app.head("/")
 def root():
-    return ok({"status": "ok", "version": "0.9.3"})
+    return ok({"status": "ok", "version": "0.9.4"})
 
 @app.get("/health")
 @app.head("/health")

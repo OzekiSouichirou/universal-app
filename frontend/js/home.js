@@ -113,7 +113,7 @@ async function loadMissions() {
     const todayStr   = today.toISOString().slice(0, 10);
     const entry    = me?.post_trend?.find(t => t.date === todayLabel);
     setMission('post', !!(entry?.count > 0));
-    setMission('calendar', localStorage.getItem('polonix_calendar_today') === todayStr);
+    const cal = await api('/calendar/').catch(() => []); const hasCalToday = Array.isArray(cal) && cal.some(e => e.created_at && e.created_at.startsWith(todayStr)); setMission('calendar', hasCalToday);
   } catch(e) { console.warn('loadMissions error:', e); }
 }
 
