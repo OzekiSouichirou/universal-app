@@ -13,13 +13,13 @@ import bcrypt
 import logging
 import random
 import string
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from sqlalchemy import text
-from models.database import engine, get_db
+from models.database import engine
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,8 +33,7 @@ logger = logging.getLogger("polonix")
 # ============================================================
 # DB起動待機（Renderスリープ対応）
 # ============================================================
-def wait_for_db(retries: int = 5, delay: int = 2) -> bool:
-    # Neonはサスペンドからの復帰が速いため短いリトライで十分
+def wait_for_db(retries: int = 10, delay: int = 5) -> bool:
     for i in range(retries):
         try:
             with engine.connect() as conn:
@@ -48,169 +47,18 @@ def wait_for_db(retries: int = 5, delay: int = 2) -> bool:
     return False
 
 # ============================================================
-# テーブル初期作成（新規DB対応）
-# ============================================================
-def create_tables():
-    DDL = """
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) UNIQUE NOT NULL,
-        hashed_password TEXT NOT NULL,
-        role VARCHAR(10) NOT NULL DEFAULT 'user',
-        avatar TEXT,
-        user_id VARCHAR(20),
-        bio VARCHAR(200),
-        selected_title VARCHAR(200),
-        selected_title_a VARCHAR(100),
-        selected_title_b VARCHAR(100),
-        selected_badges TEXT,
-        is_banned BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS posts (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        content TEXT NOT NULL,
-        image TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS likes (
-        id SERIAL PRIMARY KEY,
-        post_id INTEGER NOT NULL,
-        username VARCHAR(30) NOT NULL,
-        UNIQUE(post_id, username)
-    );
-    CREATE TABLE IF NOT EXISTS comments (
-        id SERIAL PRIMARY KEY,
-        post_id INTEGER NOT NULL,
-        username VARCHAR(30) NOT NULL,
-        content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS notifications (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        type VARCHAR(20) NOT NULL,
-        post_id INTEGER,
-        from_username VARCHAR(30),
-        is_read BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS calendar_events (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        title VARCHAR(200) NOT NULL,
-        memo TEXT,
-        date VARCHAR(10) NOT NULL,
-        type VARCHAR(20) NOT NULL DEFAULT 'memo',
-        is_done BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS timetable (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        day INTEGER NOT NULL,
-        period INTEGER NOT NULL,
-        subject VARCHAR(100) NOT NULL,
-        room VARCHAR(50),
-        teacher VARCHAR(50),
-        memo TEXT,
-        color VARCHAR(10) DEFAULT '#5b6ef5',
-        UNIQUE(username, day, period)
-    );
-    CREATE TABLE IF NOT EXISTS user_xp (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) UNIQUE NOT NULL,
-        xp INTEGER NOT NULL DEFAULT 0,
-        level INTEGER NOT NULL DEFAULT 1,
-        streak INTEGER NOT NULL DEFAULT 0,
-        last_login VARCHAR(10),
-        fortune_date VARCHAR(10)
-    );
-    CREATE TABLE IF NOT EXISTS gacha_inventory (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        type VARCHAR(2) NOT NULL,
-        rarity VARCHAR(10) NOT NULL,
-        text VARCHAR(100) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(username, type, text)
-    );
-    CREATE TABLE IF NOT EXISTS feedback (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        type VARCHAR(20) NOT NULL,
-        title VARCHAR(50) NOT NULL,
-        content TEXT NOT NULL,
-        is_anonymous BOOLEAN NOT NULL DEFAULT false,
-        status VARCHAR(20) NOT NULL DEFAULT 'open',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS logs (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        action VARCHAR(50) NOT NULL,
-        detail TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS notices (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(200) NOT NULL,
-        content TEXT NOT NULL,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS grades (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        subject VARCHAR(100) NOT NULL,
-        score NUMERIC(5,1) NOT NULL,
-        max_score NUMERIC(5,1) NOT NULL DEFAULT 100,
-        grade_type VARCHAR(20) NOT NULL DEFAULT 'exam',
-        memo TEXT,
-        date VARCHAR(10) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS tasks (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        title VARCHAR(200) NOT NULL,
-        subject VARCHAR(100),
-        due_date VARCHAR(10) NOT NULL,
-        priority VARCHAR(10) NOT NULL DEFAULT 'medium',
-        status VARCHAR(20) NOT NULL DEFAULT 'pending',
-        memo TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS bookmarks (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(30) NOT NULL,
-        post_id INTEGER NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(username, post_id)
-    );
-    """
-    try:
-        with engine.connect() as conn:
-            conn.execute(text(DDL))
-            conn.commit()
-            logger.info("テーブル作成完了")
-    except Exception as e:
-        logger.error(f"create_tables failed: {e}")
-
-# ============================================================
-# マイグレーション（既存DB向けカラム追加）
+# マイグレーション（Alembic移行前の暫定）
 # ============================================================
 def run_migrations():
     MIGRATIONS = [
-        ("users",     "bio",              "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(200)"),
-        ("users",     "selected_title",   "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title VARCHAR(200)"),
-        ("users",     "selected_badges",  "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_badges TEXT"),
-        ("users",     "selected_title_a", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_a VARCHAR(100)"),
-        ("users",     "selected_title_b", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_b VARCHAR(100)"),
-        ("users",     "is_banned",        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
-        ("user_xp",   "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
-        ("timetable", "start_time",       "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS start_time VARCHAR(5)"),
+        ("users",    "bio",              "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(200)"),
+        ("users",    "selected_title",   "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title VARCHAR(200)"),
+        ("users",    "selected_badges",  "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_badges TEXT"),
+        ("users",    "selected_title_a", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_a VARCHAR(100)"),
+        ("users",    "selected_title_b", "ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title_b VARCHAR(100)"),
+        ("users",    "is_banned",        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
+        ("user_xp",  "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
+        ("timetable","start_time",       "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS start_time VARCHAR(5)"),
     ]
     try:
         with engine.connect() as conn:
@@ -251,7 +99,6 @@ def init_admin():
 # 起動処理
 # ============================================================
 wait_for_db()
-create_tables()
 run_migrations()
 init_admin()
 
@@ -260,7 +107,7 @@ init_admin()
 # ============================================================
 app = FastAPI(
     title="Polonix API",
-    version="0.9.3",
+    version="0.9.0",
     docs_url=None,
     redoc_url=None,
 )
@@ -353,8 +200,6 @@ app.include_router(notices_router,   prefix="/notices",   tags=["notices"])
 app.include_router(posts_router,     prefix="/posts",     tags=["posts"])
 app.include_router(calendar_router,  prefix="/calendar",  tags=["calendar"])
 app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
-app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
-app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
 from routes.grades    import router as grades_router
 from routes.tasks     import router as tasks_router
@@ -362,21 +207,10 @@ from routes.bookmarks import router as bookmarks_router
 app.include_router(grades_router,    prefix="/grades",    tags=["grades"])
 app.include_router(tasks_router,     prefix="/tasks",     tags=["tasks"])
 app.include_router(bookmarks_router, prefix="/bookmarks", tags=["bookmarks"])
+app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
+app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
 @app.get("/")
 @app.head("/")
 def root():
     return ok({"status": "ok", "version": "0.9.4"})
-
-@app.get("/health")
-@app.head("/health")
-def health(db=Depends(get_db)):
-    try:
-        db.execute(text("SELECT 1"))
-        return ok({"status": "ok", "db": "ok"})
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={"status": "error", "db": "unavailable"}
-        )
