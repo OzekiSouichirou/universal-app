@@ -1,4 +1,4 @@
-"""Polonix v0.9.0 - 統計ルート（生SQL統一）"""
+"""Polonix v0.9.5 - 統計ルート"""
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import APIRouter, Depends
@@ -39,55 +39,68 @@ def get_admin_stats(db=Depends(get_db), _=Depends(require_admin)):
         ORDER BY COALESCE(x.xp, 0) DESC
         LIMIT 5
     """)).fetchall()
-    xp_ranking = [{"username": row.username, "xp": int(row.xp or 0), "level": int(row.level or 1)} for row in xp_rows]
+    xp_ranking = [{"username": r.username, "xp": int(r.xp or 0), "level": int(r.level or 1)} for r in xp_rows]
 
     # 時間帯別投稿数
     hourly_rows = db.execute(text("""
         SELECT EXTRACT(HOUR FROM created_at) AS hour, COUNT(*) AS count
-        FROM posts
-        GROUP BY hour
-        ORDER BY hour
+        FROM posts GROUP BY hour ORDER BY hour
     """)).fetchall()
-    hourly_posts = [{"hour": int(row.hour), "count": int(row.count or 0)} for row in hourly_rows if row.hour is not None]
+    hourly_posts = [{"hour": int(r.hour), "count": int(r.count or 0)} for r in hourly_rows if r.hour is not None]
 
-    # 成績・課題統計
-    grade_stats = db.execute(text("""
-        SELECT COUNT(*) AS total, AVG(score/max_score*100) AS avg_pct
-        FROM grades
-    """)).fetchone()
-    task_stats = db.execute(text("""
-        SELECT
-            COUNT(*) AS total,
-            SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS done,
-            SUM(CASE WHEN due_date < CURRENT_DATE AND status != 'done' THEN 1 ELSE 0 END) AS overdue
-        FROM tasks
-    """)).fetchone()
+    # 成績・課題統計（テーブルが存在しない場合は0を返す）
+    try:
+        grade_stats = db.execute(text(
+            "SELECT COUNT(*) AS total, AVG(score/max_score*100) AS avg_pct FROM grades"
+        )).fetchone()
+        total_grades = int(grade_stats.total or 0)
+        grade_avg    = round(float(grade_stats.avg_pct or 0), 1)
+    except Exception:
+        total_grades = 0
+        grade_avg    = 0.0
+
+    try:
+        task_stats = db.execute(text("""
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS done,
+                SUM(CASE WHEN due_date < CURRENT_DATE AND status != 'done' THEN 1 ELSE 0 END) AS overdue
+            FROM tasks
+        """)).fetchone()
+        total_tasks   = int(task_stats.total or 0)
+        done_tasks    = int(task_stats.done or 0)
+        overdue_tasks = int(task_stats.overdue or 0)
+    except Exception:
+        total_tasks = done_tasks = overdue_tasks = 0
 
     # アクティビティ（過去30日のログイン数）
     activity = []
     for i in range(29, -1, -1):
         d = date.today() - timedelta(days=i)
-        cnt = db.execute(
-            text("SELECT COUNT(DISTINCT username) AS c FROM logs WHERE action='ログイン成功' AND DATE(created_at)=:d"),
-            {"d": d}
-        ).fetchone().c
+        try:
+            cnt = db.execute(
+                text("SELECT COUNT(DISTINCT username) AS c FROM logs WHERE action LIKE '%ログイン%' AND DATE(created_at)=:d"),
+                {"d": d}
+            ).fetchone().c
+        except Exception:
+            cnt = 0
         activity.append({"date": d.strftime("%m/%d"), "count": int(cnt or 0)})
 
     return ok({
-        "total_users":   int(stats.total_users),
-        "admin_count":   int(stats.admin_count),
-        "total_posts":   int(stats.total_posts),
-        "total_comments":int(stats.total_comments),
-        "total_likes":   int(stats.total_likes),
-        "post_trend":    trend,
-        "xp_ranking":    xp_ranking,
-        "hourly_posts":  hourly_posts,
-        "grade_avg_pct": round(float(grade_stats.avg_pct or 0), 1),
-        "total_grades":  int(grade_stats.total or 0),
-        "total_tasks":   int(task_stats.total or 0),
-        "done_tasks":    int(task_stats.done or 0),
-        "overdue_tasks": int(task_stats.overdue or 0),
-        "activity":      activity,
+        "total_users":    int(stats.total_users),
+        "admin_count":    int(stats.admin_count),
+        "total_posts":    int(stats.total_posts),
+        "total_comments": int(stats.total_comments),
+        "total_likes":    int(stats.total_likes),
+        "post_trend":     trend,
+        "xp_ranking":     xp_ranking,
+        "hourly_posts":   hourly_posts,
+        "grade_avg_pct":  grade_avg,
+        "total_grades":   total_grades,
+        "total_tasks":    total_tasks,
+        "done_tasks":     done_tasks,
+        "overdue_tasks":  overdue_tasks,
+        "activity":       activity,
     })
 
 @router.get("/me")
@@ -113,19 +126,28 @@ def get_me_stats(db=Depends(get_db), current_user=Depends(get_current_user)):
         ).fetchone().c
         trend.append({"date": d.strftime("%m/%d"), "count": int(count or 0)})
 
-    # 個人アクティビティ（過去30日ログイン）
-    my_activity = []
+    # 個人アクティビティ（過去30日）
+    activity = []
     for i in range(29, -1, -1):
         d = date.today() - timedelta(days=i)
-        cnt = db.execute(
-            text("SELECT COUNT(*) AS c FROM logs WHERE username=:u AND DATE(created_at)=:d"),
-            {"u": current_user.username, "d": d}
-        ).fetchone().c
-        my_activity.append({"date": d.strftime("%m/%d"), "count": int(cnt or 0)})
+        try:
+            cnt = db.execute(
+                text("SELECT COUNT(*) AS c FROM logs WHERE username=:u AND DATE(created_at)=:d"),
+                {"u": current_user.username, "d": d}
+            ).fetchone().c
+        except Exception:
+            cnt = 0
+        activity.append({"date": d.strftime("%m/%d"), "count": int(cnt or 0)})
 
     # 個人の成績・課題数
-    my_grades = db.execute(text("SELECT COUNT(*) AS c FROM grades WHERE username=:u"), {"u": current_user.username}).fetchone().c
-    my_tasks  = db.execute(text("SELECT COUNT(*) AS c FROM tasks WHERE username=:u AND status!='done'"), {"u": current_user.username}).fetchone().c
+    try:
+        my_grades = int(db.execute(text("SELECT COUNT(*) AS c FROM grades WHERE username=:u"), {"u": current_user.username}).fetchone().c or 0)
+    except Exception:
+        my_grades = 0
+    try:
+        my_tasks = int(db.execute(text("SELECT COUNT(*) AS c FROM tasks WHERE username=:u AND status!='done'"), {"u": current_user.username}).fetchone().c or 0)
+    except Exception:
+        my_tasks = 0
 
     return ok({
         "my_posts":    int(me_stats.my_posts or 0),
@@ -135,7 +157,7 @@ def get_me_stats(db=Depends(get_db), current_user=Depends(get_current_user)):
         "level":       xp_row.level if xp_row else 1,
         "streak":      xp_row.streak if xp_row else 0,
         "post_trend":  trend,
-        "activity":    my_activity,
-        "my_grades":   int(my_grades or 0),
-        "my_tasks":    int(my_tasks or 0),
+        "activity":    activity,
+        "my_grades":   my_grades,
+        "my_tasks":    my_tasks,
     })
