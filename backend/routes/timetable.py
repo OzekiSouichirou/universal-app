@@ -36,7 +36,7 @@ def upsert_timetable(body: TimetableEntry, db=Depends(get_db), current_user=Depe
         err(E.VALIDATION, "科目名を入力してください")
     if not (0 <= body.day <= 6):
         err(E.VALIDATION, "無効な曜日です")
-    if not (1 <= body.period <= 8):
+    if not (1 <= body.period <= 10):
         err(E.VALIDATION, "無効な時限です")
     row = db.execute(text("""
         INSERT INTO timetable (username,day,period,subject,room,teacher,memo,color,start_time)

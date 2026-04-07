@@ -212,8 +212,11 @@ document.getElementById('ev-delete-btn').addEventListener('click', async () => {
 function checkReminders() {
   const today    = dateStr(new Date());
   const tomorrow = dateStr(new Date(Date.now()+86400000));
-  const items    = allEvents.filter(e => (e.date===today||e.date===tomorrow) && !e.is_done);
+  // セッション内で1回のみ表示
+  if (sessionStorage.getItem('remind_shown') === today) return;
+  const items = allEvents.filter(e => (e.date===today||e.date===tomorrow) && !e.is_done);
   if (!items.length) return;
+  sessionStorage.setItem('remind_shown', today);
   document.getElementById('remind-list').innerHTML = items.map(e => `
     <div class="remind-item">
       <span class="event-type-badge type-${e.type}">${TYPE_LABELS[e.type]}</span>
