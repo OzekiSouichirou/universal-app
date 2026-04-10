@@ -30,7 +30,7 @@
       </nav>
       <div class="sidebar-footer">
         <button id="logout-btn">ログアウト</button>
-        <button id="pwa-install-btn">📲 アプリをインストール</button>
+        <button id="pwa-install-btn">アプリをインストール</button>
       </div>
     </aside>
     <main class="main-content">
@@ -41,7 +41,6 @@
       </header>
       <section class="content-area">
 
-        <!-- タブ -->
         <div class="study-tabs">
           <button class="study-tab active" data-tab="tasks">課題</button>
           <button class="study-tab" data-tab="grades">成績</button>
@@ -50,35 +49,38 @@
 
         <!-- 課題タブ -->
         <div id="tab-tasks" class="study-tab-content">
-          <!-- 締切カレンダービュー -->
+
           <div class="db-card" style="margin-bottom:16px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <div class="db-card-title">締切カレンダー</div>
-              <button id="cal-prev" class="btn-secondary" style="padding:4px 10px;font-size:12px;">◀</button>
-              <span id="cal-label" style="font-size:13px;font-weight:600;color:var(--text)"></span>
-              <button id="cal-next" class="btn-secondary" style="padding:4px 10px;font-size:12px;">▶</button>
+            <div class="db-card-title" style="margin-bottom:2px;">締切カレンダー</div>
+            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">課題の締切日をカレンダーで確認できます</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <button id="cal-prev" class="btn-secondary" style="padding:5px 12px;font-size:13px;">◀</button>
+              <span id="cal-label" style="font-size:14px;font-weight:700;color:var(--text)"></span>
+              <button id="cal-next" class="btn-secondary" style="padding:5px 12px;font-size:13px;">▶</button>
             </div>
             <div id="task-calendar" class="task-cal-grid"></div>
           </div>
 
-          <!-- 課題追加フォーム -->
           <div class="db-card" style="margin-bottom:16px;">
-            <div class="db-card-title" style="margin-bottom:12px;">課題を追加</div>
-            <input type="text" id="task-title" placeholder="課題タイトル（必須）" maxlength="100">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
-              <input type="text" id="task-subject" placeholder="科目名" maxlength="50">
+            <div class="db-card-title" style="margin-bottom:2px;">課題を追加</div>
+            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">タイトルと締切日は必須です</p>
+            <input type="text" id="task-title" placeholder="課題タイトル" maxlength="100">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+              <input type="text" id="task-subject" placeholder="科目名（任意）" maxlength="50">
               <input type="date" id="task-due">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
               <select id="task-priority">
-                <option value="high">🔴 高</option>
-                <option value="medium" selected>🟡 中</option>
-                <option value="low">🟢 低</option>
+                <option value="high">優先度：高</option>
+                <option value="medium" selected>優先度：中</option>
+                <option value="low">優先度：低</option>
               </select>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);">
+                <input type="checkbox" id="task-sync-cal" checked> カレンダーにも登録
+              </label>
             </div>
             <input type="text" id="task-memo" placeholder="メモ（任意）" maxlength="100" style="margin-top:10px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin-top:10px;">
-              <input type="checkbox" id="task-sync-cal" checked> カレンダーにも登録
-            </label>
-            <button id="task-add-btn" class="btn-primary" style="margin-top:10px;width:100%;">追加</button>
+            <button id="task-add-btn" class="btn-primary" style="margin-top:12px;width:100%;">追加</button>
             <p id="task-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
           </div>
 
@@ -94,28 +96,39 @@
         <!-- 成績タブ -->
         <div id="tab-grades" class="study-tab-content" style="display:none;">
           <div class="db-card" style="margin-bottom:16px;">
-            <div class="db-card-title" style="margin-bottom:12px;">成績を追加</div>
+            <div class="db-card-title" style="margin-bottom:2px;">成績を追加</div>
+            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">科目名・得点・日付を入力してください</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <input type="text" id="grade-subject" placeholder="科目名" maxlength="50">
               <input type="date" id="grade-date">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
-              <input type="number" id="grade-score" placeholder="得点" min="0" step="0.1">
-              <input type="number" id="grade-max" placeholder="満点" min="1" step="0.1" value="100">
-              <select id="grade-type">
-                <option value="exam">試験</option>
-                <option value="quiz">小テスト</option>
-                <option value="report">レポート</option>
-                <option value="other">その他</option>
-              </select>
+              <div>
+                <label style="font-size:11px;color:var(--text-3);">得点</label>
+                <input type="number" id="grade-score" placeholder="例: 85" min="0" step="0.1">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-3);">満点</label>
+                <input type="number" id="grade-max" placeholder="例: 100" min="1" step="0.1" value="100">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-3);">種別</label>
+                <select id="grade-type">
+                  <option value="exam">試験</option>
+                  <option value="quiz">小テスト</option>
+                  <option value="report">レポート</option>
+                  <option value="other">その他</option>
+                </select>
+              </div>
             </div>
             <input type="text" id="grade-memo" placeholder="メモ（任意）" maxlength="100" style="margin-top:10px;">
             <button id="grade-add-btn" class="btn-primary" style="margin-top:12px;width:100%;">追加</button>
             <p id="grade-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
           </div>
           <div class="db-card" style="margin-bottom:16px;">
-            <div class="db-card-title" style="margin-bottom:12px;">科目別平均</div>
+            <div class="db-card-title" style="margin-bottom:12px;">科目別平均点</div>
             <canvas id="grades-chart" height="200"></canvas>
+            <p id="grades-empty" style="font-size:13px;color:var(--text-3);text-align:center;padding:16px;display:none;">成績を追加するとグラフが表示されます</p>
           </div>
           <div class="db-card">
             <div class="db-card-title" style="margin-bottom:12px;">成績一覧</div>
@@ -126,19 +139,20 @@
         <!-- 出席タブ -->
         <div id="tab-attendance" class="study-tab-content" style="display:none;">
           <div class="db-card" style="margin-bottom:16px;">
-            <div class="db-card-title" style="margin-bottom:12px;">科目を登録/更新</div>
-            <input type="text" id="att-subject" placeholder="科目名（必須）" maxlength="50">
+            <div class="db-card-title" style="margin-bottom:2px;">科目を登録</div>
+            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">科目ごとに授業数と出席数を管理します。出席ボタンで1回ずつ記録できます。</p>
+            <input type="text" id="att-subject" placeholder="科目名" maxlength="50">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
               <div>
-                <label style="font-size:12px;color:var(--text-3);">総授業数</label>
+                <label style="font-size:11px;color:var(--text-3);">総授業数</label>
                 <input type="number" id="att-total" min="0" value="0">
               </div>
               <div>
-                <label style="font-size:12px;color:var(--text-3);">出席数</label>
+                <label style="font-size:11px;color:var(--text-3);">出席数</label>
                 <input type="number" id="att-attended" min="0" value="0">
               </div>
               <div>
-                <label style="font-size:12px;color:var(--text-3);">欠席上限</label>
+                <label style="font-size:11px;color:var(--text-3);">欠席上限</label>
                 <input type="number" id="att-max" min="1" value="5">
               </div>
             </div>
@@ -158,14 +172,16 @@
       <h3>課題を編集</h3>
       <input type="hidden" id="edit-task-id">
       <input type="text" id="edit-task-title" placeholder="タイトル">
-      <input type="text" id="edit-task-subject" placeholder="科目名">
-      <input type="date" id="edit-task-due">
-      <select id="edit-task-priority">
-        <option value="high">🔴 高</option>
-        <option value="medium">🟡 中</option>
-        <option value="low">🟢 低</option>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <input type="text" id="edit-task-subject" placeholder="科目名">
+        <input type="date" id="edit-task-due">
+      </div>
+      <select id="edit-task-priority" style="margin-top:8px;">
+        <option value="high">優先度：高</option>
+        <option value="medium">優先度：中</option>
+        <option value="low">優先度：低</option>
       </select>
-      <input type="text" id="edit-task-memo" placeholder="メモ">
+      <input type="text" id="edit-task-memo" placeholder="メモ" style="margin-top:8px;">
       <div class="modal-buttons">
         <button id="edit-task-save-btn" class="btn-primary">保存</button>
         <button id="edit-task-cancel-btn" class="btn-secondary">キャンセル</button>
@@ -179,19 +195,21 @@
     <div class="modal-box">
       <h3>成績を編集</h3>
       <input type="hidden" id="edit-grade-id">
-      <input type="text" id="edit-grade-subject" placeholder="科目名">
-      <input type="date" id="edit-grade-date">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <input type="text" id="edit-grade-subject" placeholder="科目名">
+        <input type="date" id="edit-grade-date">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px;">
         <input type="number" id="edit-grade-score" placeholder="得点" step="0.1">
         <input type="number" id="edit-grade-max" placeholder="満点" step="0.1">
+        <select id="edit-grade-type">
+          <option value="exam">試験</option>
+          <option value="quiz">小テスト</option>
+          <option value="report">レポート</option>
+          <option value="other">その他</option>
+        </select>
       </div>
-      <select id="edit-grade-type">
-        <option value="exam">試験</option>
-        <option value="quiz">小テスト</option>
-        <option value="report">レポート</option>
-        <option value="other">その他</option>
-      </select>
-      <input type="text" id="edit-grade-memo" placeholder="メモ">
+      <input type="text" id="edit-grade-memo" placeholder="メモ" style="margin-top:8px;">
       <div class="modal-buttons">
         <button id="edit-grade-save-btn" class="btn-primary">保存</button>
         <button id="edit-grade-cancel-btn" class="btn-secondary">キャンセル</button>
@@ -201,11 +219,11 @@
   </div>
 
   <nav class="bottom-nav">
-    <a href="home.html"><span>🏠</span><span>ホーム</span></a>
-    <a href="board.html"><span>📋</span><span>掲示板</span></a>
-    <a href="calendar.html"><span>📅</span><span>カレンダー</span></a>
-    <a href="study.html" class="active"><span>📚</span><span>学習</span></a>
-    <a href="profile.html"><span>👤</span><span>プロフィール</span></a>
+    <a href="home.html"><span>ホーム</span></a>
+    <a href="board.html"><span>掲示板</span></a>
+    <a href="calendar.html"><span>カレンダー</span></a>
+    <a href="study.html" class="active"><span>学習</span></a>
+    <a href="profile.html"><span>プロフィール</span></a>
   </nav>
 
   <script src="js/api.js?v=17"></script>

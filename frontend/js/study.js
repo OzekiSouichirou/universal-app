@@ -31,9 +31,10 @@ async function init() {
 // ============================================================
 // 課題管理 + 締切カレンダー
 // ============================================================
-const PRIORITY_LABELS = { high:'🔴 高', medium:'🟡 中', low:'🟢 低' };
+const PRIORITY_LABELS = { high:'高', medium:'中', low:'低' };
 const STATUS_LABELS   = { pending:'未着手', in_progress:'進行中', done:'完了' };
 const STATUS_COLORS   = { pending:'var(--text-3)', in_progress:'#f5a623', done:'var(--green)' };
+const PRIORITY_COLORS = { high:'var(--red)', medium:'#f5a623', low:'var(--green)' };
 let tasksData = [], filterStatus = 'all';
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 
@@ -111,7 +112,7 @@ function renderTasks() {
         <div>
           <div class="task-title ${t.status==='done'?'done-text':''}">${t.title}</div>
           <div class="task-meta">
-            ${t.subject?`<span>${t.subject}</span>・`:''}<span>${t.due_date}</span>・${daysLabel}・<span>${PRIORITY_LABELS[t.priority]}</span>
+            ${t.subject?`<span>${t.subject}</span>・`:''}<span>${t.due_date}</span>・${daysLabel}・<span style="color:${PRIORITY_COLORS[t.priority]};font-weight:600;">${PRIORITY_LABELS[t.priority]}</span>
             ${t.memo?`・<span style="color:var(--text-3)">${t.memo}</span>`:''}
           </div>
         </div>
@@ -336,7 +337,7 @@ function renderAttendance() {
         <div style="font-size:14px;font-weight:700;color:var(--text);">${a.subject}</div>
         <div style="text-align:right;">
           <span style="font-size:18px;font-weight:800;color:${col};">${pct}%</span>
-          ${a.danger ? '<span style="font-size:11px;color:var(--red);margin-left:4px;">⚠️危険</span>' : ''}
+          ${a.danger ? '<span style="font-size:11px;color:var(--red);font-weight:700;margin-left:4px;">要注意</span>' : ''}
         </div>
       </div>
       <div style="background:var(--border);border-radius:99px;height:8px;margin-bottom:8px;overflow:hidden;">
@@ -348,8 +349,8 @@ function renderAttendance() {
         <span style="color:${a.can_skip<=1?'var(--red)':'var(--text-2)'};">あと${a.can_skip}回休める</span>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="btn-primary att-attend-btn" data-id="${a.id}" style="flex:1;padding:8px;font-size:12px;">✅ 出席</button>
-        <button class="btn-secondary att-absent-btn" data-id="${a.id}" style="flex:1;padding:8px;font-size:12px;">❌ 欠席</button>
+        <button class="btn-primary att-attend-btn" data-id="${a.id}" style="flex:1;padding:8px;font-size:12px;">出席 +1</button>
+        <button class="btn-secondary att-absent-btn" data-id="${a.id}" style="flex:1;padding:8px;font-size:12px;">欠席 +1</button>
         <button class="btn-secondary att-edit-btn" data-id="${a.id}" data-subject="${a.subject}" data-total="${a.total_classes}" data-attended="${a.attended}" data-max="${a.max_absences}" style="padding:8px 12px;font-size:12px;">編集</button>
         <button class="btn-danger att-del-btn" data-id="${a.id}" style="padding:8px 12px;font-size:12px;">削除</button>
       </div>

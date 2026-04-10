@@ -3686,11 +3686,11 @@ body {
     text-decoration: none;
     gap: 3px;
     transition: color var(--t);
-    min-height: 56px;
+    min-height: 52px;
   }
   .bottom-nav a.active,
   .bottom-nav a:hover { color: var(--accent); }
-  .bottom-nav a span:first-child { font-size: 22px; line-height: 1; }
+  .bottom-nav a span { font-size: 11px; font-weight: 600; }
   /* ボトムナビ分のパディング */
   .main-content { padding-bottom: 80px; }
 }
