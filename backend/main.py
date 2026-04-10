@@ -60,6 +60,8 @@ def run_migrations():
         ("user_xp",  "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
         ("timetable","start_time",       "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS start_time VARCHAR(5)"),
         ("posts",    "tag",              "ALTER TABLE posts ADD COLUMN IF NOT EXISTS tag VARCHAR(30)"),
+        ("notices",  "is_pinned",        "ALTER TABLE notices ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false"),
+        ("notices",  "priority",         "ALTER TABLE notices ADD COLUMN IF NOT EXISTS priority VARCHAR(10) NOT NULL DEFAULT 'normal'"),
     ]
     try:
         with engine.connect() as conn:
@@ -201,17 +203,21 @@ app.include_router(notices_router,   prefix="/notices",   tags=["notices"])
 app.include_router(posts_router,     prefix="/posts",     tags=["posts"])
 app.include_router(calendar_router,  prefix="/calendar",  tags=["calendar"])
 app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
-
-from routes.grades    import router as grades_router
-from routes.tasks     import router as tasks_router
-from routes.bookmarks import router as bookmarks_router
-app.include_router(grades_router,    prefix="/grades",    tags=["grades"])
-app.include_router(tasks_router,     prefix="/tasks",     tags=["tasks"])
-app.include_router(bookmarks_router, prefix="/bookmarks", tags=["bookmarks"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
 app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
+
+from routes.grades     import router as grades_router
+from routes.tasks      import router as tasks_router
+from routes.bookmarks  import router as bookmarks_router
+from routes.attendance import router as attendance_router
+from routes.badges     import router as badges_router
+app.include_router(grades_router,     prefix="/grades",     tags=["grades"])
+app.include_router(tasks_router,      prefix="/tasks",      tags=["tasks"])
+app.include_router(bookmarks_router,  prefix="/bookmarks",  tags=["bookmarks"])
+app.include_router(attendance_router, prefix="/attendance", tags=["attendance"])
+app.include_router(badges_router,     prefix="/badges",     tags=["badges"])
 
 @app.get("/")
 @app.head("/")
 def root():
-    return ok({"status": "ok", "version": "0.9.5"})
+    return ok({"status": "ok", "version": "0.9.6"})

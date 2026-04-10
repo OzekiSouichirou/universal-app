@@ -3752,3 +3752,73 @@ body {
   border-bottom-color: var(--accent);
 }
 .study-tab:hover { color: var(--text); }
+
+/* ============================================================
+   締切カレンダー
+   ============================================================ */
+.task-cal-grid {
+  font-size: 12px;
+}
+.cal-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.cal-day-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  padding: 4px 0;
+}
+.cal-body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.cal-cell {
+  min-height: 52px;
+  padding: 3px 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.cal-cell.empty { background: transparent; border-color: transparent; }
+.cal-cell.cal-today { border-color: var(--accent); background: rgba(91,110,245,0.08); }
+.cal-date {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 2px;
+  text-align: center;
+}
+.cal-today-num { color: var(--accent); }
+.cal-task-dot {
+  font-size: 9px;
+  color: #fff;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   出席管理
+   ============================================================ */
+.att-meter {
+  background: var(--border);
+  border-radius: 99px;
+  height: 8px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.att-meter-bar {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s;
+}

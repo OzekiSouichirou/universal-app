@@ -14,18 +14,20 @@ class NoticeCreate(BaseModel):
     title: str
     content: str
     is_active: bool = True
+    is_pinned: bool = False
+    priority: str = "normal"  # normal / important / urgent
 
 @router.get("/")
 def get_notices(db=Depends(get_db), _=Depends(get_current_user)):
     rows = db.execute(
-        text("SELECT id,title,content,is_active,created_at FROM notices WHERE is_active=true ORDER BY created_at DESC")
+        text("SELECT id,title,content,is_active,is_pinned,priority,created_at FROM notices WHERE is_active=true ORDER BY is_pinned DESC, CASE priority WHEN 'urgent' THEN 0 WHEN 'important' THEN 1 ELSE 2 END, created_at DESC")
     ).fetchall()
     return ok(rows_to_list(rows))
 
 @router.get("/all")
 def get_all_notices(db=Depends(get_db), _=Depends(require_admin)):
     rows = db.execute(
-        text("SELECT id,title,content,is_active,created_at FROM notices ORDER BY created_at DESC")
+        text("SELECT id,title,content,is_active,is_pinned,priority,created_at FROM notices ORDER BY is_pinned DESC, created_at DESC")
     ).fetchall()
     return ok(rows_to_list(rows))
 
@@ -34,8 +36,8 @@ def create_notice(body: NoticeCreate, db=Depends(get_db), admin=Depends(require_
     if not body.title.strip():
         err(E.VALIDATION, "タイトルを入力してください")
     db.execute(
-        text("INSERT INTO notices (title,content,is_active) VALUES (:t,:c,:a)"),
-        {"t": body.title.strip(), "c": body.content, "a": body.is_active}
+        text("INSERT INTO notices (title,content,is_active,is_pinned,priority) VALUES (:t,:c,:a,:p,:pr)"),
+        {"t": body.title.strip(), "c": body.content, "a": body.is_active, "p": body.is_pinned, "pr": body.priority}
     )
     db.execute(
         text("INSERT INTO logs (username,action) VALUES (:u,'お知らせ追加')"),
@@ -46,8 +48,8 @@ def create_notice(body: NoticeCreate, db=Depends(get_db), admin=Depends(require_
 @router.patch("/{notice_id}")
 def update_notice(notice_id: int, body: NoticeCreate, db=Depends(get_db), admin=Depends(require_admin)):
     db.execute(
-        text("UPDATE notices SET title=:t, content=:c, is_active=:a WHERE id=:id"),
-        {"t": body.title, "c": body.content, "a": body.is_active, "id": notice_id}
+        text("UPDATE notices SET title=:t, content=:c, is_active=:a, is_pinned=:p, priority=:pr WHERE id=:id"),
+        {"t": body.title, "c": body.content, "a": body.is_active, "p": body.is_pinned, "pr": body.priority, "id": notice_id}
     )
     return ok({"message": "更新しました"})
 

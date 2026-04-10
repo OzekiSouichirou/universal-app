@@ -14,9 +14,9 @@
   <div class="layout">
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.5-β</span></div>
+      <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.6-β</span></div>
       <nav>
-                <ul>
+        <ul>
           <li><a href="home.html">ホーム</a></li>
           <li><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
@@ -42,17 +42,30 @@
 
         <!-- タブ -->
         <div class="study-tabs">
-          <button class="study-tab active" data-tab="tasks">📋 課題管理</button>
-          <button class="study-tab" data-tab="grades">📊 成績管理</button>
+          <button class="study-tab active" data-tab="tasks">📋 課題</button>
+          <button class="study-tab" data-tab="grades">📊 成績</button>
+          <button class="study-tab" data-tab="attendance">🎯 出席</button>
         </div>
 
-        <!-- 課題管理タブ -->
+        <!-- 課題タブ -->
         <div id="tab-tasks" class="study-tab-content">
+          <!-- 締切カレンダービュー -->
+          <div class="db-card" style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div class="db-card-title">締切カレンダー</div>
+              <button id="cal-prev" class="btn-secondary" style="padding:4px 10px;font-size:12px;">◀</button>
+              <span id="cal-label" style="font-size:13px;font-weight:600;color:var(--text)"></span>
+              <button id="cal-next" class="btn-secondary" style="padding:4px 10px;font-size:12px;">▶</button>
+            </div>
+            <div id="task-calendar" class="task-cal-grid"></div>
+          </div>
+
+          <!-- 課題追加フォーム -->
           <div class="db-card" style="margin-bottom:16px;">
             <div class="db-card-title" style="margin-bottom:12px;">課題を追加</div>
             <input type="text" id="task-title" placeholder="課題タイトル（必須）" maxlength="100">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
-              <input type="text" id="task-subject" placeholder="科目名（任意）" maxlength="50">
+              <input type="text" id="task-subject" placeholder="科目名" maxlength="50">
               <input type="date" id="task-due">
               <select id="task-priority">
                 <option value="high">🔴 高</option>
@@ -62,12 +75,12 @@
             </div>
             <input type="text" id="task-memo" placeholder="メモ（任意）" maxlength="100" style="margin-top:10px;">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin-top:10px;">
-              <input type="checkbox" id="task-sync-cal" checked>
-              カレンダーにも自動登録する
+              <input type="checkbox" id="task-sync-cal" checked> カレンダーにも登録
             </label>
             <button id="task-add-btn" class="btn-primary" style="margin-top:10px;width:100%;">追加</button>
             <p id="task-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
           </div>
+
           <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
             <button class="task-filter-btn active" data-status="all">すべて</button>
             <button class="task-filter-btn" data-status="pending">未着手</button>
@@ -77,7 +90,7 @@
           <div id="tasks-list"></div>
         </div>
 
-        <!-- 成績管理タブ -->
+        <!-- 成績タブ -->
         <div id="tab-grades" class="study-tab-content" style="display:none;">
           <div class="db-card" style="margin-bottom:16px;">
             <div class="db-card-title" style="margin-bottom:12px;">成績を追加</div>
@@ -107,6 +120,31 @@
             <div class="db-card-title" style="margin-bottom:12px;">成績一覧</div>
             <div id="grades-list"></div>
           </div>
+        </div>
+
+        <!-- 出席タブ -->
+        <div id="tab-attendance" class="study-tab-content" style="display:none;">
+          <div class="db-card" style="margin-bottom:16px;">
+            <div class="db-card-title" style="margin-bottom:12px;">科目を登録/更新</div>
+            <input type="text" id="att-subject" placeholder="科目名（必須）" maxlength="50">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+              <div>
+                <label style="font-size:12px;color:var(--text-3);">総授業数</label>
+                <input type="number" id="att-total" min="0" value="0">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-3);">出席数</label>
+                <input type="number" id="att-attended" min="0" value="0">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-3);">欠席上限</label>
+                <input type="number" id="att-max" min="1" value="5">
+              </div>
+            </div>
+            <button id="att-save-btn" class="btn-primary" style="margin-top:12px;width:100%;">保存</button>
+            <p id="att-msg" style="font-size:13px;min-height:16px;margin-top:6px;"></p>
+          </div>
+          <div id="attendance-list"></div>
         </div>
 
       </section>
@@ -161,11 +199,11 @@
     </div>
   </div>
 
-    <nav class="bottom-nav">
+  <nav class="bottom-nav">
     <a href="home.html"><span>🏠</span><span>ホーム</span></a>
     <a href="board.html"><span>📋</span><span>掲示板</span></a>
     <a href="calendar.html"><span>📅</span><span>カレンダー</span></a>
-    <a href="study.html"><span>📚</span><span>学習</span></a>
+    <a href="study.html" class="active"><span>📚</span><span>学習</span></a>
     <a href="profile.html"><span>👤</span><span>プロフィール</span></a>
   </nav>
 
