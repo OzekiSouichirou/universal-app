@@ -1,4 +1,3 @@
-var API = window._POLONIX_API || (window.location.hostname === 'localhost' ? 'http://127.0.0.1:8000' : 'https://polonix-api-sod4.onrender.com');
 const loginBtn = document.getElementById('login-btn');
 const errorMsg = document.getElementById('error-msg');
 
@@ -26,8 +25,7 @@ loginBtn.addEventListener('click', async () => {
     });
     const json = await res.json().catch(() => null);
 
-    // v0.9.0統一レスポンス形式に対応
-    const ok   = json?.success === true  ? json.data   : null;
+    const ok     = json?.success === true  ? json.data        : null;
     const errMsg = json?.success === false ? json.error?.message : null;
 
     if (!res.ok || !ok) {

@@ -1,11 +1,10 @@
-var API = window._POLONIX_API || (window.location.hostname === 'localhost' ? 'http://127.0.0.1:8000' : 'https://polonix-api-sod4.onrender.com');
 const registerBtn = document.getElementById('register-btn');
 const errorMsg = document.getElementById('error-msg');
 
 registerBtn.addEventListener('click', async () => {
   const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value.trim();
-  const confirm = document.getElementById('confirm-password').value.trim();
+  const confirm  = document.getElementById('confirm-password').value.trim();
 
   if (!username || !password || !confirm) {
     errorMsg.style.color = '#f0476c';
