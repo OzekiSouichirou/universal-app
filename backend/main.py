@@ -103,12 +103,15 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS timetable (
         id SERIAL PRIMARY KEY,
         username VARCHAR(30) NOT NULL,
-        day_of_week INTEGER NOT NULL,
+        day INTEGER NOT NULL,
         period INTEGER NOT NULL,
         subject VARCHAR(100) NOT NULL,
         room VARCHAR(50),
+        teacher VARCHAR(100),
+        memo TEXT,
+        color VARCHAR(20) NOT NULL DEFAULT '#5b6ef5',
         start_time VARCHAR(5),
-        UNIQUE(username, day_of_week, period)
+        UNIQUE(username, day, period)
     );
     CREATE TABLE IF NOT EXISTS user_xp (
         username VARCHAR(30) PRIMARY KEY,
@@ -130,7 +133,9 @@ def create_tables():
         id SERIAL PRIMARY KEY,
         username VARCHAR(30) NOT NULL,
         type VARCHAR(20) NOT NULL DEFAULT 'other',
+        title VARCHAR(200),
         content TEXT NOT NULL,
+        is_anonymous BOOLEAN NOT NULL DEFAULT false,
         status VARCHAR(20) NOT NULL DEFAULT 'open',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -218,9 +223,15 @@ def run_migrations():
         ("users",    "is_banned",        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT false"),
         ("user_xp",  "fortune_date",     "ALTER TABLE user_xp ADD COLUMN IF NOT EXISTS fortune_date VARCHAR(10)"),
         ("timetable","start_time",       "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS start_time VARCHAR(5)"),
+        ("timetable","day_rename",       "ALTER TABLE timetable RENAME COLUMN day_of_week TO day"),
+        ("timetable","teacher",          "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS teacher VARCHAR(100)"),
+        ("timetable","memo",             "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS memo TEXT"),
+        ("timetable","color",            "ALTER TABLE timetable ADD COLUMN IF NOT EXISTS color VARCHAR(20) NOT NULL DEFAULT '#5b6ef5'"),
         ("posts",    "tag",              "ALTER TABLE posts ADD COLUMN IF NOT EXISTS tag VARCHAR(30)"),
         ("notices",  "is_pinned",        "ALTER TABLE notices ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false"),
         ("notices",  "priority",         "ALTER TABLE notices ADD COLUMN IF NOT EXISTS priority VARCHAR(10) NOT NULL DEFAULT 'normal'"),
+        ("feedback", "title",            "ALTER TABLE feedback ADD COLUMN IF NOT EXISTS title VARCHAR(200)"),
+        ("feedback", "is_anonymous",     "ALTER TABLE feedback ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN NOT NULL DEFAULT false"),
     ]
     try:
         with engine.connect() as conn:
@@ -372,7 +383,8 @@ def root():
     return ok({"status": "ok", "version": "0.9.6"})
 
 @app.get("/health")
-def health(  ):
+@app.head("/health")
+def health():
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
