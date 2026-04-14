@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'polonix-v0.9.2';
+const CACHE_NAME  = 'polonix-v0.9.6';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
@@ -31,7 +31,7 @@ self.addEventListener('fetch', event => {
 
   // 外部オリジン・APIはスルー
   if (url.origin !== location.origin) return;
-  if (url.hostname.includes('onrender.com')) return;
+  if (url.hostname.includes('ondigitalocean.app')) return;
 
   // JSファイルはキャッシュしない（?v=N で管理）
   if (url.pathname.endsWith('.js')) {
