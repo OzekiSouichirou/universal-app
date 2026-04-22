@@ -211,7 +211,7 @@ def create_tables():
         logger.error(f"テーブル作成失敗: {e}")
 
 # ============================================================
-# マイグレーション
+# マイグレーション（各文ごとに独立コネクションで実行）
 # ============================================================
 def run_migrations():
     MIGRATIONS = [
@@ -239,17 +239,14 @@ def run_migrations():
         ("gacha_inventory", "drop_item_name", "ALTER TABLE gacha_inventory DROP COLUMN IF EXISTS item_name"),
         ("gacha_inventory", "drop_obtained_at","ALTER TABLE gacha_inventory DROP COLUMN IF EXISTS obtained_at"),
     ]
-    try:
-        with engine.connect() as conn:
-            for table, column, sql in MIGRATIONS:
-                try:
-                    conn.execute(text(sql))
-                    conn.commit()
-                    logger.info(f"Migration: {table}.{column} 完了")
-                except Exception as e:
-                    logger.warning(f"Migration skipped ({table}.{column}): {e}")
-    except Exception as e:
-        logger.error(f"Migration failed: {e}")
+    for table, column, sql in MIGRATIONS:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(sql))
+                conn.commit()
+                logger.info(f"Migration: {table}.{column} 完了")
+        except Exception as e:
+            logger.warning(f"Migration skipped ({table}.{column}): {str(e).splitlines()[0]}")
 
 # ============================================================
 # 管理者アカウント初期化
