@@ -1,7 +1,7 @@
 window._POLONIX_API = window._POLONIX_API || (
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:8000'
-    : 'https://polonix-fda3w.ondigitalocean.app'
+    : 'https://api.polonix.app'
 );
 var API = window._POLONIX_API;
 
@@ -114,7 +114,6 @@ const _isSafari    = _isIos && /safari/.test(_ua) && !/crios|fxios/.test(_ua);
 const _isStandalone = window.navigator.standalone === true
   || window.matchMedia('(display-mode: standalone)').matches;
 
-// iOS Safari: インストール手順モーダルを表示
 function _showIosGuide() {
   if (document.getElementById('pwa-ios-modal')) return;
   const modal = document.createElement('div');
@@ -138,7 +137,6 @@ function _showIosGuide() {
   });
 }
 
-// beforeinstallprompt対応ブラウザ（Chrome/Edge/Firefox Android/Samsung等）
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _installPrompt = e;
@@ -161,19 +159,15 @@ function _hideInstallBtn() {
   if (btn) btn.style.display = 'none';
 }
 
-// iOS Safariでインストール案内を表示
 if (_isSafari && !_isStandalone) {
   window.addEventListener('DOMContentLoaded', _showInstallBtn);
 }
 
-// インストールボタンのクリック処理
 function pwaInstall() {
   if (_installPrompt) {
-    // Chrome/Android等: ネイティブプロンプトを表示
     _installPrompt.prompt();
     _installPrompt.userChoice.then(() => { _installPrompt = null; });
   } else if (_isSafari) {
-    // iOS Safari: 手順モーダルを表示
     _showIosGuide();
   }
 }
