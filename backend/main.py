@@ -124,10 +124,10 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS gacha_inventory (
         id SERIAL PRIMARY KEY,
         username VARCHAR(30) NOT NULL,
-        item_id VARCHAR(50) NOT NULL,
-        item_name VARCHAR(100) NOT NULL,
+        type VARCHAR(2) NOT NULL,
         rarity VARCHAR(10) NOT NULL,
-        obtained_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        text VARCHAR(200) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS feedback (
         id SERIAL PRIMARY KEY,
@@ -232,6 +232,12 @@ def run_migrations():
         ("notices",  "priority",         "ALTER TABLE notices ADD COLUMN IF NOT EXISTS priority VARCHAR(10) NOT NULL DEFAULT 'normal'"),
         ("feedback", "title",            "ALTER TABLE feedback ADD COLUMN IF NOT EXISTS title VARCHAR(200)"),
         ("feedback", "is_anonymous",     "ALTER TABLE feedback ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN NOT NULL DEFAULT false"),
+        ("gacha_inventory", "type",      "ALTER TABLE gacha_inventory ADD COLUMN IF NOT EXISTS type VARCHAR(2)"),
+        ("gacha_inventory", "text",      "ALTER TABLE gacha_inventory ADD COLUMN IF NOT EXISTS text VARCHAR(200)"),
+        ("gacha_inventory", "created_at","ALTER TABLE gacha_inventory ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+        ("gacha_inventory", "drop_item_id",   "ALTER TABLE gacha_inventory DROP COLUMN IF EXISTS item_id"),
+        ("gacha_inventory", "drop_item_name", "ALTER TABLE gacha_inventory DROP COLUMN IF EXISTS item_name"),
+        ("gacha_inventory", "drop_obtained_at","ALTER TABLE gacha_inventory DROP COLUMN IF EXISTS obtained_at"),
     ]
     try:
         with engine.connect() as conn:
