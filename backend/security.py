@@ -1,153 +1,173 @@
 """
-Polonix v0.9.0 - セキュリティ層
-- レート制限（メモリベース・TTL付きクリーンアップ）
+Polonix v0.9.7 - セキュリティ層
+- レート制限（メモリベース・スレッドセーフ・自動 GC）
 - 入力バリデーション
-- BAN確認
-- SQLインジェクション対策（生SQL使用時のパラメータバインド強制）
+- XSS 対策（HTMLタグ除去）
+- BAN 確認
 """
-from fastapi import HTTPException, Request
-from datetime import datetime, timedelta
-from collections import defaultdict
-import threading
-import re
+from __future__ import annotations
+
 import logging
+import re
+import threading
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from typing import Final
+
+from response import E, err
 
 logger = logging.getLogger("polonix.security")
 
-# ============================================================
-# レート制限（メモリベース・スレッドセーフ）
-# ============================================================
-_rate_store: dict = defaultdict(list)
-_rate_lock = threading.Lock()
-_last_cleanup = datetime.utcnow()
 
-def _cleanup_rate_store():
-    """古いエントリを定期クリーンアップ（メモリリーク防止）"""
-    global _last_cleanup
-    now = datetime.utcnow()
-    if (now - _last_cleanup).seconds < 300:  # 5分に1回
+# ================================================================
+# レート制限
+# ================================================================
+_RATE_STORE: dict[str, list[datetime]] = defaultdict(list)
+_RATE_LOCK = threading.Lock()
+_LAST_CLEANUP = datetime.now(timezone.utc)
+_CLEANUP_INTERVAL_SEC: Final[int] = 300
+
+
+def _gc_rate_store() -> None:
+    """5分ごとに古いエントリを掃除（メモリリーク防止）。lock 内で呼ぶこと。"""
+    global _LAST_CLEANUP
+    now = datetime.now(timezone.utc)
+    if (now - _LAST_CLEANUP).total_seconds() < _CLEANUP_INTERVAL_SEC:
         return
-    _last_cleanup = now
+    _LAST_CLEANUP = now
     cutoff = now - timedelta(seconds=600)
-    keys_to_delete = []
-    for key, calls in _rate_store.items():
-        filtered = [t for t in calls if t > cutoff]
-        if filtered:
-            _rate_store[key] = filtered
+    dead_keys: list[str] = []
+    for k, calls in _RATE_STORE.items():
+        active = [t for t in calls if t > cutoff]
+        if active:
+            _RATE_STORE[k] = active
         else:
-            keys_to_delete.append(key)
-    for k in keys_to_delete:
-        del _rate_store[k]
+            dead_keys.append(k)
+    for k in dead_keys:
+        del _RATE_STORE[k]
 
-def check_rate_limit(key: str, max_calls: int, window_seconds: int):
+
+def check_rate_limit(key: str, max_calls: int, window_sec: int) -> None:
     """
-    keyでmax_calls/window_seconds を超えたらHTTP429を返す。
-    key例: "login:127.0.0.1", "post:nekozita", "gacha:nekozita"
+    レート制限を判定する。超過した場合は 429 を返す。
+
+    :param key: 識別キー（例: "login:127.0.0.1"）
+    :param max_calls: window_sec 内に許可する最大呼び出し回数
+    :param window_sec: 計測ウィンドウ（秒）
     """
-    now = datetime.utcnow()
-    cutoff = now - timedelta(seconds=window_seconds)
-    with _rate_lock:
-        _cleanup_rate_store()
-        calls = _rate_store[key]
-        calls = [t for t in calls if t > cutoff]
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(seconds=window_sec)
+    with _RATE_LOCK:
+        _gc_rate_store()
+        calls = [t for t in _RATE_STORE[key] if t > cutoff]
         if len(calls) >= max_calls:
-            logger.warning(f"Rate limit exceeded: {key} ({len(calls)}/{max_calls})")
-            raise HTTPException(
-                status_code=429,
-                detail={"success": False, "error": {
-                    "code": "RATE_LIMIT",
-                    "message": f"リクエストが多すぎます。{window_seconds}秒後に再試行してください。"
-                }}
+            logger.warning("Rate limit exceeded: %s (%d/%d)", key, len(calls), max_calls)
+            err(
+                E.RATE_LIMIT,
+                f"リクエストが多すぎます。{window_sec}秒後に再試行してください。",
+                status=429,
             )
         calls.append(now)
-        _rate_store[key] = calls
+        _RATE_STORE[key] = calls
 
-# レート制限プリセット（緩めに設定して誤爆防止）
-RATE = {
-    "login":    (10, 300),   # 5分で10回
-    "register": (5,  600),   # 10分で5回
-    "post":     (15, 60),    # 1分で15回
-    "gacha":    (5,  60),    # 1分で5回（10連×5）
-    "password": (5,  600),   # 10分で5回
-    "comment":  (20, 60),    # 1分で20回
-    "like":     (30, 60),    # 1分で30回
+
+# レート制限プリセット（max_calls, window_sec）
+RATE: Final[dict[str, tuple[int, int]]] = {
+    "login":    (10, 300),
+    "register": (5,  600),
+    "post":     (15, 60),
+    "gacha":    (5,  60),
+    "password": (5,  600),
+    "comment":  (20, 60),
+    "like":     (30, 60),
 }
 
-# ============================================================
+
+# ================================================================
 # 入力バリデーション
-# ============================================================
-USERNAME_RE = re.compile(r'^[a-zA-Z0-9_\-]{3,30}$')
-PASSWORD_MIN = 6
+# ================================================================
+USERNAME_RE: Final = re.compile(r"^[a-zA-Z0-9_\-]{3,30}$")
+PASSWORD_MIN: Final[int] = 6
+PASSWORD_MAX: Final[int] = 128
 
-# XSS対策: 危険なHTMLタグを除去
-_DANGEROUS_TAGS = re.compile(r'<[^>]*>', re.IGNORECASE)
+# HTML タグ除去
+_HTML_TAG_RE: Final = re.compile(r"<[^>]*>", re.IGNORECASE)
 
-def sanitize_text(text: str) -> str:
-    """XSS対策: HTMLタグを除去"""
-    return _DANGEROUS_TAGS.sub('', text).strip()
+
+def sanitize_text(s: str) -> str:
+    """XSS 対策: HTMLタグを完全除去して trim。"""
+    return _HTML_TAG_RE.sub("", s).strip()
+
 
 def validate_username(username: str) -> str:
+    """ユーザー名形式を検証して整形済みの値を返す。"""
     if not username:
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "ユーザー名を入力してください"}})
-    username = username.strip()
-    if not USERNAME_RE.match(username):
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "ユーザー名は3〜30文字の英数字・アンダースコア・ハイフンのみ使用できます"}})
-    return username
+        err(E.VALIDATION, "ユーザー名を入力してください")
+    s = username.strip()
+    if not USERNAME_RE.match(s):
+        err(
+            E.VALIDATION,
+            "ユーザー名は 3〜30 文字の半角英数字・アンダースコア・ハイフンのみ使用できます",
+        )
+    return s
+
 
 def validate_password(password: str) -> str:
+    """パスワード長を検証する。"""
     if not password or len(password) < PASSWORD_MIN:
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": f"パスワードは{PASSWORD_MIN}文字以上にしてください"}})
-    if len(password) > 128:
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "パスワードが長すぎます（128文字以内）"}})
+        err(E.VALIDATION, f"パスワードは {PASSWORD_MIN} 文字以上にしてください")
+    if len(password) > PASSWORD_MAX:
+        err(E.VALIDATION, f"パスワードが長すぎます（{PASSWORD_MAX} 文字以内）")
     return password
 
-def validate_post_content(content: str) -> str:
+
+def validate_post_content(content: str, max_len: int = 500) -> str:
+    """投稿本文を検証・サニタイズして返す。"""
     if not content or not content.strip():
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "投稿内容を入力してください"}})
-    content = sanitize_text(content)
-    if len(content) > 500:
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "投稿内容は500文字以内にしてください"}})
-    return content
+        err(E.VALIDATION, "投稿内容を入力してください")
+    s = sanitize_text(content)
+    if len(s) > max_len:
+        err(E.VALIDATION, f"投稿内容は {max_len} 文字以内にしてください")
+    return s
 
-def validate_bio(bio: str) -> str:
-    bio = sanitize_text(bio)
-    if len(bio) > 200:
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "自己紹介は200文字以内にしてください"}})
-    return bio
 
-def validate_event_title(title: str) -> str:
+def validate_bio(bio: str, max_len: int = 200) -> str:
+    """自己紹介文を検証・サニタイズして返す。"""
+    s = sanitize_text(bio or "")
+    if len(s) > max_len:
+        err(E.VALIDATION, f"自己紹介は {max_len} 文字以内にしてください")
+    return s
+
+
+def validate_event_title(title: str, max_len: int = 200) -> str:
+    """イベントタイトルを検証・サニタイズして返す。"""
     if not title or not title.strip():
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "タイトルを入力してください"}})
-    title = sanitize_text(title)
-    if len(title) > 200:
-        raise HTTPException(status_code=400, detail={
-            "success": False, "error": {"code": "VALIDATION_ERROR",
-                                         "message": "タイトルは200文字以内にしてください"}})
-    return title
+        err(E.VALIDATION, "タイトルを入力してください")
+    s = sanitize_text(title)
+    if len(s) > max_len:
+        err(E.VALIDATION, f"タイトルは {max_len} 文字以内にしてください")
+    return s
 
-# ============================================================
-# BAN確認
-# ============================================================
-def check_banned(is_banned: bool, username: str = ""):
+
+# ================================================================
+# BAN 確認
+# ================================================================
+def check_banned(is_banned: bool, username: str = "") -> None:
+    """is_banned が True の場合 403 を送出する。"""
     if is_banned:
         if username:
-            logger.warning(f"Banned user attempted access: {username}")
-        raise HTTPException(status_code=403, detail={
-            "success": False, "error": {"code": "USER_BANNED",
-                                         "message": "このアカウントは利用停止されています"}})
+            logger.warning("Banned user attempted access: %s", username)
+        err(E.BANNED, "このアカウントは利用停止されています", status=403)
+
+
+# ================================================================
+# セキュリティヘッダー（main.py から参照される定数）
+# ================================================================
+SECURITY_HEADERS: Final[dict[str, str]] = {
+    "X-Content-Type-Options":  "nosniff",
+    "X-Frame-Options":         "DENY",
+    "Referrer-Policy":         "strict-origin-when-cross-origin",
+    "Permissions-Policy":      "geolocation=(), microphone=(), camera=()",
+    "Cross-Origin-Opener-Policy":   "same-origin",
+    "Cross-Origin-Resource-Policy": "same-site",
+}

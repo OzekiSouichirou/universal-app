@@ -1,27 +1,44 @@
 """
-Polonix v0.9.0 - APIレスポンス統一ユーティリティ
+Polonix v0.9.7 - APIレスポンス統一ユーティリティ
 全APIは以下の形式で統一する:
 
-成功時: {"success": true,  "data": {...}}
-失敗時: {"success": false, "error": {"code": "ERROR_CODE", "message": "..."}}
+  成功: {"success": true,  "data": {...}}
+  失敗: {"success": false, "error": {"code": "ERROR_CODE", "message": "..."}}
 """
-from fastapi import HTTPException
-from fastapi.responses import JSONResponse
-from typing import Any
+from __future__ import annotations
 
-def ok(data: Any = None) -> dict:
-    """成功レスポンスを生成"""
+from typing import Any, NoReturn
+
+from fastapi import HTTPException
+
+
+# ----------------------------------------------------------------
+# 成功レスポンス
+# ----------------------------------------------------------------
+def ok(data: Any = None) -> dict[str, Any]:
+    """成功レスポンスを生成する。"""
     return {"success": True, "data": data if data is not None else {}}
 
-def err(code: str, message: str, status: int = 400) -> HTTPException:
-    """失敗レスポンスをHTTPExceptionとして生成"""
+
+# ----------------------------------------------------------------
+# 失敗レスポンス（HTTPException として throw）
+# ----------------------------------------------------------------
+def err(code: str, message: str, status: int = 400) -> NoReturn:
+    """
+    失敗レスポンスを HTTPException として送出する。
+    status は HTTP ステータスコード。デフォルト 400。
+    """
     raise HTTPException(
         status_code=status,
-        detail={"success": False, "error": {"code": code, "message": message}}
+        detail={"success": False, "error": {"code": code, "message": message}},
     )
 
-# よく使うエラーコード定数
+
+# ----------------------------------------------------------------
+# 標準エラーコード定数
+# ----------------------------------------------------------------
 class E:
+    """よく使うエラーコード定数。"""
     NOT_FOUND       = "NOT_FOUND"
     UNAUTHORIZED    = "UNAUTHORIZED"
     FORBIDDEN       = "FORBIDDEN"
@@ -33,3 +50,4 @@ class E:
     XP_INSUFFICIENT = "XP_INSUFFICIENT"
     AUTH_FAILED     = "AUTH_FAILED"
     BANNED          = "USER_BANNED"
+    INTERNAL        = "INTERNAL_ERROR"
