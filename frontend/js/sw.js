@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'polonix-v0.9.7';
+const CACHE_NAME  = 'polonix-v0.9.8';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
@@ -34,27 +34,18 @@ self.addEventListener('fetch', event => {
   if (url.hostname.includes('ondigitalocean.app')) return;
   if (url.hostname.startsWith('api.')) return;
 
-  // JSファイルはキャッシュしない（?v=N で管理）
-  if (url.pathname.endsWith('.js')) {
-    event.respondWith(fetch(event.request));
+  // JS/CSS/HTMLは常にネットワーク優先（キャッシュしない・オフライン時のみフォールバック）
+  if (url.pathname.match(/\.(js|css|html)$/) || url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match(event.request).then(cached => cached || caches.match(OFFLINE_URL))
+      )
+    );
     return;
   }
 
-  // Network First: 成功したレスポンスをキャッシュ、失敗時にフォールバック
+  // それ以外（画像など）はCache First
   event.respondWith(
-    fetch(event.request)
-      .then(res => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, copy))
-            .catch(() => { /* キャッシュ失敗は無視 */ });
-        }
-        return res;
-      })
-      .catch(() =>
-        caches.match(event.request)
-          .then(cached => cached || caches.match(OFFLINE_URL))
-      )
+    caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
