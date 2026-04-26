@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'polonix-v0.9.8';
+const CACHE_NAME  = 'polonix-v0.9.9';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(cache => cache.addAll(STATIC_ASSETS).catch(() => null))
       .then(() => self.skipWaiting())
   );
 });

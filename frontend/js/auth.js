@@ -1,5 +1,5 @@
 // ============================================================
-// ローディングスピナー制御
+// ローディングスピナー
 // ============================================================
 function showSpinner() {
   const el = document.getElementById('page-spinner');
@@ -79,11 +79,25 @@ document.addEventListener('DOMContentLoaded', () => {
   overlay.addEventListener('click', close);
   sidebar.querySelectorAll('nav a').forEach(a => a.addEventListener('click', close));
 
-  // PWAインストールボタン
   const installBtn = document.getElementById('pwa-install-btn');
   if (installBtn) installBtn.addEventListener('click', pwaInstall);
 });
 
+// ============================================================
+// Service Worker 登録（ルート配置の /sw.js を使用）
+// ============================================================
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  window.addEventListener('load', async () => {
+    try {
+      // 過去の誤登録（/js/sw.js）が残っていれば破棄
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) {
+        const url = r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || '';
+        if (url.includes('/js/sw.js')) await r.unregister();
+      }
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    } catch (e) {
+      console.warn('SW register failed:', e);
+    }
+  });
 }

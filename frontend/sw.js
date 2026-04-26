@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'polonix-v0.9.6';
+const CACHE_NAME  = 'polonix-v0.9.9';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(cache => cache.addAll(STATIC_ASSETS).catch(() => null))
       .then(() => self.skipWaiting())
   );
 });
@@ -32,26 +32,20 @@ self.addEventListener('fetch', event => {
   // 外部オリジン・APIはスルー
   if (url.origin !== location.origin) return;
   if (url.hostname.includes('ondigitalocean.app')) return;
+  if (url.hostname.startsWith('api.')) return;
 
-  // JSファイルはキャッシュしない（?v=N で管理）
-  if (url.pathname.endsWith('.js')) {
-    event.respondWith(fetch(event.request));
+  // JS/CSS/HTMLは常にネットワーク優先（キャッシュしない・オフライン時のみフォールバック）
+  if (url.pathname.match(/\.(js|css|html)$/) || url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match(event.request).then(cached => cached || caches.match(OFFLINE_URL))
+      )
+    );
     return;
   }
 
-  // Network First: 成功したレスポンスをキャッシュ、失敗時にフォールバック
+  // それ以外（画像など）はCache First
   event.respondWith(
-    fetch(event.request)
-      .then(res => {
-        if (res.ok) {
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, res.clone()));
-        }
-        return res;
-      })
-      .catch(() =>
-        caches.match(event.request)
-          .then(cached => cached || caches.match(OFFLINE_URL))
-      )
+    caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
