@@ -1,47 +1,54 @@
-"""Polonix v0.9.6 - 出席管理ルート"""
-import os, sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from fastapi import APIRouter, Depends
-from sqlalchemy import text
-from pydantic import BaseModel
+"""Polonix v0.9.7 - 出席管理ルート"""
+from __future__ import annotations
+
 from typing import Optional
-from models.database import get_db, rows_to_list, row_to_dict
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy import text
+
+from models.database import get_db, row_to_dict, rows_to_list
+from response import E, err, ok
 from routes.users import get_current_user
-from response import ok, err, E
 
 router = APIRouter()
 
+
 class AttendanceBody(BaseModel):
-    subject: str
+    subject:       str
     total_classes: int
-    attended: int
-    max_absences: int = 5
+    attended:      int
+    max_absences:  int = 5
+
 
 class AttendanceUpdate(BaseModel):
-    delta: int  # +1 or -1
+    delta: int  # +1（出席）/ -1（欠席）
+
 
 @router.get("/")
 def get_attendance(db=Depends(get_db), current_user=Depends(get_current_user)):
     rows = db.execute(
         text("SELECT id,subject,total_classes,attended,max_absences,updated_at FROM attendance WHERE username=:u ORDER BY subject"),
-        {"u": current_user.username}
+        {"u": current_user.username},
     ).fetchall()
     result = []
     for r in rows_to_list(rows):
-        absences = r["total_classes"] - r["attended"]
-        rate     = round(r["attended"] / r["total_classes"] * 100, 1) if r["total_classes"] > 0 else 100.0
-        can_skip = max(0, r["max_absences"] - absences)
-        r["absences"]      = absences
-        r["attend_rate"]   = rate
-        r["can_skip"]      = can_skip
-        r["danger"]        = can_skip <= 1
+        absences   = r["total_classes"] - r["attended"]
+        rate       = round(r["attended"] / r["total_classes"] * 100, 1) if r["total_classes"] > 0 else 100.0
+        can_skip   = max(0, r["max_absences"] - absences)
+        r.update(absences=absences, attend_rate=rate, can_skip=can_skip, danger=can_skip <= 1)
         result.append(r)
     return ok(result)
 
+
 @router.post("/")
 def upsert_attendance(body: AttendanceBody, db=Depends(get_db), current_user=Depends(get_current_user)):
-    if not body.subject.strip(): err(E.VALIDATION, "科目名を入力してください")
-    if body.attended > body.total_classes: err(E.VALIDATION, "出席数が授業数を超えています")
+    if not body.subject.strip():
+        err(E.VALIDATION, "科目名を入力してください")
+    if body.attended > body.total_classes:
+        err(E.VALIDATION, "出席数が授業数を超えています")
+    if body.total_classes < 0 or body.attended < 0:
+        err(E.VALIDATION, "授業数・出席数は0以上にしてください")
     row = db.execute(text("""
         INSERT INTO attendance (username,subject,total_classes,attended,max_absences,updated_at)
         VALUES (:u,:s,:t,:a,:m,NOW())
@@ -52,22 +59,28 @@ def upsert_attendance(body: AttendanceBody, db=Depends(get_db), current_user=Dep
            "t": body.total_classes, "a": body.attended, "m": body.max_absences}).fetchone()
     return ok(row_to_dict(row))
 
+
 @router.patch("/{att_id}/attend")
 def record_attend(att_id: int, body: AttendanceUpdate, db=Depends(get_db), current_user=Depends(get_current_user)):
-    """出席/欠席を+1/-1で記録"""
+    if body.delta not in (1, -1):
+        err(E.VALIDATION, "deltaは1または-1のみ")
     row = db.execute(text("""
         UPDATE attendance
         SET total_classes = total_classes + 1,
-            attended = attended + CASE WHEN :delta > 0 THEN 1 ELSE 0 END,
-            updated_at = NOW()
+            attended      = attended + CASE WHEN :delta > 0 THEN 1 ELSE 0 END,
+            updated_at    = NOW()
         WHERE id=:id AND username=:u
         RETURNING id,subject,total_classes,attended,max_absences
     """), {"id": att_id, "delta": body.delta, "u": current_user.username}).fetchone()
-    if not row: err(E.NOT_FOUND, "記録が見つかりません", 404)
+    if not row:
+        err(E.NOT_FOUND, "記録が見つかりません", 404)
     return ok(row_to_dict(row))
+
 
 @router.delete("/{att_id}")
 def delete_attendance(att_id: int, db=Depends(get_db), current_user=Depends(get_current_user)):
-    db.execute(text("DELETE FROM attendance WHERE id=:id AND username=:u"),
-               {"id": att_id, "u": current_user.username})
+    db.execute(
+        text("DELETE FROM attendance WHERE id=:id AND username=:u"),
+        {"id": att_id, "u": current_user.username},
+    )
     return ok({"message": "削除しました"})
