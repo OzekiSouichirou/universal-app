@@ -13,43 +13,49 @@ function hideSpinner() {
 
 // ============================================================
 // 認証
-// ============================================================
+// ================================================================
+// /users/me はページ遷移ごとに叩かれる最頻エンドポイント。
+// api() 経由にすることで TTLキャッシュ（60秒）が適用され、
+// 連続したページ遷移で Singapore への往復が発生しなくなる。
+// ================================================================
 async function checkAuth(requireAdmin = false) {
   showSpinner();
   const t = token();
-  if (!t) { window.location.href = 'index.html'; return null; }
-
-  try { await fetch(`${API}/`, { method: 'GET' }); } catch (_) {}
-
-  let res = null;
-  for (let i = 0; i < 3; i++) {
-    try {
-      res = await fetch(`${API}/users/me`, { headers: { 'Authorization': `Bearer ${t}` } });
-      break;
-    } catch {
-      if (i < 2) await new Promise(r => setTimeout(r, 3000));
-      else { console.warn('checkAuth: network error'); hideSpinner(); return null; }
-    }
-  }
-
-  if (!res) { hideSpinner(); return null; }
-
-  if (res.status === 401) {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('role');
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('role');
+  if (!t) {
     window.location.href = 'index.html';
     return null;
   }
 
-  if (!res.ok) { console.warn('checkAuth: server error', res.status); hideSpinner(); return null; }
+  let user = null;
+  try {
+    // api() 経由: TTLキャッシュ60秒が効く / 401で自動ログアウト
+    user = await api('/users/me');
+  } catch (e) {
+    // 401 は api() 内でリダイレクト済みなので、それ以外のエラーのみ処理
+    if (e?.status !== 401) {
+      // ネットワークエラー時: 1回リトライ（最大1秒待ち）
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        user = await api('/users/me');
+      } catch {
+        console.warn('checkAuth: network error');
+        hideSpinner();
+        return null;
+      }
+    }
+    return null;
+  }
 
-  const json = await res.json().catch(() => null);
-  const user = json?.success === true ? json.data : json;
+  if (!user?.username) {
+    console.warn('checkAuth: unexpected response', user);
+    hideSpinner();
+    return null;
+  }
 
-  if (!user?.username) { console.warn('checkAuth: unexpected response', json); hideSpinner(); return null; }
-  if (requireAdmin && user.role !== 'admin') { window.location.href = 'home.html'; return null; }
+  if (requireAdmin && user.role !== 'admin') {
+    window.location.href = 'home.html';
+    return null;
+  }
 
   hideSpinner();
   return user;
@@ -60,6 +66,8 @@ function logout() {
   localStorage.removeItem('role');
   sessionStorage.removeItem('access_token');
   sessionStorage.removeItem('role');
+  // ログアウト時にキャッシュも全クリア
+  if (typeof clearApiCache === 'function') clearApiCache();
   window.location.href = 'index.html';
 }
 
@@ -72,10 +80,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay   = document.getElementById('sidebar-overlay');
   if (!hamburger || !sidebar || !overlay) return;
 
-  const open  = () => { sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; };
-  const close = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = ''; };
+  const open  = () => {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+  const close = () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  };
 
-  hamburger.addEventListener('click', () => sidebar.classList.contains('open') ? close() : open());
+  hamburger.addEventListener('click', () =>
+    sidebar.classList.contains('open') ? close() : open()
+  );
   overlay.addEventListener('click', close);
   sidebar.querySelectorAll('nav a').forEach(a => a.addEventListener('click', close));
 
@@ -84,12 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// Service Worker 登録（ルート配置の /sw.js を使用）
+// Service Worker 登録
 // ============================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // 過去の誤登録（/js/sw.js）が残っていれば破棄
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const r of regs) {
         const url = r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || '';

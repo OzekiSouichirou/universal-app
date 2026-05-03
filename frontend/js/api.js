@@ -24,33 +24,33 @@ function headers(extra = {}) {
 
 // ================================================================
 // クライアントサイド TTL キャッシュ
-// ページ遷移をまたいでデータを再利用し、Singapore RTT を削減する。
+// ページ遷移をまたいでデータを再利用し Singapore RTT を削減する。
 // ================================================================
 const _cache = new Map();
 
 // エンドポイントごとの TTL（ミリ秒）。0 = キャッシュなし。
 const _CACHE_TTL = {
-  '/notices/':               120_000,   // 2分：管理者更新頻度低
-  '/timetable/':             300_000,   // 5分：学期単位で変更
-  '/users/avatars':          300_000,   // 5分：変更頻度低
-  '/users/fortune/today':  3_600_000,   // 1時間：1日1回
-  '/calendar/xp':             60_000,   // 1分
-  '/calendar/':               60_000,   // 1分
-  '/stats/me':                60_000,   // 1分
-  '/stats/admin':            120_000,   // 2分
-  '/tasks/':                  60_000,   // 1分
-  '/grades/':                 60_000,   // 1分
-  '/badges/':                120_000,   // 2分
-  '/attendance/':             60_000,   // 1分
-  '/bookmarks/':              60_000,   // 1分
-  '/posts/':                  15_000,   // 15秒：投稿は比較的リアルタイム
-  '/posts/notifications/list':     0,   // キャッシュなし（ポーリング対象）
-  '/users/profile/':          60_000,   // 1分
+  '/users/me':               60_000,  // 認証情報 1分（全ページ共通）
+  '/users/avatars':         300_000,  // アバター 5分
+  '/users/fortune/today': 3_600_000,  // 運勢 1時間（1日1回）
+  '/users/profile/':         60_000,  // 他ユーザープロフィール 1分
+  '/notices/':              120_000,  // お知らせ 2分
+  '/timetable/':            300_000,  // 時間割 5分（学期単位）
+  '/calendar/xp':            60_000,  // XP情報 1分
+  '/calendar/':              60_000,  // カレンダー 1分
+  '/stats/me':               60_000,  // 個人統計 1分
+  '/stats/admin':           120_000,  // 管理統計 2分
+  '/tasks/':                 60_000,  // 課題 1分
+  '/grades/':                60_000,  // 成績 1分
+  '/badges/':               120_000,  // バッジ 2分
+  '/attendance/':            60_000,  // 出席 1分
+  '/bookmarks/':             60_000,  // ブックマーク 1分
+  '/posts/':                 15_000,  // 投稿 15秒
+  '/posts/notifications/list': 0,    // 通知（ポーリング対象）キャッシュなし
 };
 
 function _getTtl(path) {
   const base = path.split('?')[0];
-  // 完全一致 → 前方一致の順で検索
   if (_CACHE_TTL[base] !== undefined) return _CACHE_TTL[base];
   for (const prefix of Object.keys(_CACHE_TTL)) {
     if (base.startsWith(prefix)) return _CACHE_TTL[prefix];
@@ -59,10 +59,10 @@ function _getTtl(path) {
 }
 
 function _cacheGet(path) {
-  const entry = _cache.get(path);
-  if (!entry) return null;
-  if (Date.now() > entry.exp) { _cache.delete(path); return null; }
-  return entry.data;
+  const e = _cache.get(path);
+  if (!e) return null;
+  if (Date.now() > e.exp) { _cache.delete(path); return null; }
+  return e.data;
 }
 
 function _cacheSet(path, data) {
@@ -70,8 +70,6 @@ function _cacheSet(path, data) {
   if (ttl > 0) _cache.set(path, { data, exp: Date.now() + ttl });
 }
 
-// POST/PATCH/PUT/DELETE 後に関連キャッシュを無効化する。
-// 例: /calendar/42 → /calendar/ から始まる全エントリを破棄。
 function _invalidate(path) {
   const base   = path.split('?')[0];
   const prefix = base.replace(/\/\d+.*$/, '/');
@@ -80,7 +78,6 @@ function _invalidate(path) {
   }
 }
 
-// 手動でキャッシュをクリアしたい場合に外部から呼ぶ。
 function clearApiCache(prefix) {
   if (prefix) {
     for (const key of _cache.keys()) {
@@ -97,9 +94,8 @@ function clearApiCache(prefix) {
 function _tokenExp() {
   const t = token();
   if (!t) return null;
-  try {
-    return JSON.parse(atob(t.split('.')[1])).exp * 1000;
-  } catch { return null; }
+  try { return JSON.parse(atob(t.split('.')[1])).exp * 1000; }
+  catch { return null; }
 }
 
 let _refreshing = false;
@@ -109,7 +105,7 @@ async function _refreshIfNeeded() {
   if (!exp || exp - Date.now() > 30 * 60 * 1000) return;
   _refreshing = true;
   try {
-    const res  = await fetch(`${API}/auth/refresh`, {
+    const res = await fetch(`${API}/auth/refresh`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' },
     });
@@ -120,9 +116,7 @@ async function _refreshIfNeeded() {
       if (localStorage.getItem('access_token')) localStorage.setItem('access_token', t);
       else sessionStorage.setItem('access_token', t);
     }
-  } catch { /* リフレッシュ失敗は無視 */ } finally {
-    _refreshing = false;
-  }
+  } catch { /* ignore */ } finally { _refreshing = false; }
 }
 
 // ================================================================
@@ -132,7 +126,7 @@ async function api(path, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const isRead = method === 'GET';
 
-  // キャッシュヒット確認（GETのみ）
+  // キャッシュヒット確認（GET のみ）
   if (isRead) {
     const cached = _cacheGet(path);
     if (cached !== null) return cached;
@@ -151,9 +145,7 @@ async function api(path, options = {}) {
 
   if (json && typeof json.success !== 'undefined') {
     if (json.success) {
-      // 変更系リクエスト → 関連キャッシュを無効化
       if (!isRead) _invalidate(path);
-      // 取得系 → キャッシュに保存
       if (isRead)  _cacheSet(path, json.data);
       return json.data;
     }
@@ -184,7 +176,7 @@ function toast(message, type = 'info') {
   t.id = 'polonix-toast';
   t.textContent = message;
   Object.assign(t.style, {
-    position:  'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+    position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
     background: type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--surface)',
     color: 'var(--text)', padding: '10px 20px', borderRadius: 'var(--r)',
     fontSize: '13px', fontWeight: '600', zIndex: '9999',
@@ -196,10 +188,9 @@ function toast(message, type = 'info') {
 }
 
 // ================================================================
-// PWA インストール（全 OS・ブラウザ対応）
+// PWA インストール
 // ================================================================
 let _installPrompt = null;
-
 const _ua           = navigator.userAgent.toLowerCase();
 const _isIos        = /iphone|ipad|ipod/.test(_ua);
 const _isSafari     = _isIos && /safari/.test(_ua) && !/crios|fxios/.test(_ua);
