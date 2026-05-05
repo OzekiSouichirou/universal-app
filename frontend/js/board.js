@@ -1,7 +1,7 @@
-let currentUser = null;
-let avatars = {};
+let currentUser  = null;
+let avatars      = {};
 let selectedImage = null;
-let bookmarks = new Set();
+let bookmarks    = new Set();
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
@@ -42,7 +42,7 @@ document.getElementById('image-attach-btn').addEventListener('click', () => {
   document.getElementById('image-input').click();
 });
 
-document.getElementById('image-input').addEventListener('change', async (e) => {
+document.getElementById('image-input').addEventListener('change', async e => {
   const file    = e.target.files[0];
   if (!file) return;
   const preview = document.getElementById('image-preview');
@@ -54,7 +54,6 @@ document.getElementById('image-input').addEventListener('change', async (e) => {
   if (file.size > 10 * 1024 * 1024) {
     msg.style.color = '#f0476c'; msg.textContent = '10MB以下の画像を選択してください'; return;
   }
-
   msg.style.color = '#7a87aa'; msg.textContent = '圧縮中...';
 
   try {
@@ -64,11 +63,10 @@ document.getElementById('image-input').addEventListener('change', async (e) => {
       selectedImage = null; preview.innerHTML = ''; return;
     }
     selectedImage = dataUrl;
-    preview.innerHTML = `
-      <div class="image-preview-wrap">
-        <img src="${dataUrl}" alt="preview">
-        <button class="image-remove-btn" id="image-remove-btn">✕</button>
-      </div>`;
+    preview.innerHTML = `<div class="image-preview-wrap">
+      <img src="${dataUrl}" alt="preview">
+      <button class="image-remove-btn" id="image-remove-btn">✕</button>
+    </div>`;
     document.getElementById('image-remove-btn').addEventListener('click', () => {
       selectedImage = null; preview.innerHTML = ''; msg.textContent = '';
     });
@@ -84,8 +82,11 @@ async function init() {
   if (!user) return;
   currentUser = user;
   document.getElementById('current-user').textContent = user.username;
-  avatars = await api('/users/avatars').catch(() => ({}));
-  const bm = await api('/bookmarks/').catch(() => []);
+  const [av, bm] = await Promise.all([
+    api('/users/avatars').catch(() => ({})),
+    api('/bookmarks/').catch(() => []),
+  ]);
+  avatars   = av;
   bookmarks = new Set((Array.isArray(bm) ? bm : []).map(b => b.post_id));
   fetchPosts();
   fetchNotifs();
@@ -95,8 +96,8 @@ async function fetchNotifs() {
   const notifs = await api('/posts/notifications/list').catch(() => []);
   const unread = notifs.filter(n => !n.is_read).length;
   const badge  = document.getElementById('notif-badge');
-  badge.textContent    = unread > 0 ? (unread > 99 ? '99+' : unread) : '';
-  badge.style.display  = unread > 0 ? 'flex' : 'none';
+  badge.textContent   = unread > 0 ? (unread > 99 ? '99+' : unread) : '';
+  badge.style.display = unread > 0 ? 'flex' : 'none';
   renderNotifs(notifs);
 }
 
@@ -106,12 +107,11 @@ function renderNotifs(notifs) {
   list.innerHTML = notifs.map(n => {
     const label = n.type === 'like' ? '♥ いいね' : '💬 コメント';
     const time  = new Date(n.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-    return `
-      <div class="notif-item ${n.is_read ? '' : 'unread'}" data-post-id="${n.post_id}">
-        <span class="notif-type ${n.type}">${label}</span>
-        <span class="notif-text"><b>${n.from_username}</b>さんが投稿に${n.type === 'like' ? 'いいね' : 'コメント'}しました</span>
-        <span class="notif-time">${time}</span>
-      </div>`;
+    return `<div class="notif-item ${n.is_read ? '' : 'unread'}" data-post-id="${n.post_id}">
+      <span class="notif-type ${n.type}">${label}</span>
+      <span class="notif-text"><b>${n.from_username}</b>さんが${n.type === 'like' ? 'いいね' : 'コメント'}しました</span>
+      <span class="notif-time">${time}</span>
+    </div>`;
   }).join('');
 
   list.querySelectorAll('.notif-item').forEach(item => {
@@ -136,13 +136,13 @@ document.getElementById('notif-bell').addEventListener('click', async () => {
   panel.classList.toggle('hidden');
   if (!panel.classList.contains('hidden')) {
     await api('/posts/notifications/read-all', { method: 'POST' }).catch(() => {});
-    document.getElementById('notif-badge').style.display = 'none';
-    document.getElementById('notif-badge').textContent = '';
+    const badge = document.getElementById('notif-badge');
+    badge.style.display = 'none'; badge.textContent = '';
     document.querySelectorAll('.notif-item').forEach(el => el.classList.remove('unread'));
   }
 });
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   const panel = document.getElementById('notif-panel');
   const bell  = document.getElementById('notif-bell');
   if (!panel.classList.contains('hidden') && !panel.contains(e.target) && !bell.contains(e.target)) {
@@ -154,7 +154,7 @@ let _searchQuery = '';
 let _searchTimer = null;
 
 async function fetchPosts(q = '') {
-  const path = q.trim() ? `/posts/?q=${encodeURIComponent(q.trim())}` : '/posts/';
+  const path  = q.trim() ? `/posts/?q=${encodeURIComponent(q.trim())}` : '/posts/';
   const posts = await api(path).catch(() => []);
   renderPosts(Array.isArray(posts) ? posts : []);
   const status = document.getElementById('search-status');
@@ -182,51 +182,50 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;').replace(/\n/g, '<br>');
 }
 
+const RARITY_COLORS = { SECR: '#b06ef5', UR: '#f08cff', SSR: '#f5a623', SR: '#41b4f5', R: '#3ecf8e', N: '#8892b0' };
+const RARITY_ORDER  = ['SECR','UR','SSR','SR','R','N'];
+
 function renderPosts(posts) {
   const list = document.getElementById('post-list');
   if (!posts.length) { list.innerHTML = '<p class="no-posts">まだ投稿はありません</p>'; return; }
 
-  const RARITY_COLORS = { SECR:'#b06ef5', UR:'#f08cff', SSR:'#f5a623', SR:'#41b4f5', R:'#3ecf8e', N:'#8892b0' };
-  const RARITY_ORDER  = ['SECR','UR','SSR','SR','R','N'];
-
   list.innerHTML = posts.map(p => {
+    // ✅ バグ修正: p.rarity_a/rarity_b は存在しない → title_a/title_b の存在判定のみで称号バッジ生成
     const titleBadge = (p.title_a || p.title_b) ? (() => {
-      const top   = [p.rarity_a, p.rarity_b].filter(Boolean).sort((a,b) => RARITY_ORDER.indexOf(a) - RARITY_ORDER.indexOf(b))[0] || 'N';
-      const color = RARITY_COLORS[top] || '#8892b0';
       const title = [p.title_a, p.title_b].filter(Boolean).join(' ');
-      return `<span class="post-title-badge" style="color:${color};font-size:11px;margin-left:4px;opacity:0.9;">『${title}』</span>`;
+      return `<span class="post-title-badge" style="font-size:11px;margin-left:4px;opacity:0.9;color:var(--accent-2);">『${title}』</span>`;
     })() : '';
-    return `
-      <div class="post-card" id="post-${p.id}">
-        <div class="post-header">
-          <div class="post-user-info">
-            ${avatarHtml(p.username)}
-            <div class="post-user-meta">
-              <span class="post-username"${p.username === currentUser.username ? ' style="color:var(--accent-2)"' : ''}>${p.username}</span>
-              ${titleBadge}
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            ${p.tag ? `<span class='post-tag-badge'>${p.tag}</span>` : ''}
-            <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', {timeZone:'Asia/Tokyo'})}</span>
+    return `<div class="post-card" id="post-${p.id}">
+      <div class="post-header">
+        <div class="post-user-info">
+          ${avatarHtml(p.username)}
+          <div class="post-user-meta">
+            <span class="post-username"${p.username === currentUser.username ? ' style="color:var(--accent-2)"' : ''}>${p.username}</span>
+            ${titleBadge}
           </div>
         </div>
-        <div class="post-content">${escapeHtml(p.content)}</div>
-        ${p.image ? `<div class="post-image"><img src="${p.image}" alt="投稿画像" loading="lazy"></div>` : ''}
-        <div class="post-footer">
-          <button class="like-btn ${p.liked ? 'liked' : ''}" data-id="${p.id}">♥ <span class="like-count">${p.likes}</span></button>
-          <button class="comment-toggle-btn" data-id="${p.id}">💬 <span class="comment-count">${p.comment_count}</span></button>
-          <button class="bookmark-btn ${bookmarks.has(p.id) ? 'bookmarked' : ''}" data-id="${p.id}" title="ブックマーク">🔖</button>
-          ${p.username === currentUser.username || currentUser.role === 'admin' ? `<button class="delete-post-btn" data-id="${p.id}">削除</button>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${p.tag ? `<span class="post-tag-badge">${p.tag}</span>` : ''}
+          <span class="post-date">${new Date(p.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</span>
         </div>
-        <div class="comment-area hidden" id="comments-${p.id}">
-          <div class="comment-list" id="comment-list-${p.id}"></div>
-          <div class="comment-form">
-            <input type="text" class="comment-input" id="comment-input-${p.id}" placeholder="コメントを入力（200文字以内）" maxlength="200">
-            <button class="comment-submit-btn btn-primary" data-id="${p.id}">送信</button>
-          </div>
+      </div>
+      <div class="post-content">${escapeHtml(p.content)}</div>
+      ${p.image ? `<div class="post-image"><img src="${p.image}" alt="投稿画像" loading="lazy"></div>` : ''}
+      <div class="post-footer">
+        <button class="like-btn ${p.liked ? 'liked' : ''}" data-id="${p.id}">♥ <span class="like-count">${p.likes}</span></button>
+        <button class="comment-toggle-btn" data-id="${p.id}">💬 <span class="comment-count">${p.comment_count}</span></button>
+        <button class="bookmark-btn ${bookmarks.has(p.id) ? 'bookmarked' : ''}" data-id="${p.id}" title="ブックマーク">🔖</button>
+        ${p.username === currentUser.username || currentUser.role === 'admin'
+          ? `<button class="delete-post-btn" data-id="${p.id}">削除</button>` : ''}
+      </div>
+      <div class="comment-area hidden" id="comments-${p.id}">
+        <div class="comment-list" id="comment-list-${p.id}"></div>
+        <div class="comment-form">
+          <input type="text" class="comment-input" id="comment-input-${p.id}" placeholder="コメントを入力（200文字以内）" maxlength="200">
+          <button class="comment-submit-btn btn-primary" data-id="${p.id}">送信</button>
         </div>
-      </div>`;
+      </div>
+    </div>`;
   }).join('');
 
   document.querySelectorAll('.like-btn').forEach(btn => {
@@ -245,16 +244,14 @@ function renderPosts(posts) {
       try {
         if (bookmarks.has(id)) {
           await api(`/bookmarks/${id}`, { method: 'DELETE' });
-          bookmarks.delete(id);
-          btn.classList.remove('bookmarked');
+          bookmarks.delete(id); btn.classList.remove('bookmarked');
           toast('ブックマークを解除しました');
         } else {
           await api(`/bookmarks/${id}`, { method: 'POST' });
-          bookmarks.add(id);
-          btn.classList.add('bookmarked');
+          bookmarks.add(id); btn.classList.add('bookmarked');
           toast('ブックマークしました', 'success');
         }
-      } catch(e) { toast(e.message||'失敗しました', 'error'); }
+      } catch(e) { toast(e.message || '失敗しました', 'error'); }
     });
   });
 
@@ -268,8 +265,8 @@ function renderPosts(posts) {
 
   document.querySelectorAll('.comment-submit-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id    = btn.dataset.id;
-      const input = document.getElementById(`comment-input-${id}`);
+      const id      = btn.dataset.id;
+      const input   = document.getElementById(`comment-input-${id}`);
       const content = input.value.trim();
       if (!content) return;
       try {
@@ -302,8 +299,9 @@ async function fetchComments(postId) {
       <div class="comment-header">
         ${avatarHtml(c.username)}
         <span class="comment-username">${c.username}</span>
-        <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', {timeZone:'Asia/Tokyo'})}</span>
-        ${c.username === currentUser.username || currentUser.role === 'admin' ? `<button class="delete-comment-btn" data-post-id="${postId}" data-id="${c.id}">削除</button>` : ''}
+        <span class="comment-date">${new Date(c.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</span>
+        ${c.username === currentUser.username || currentUser.role === 'admin'
+          ? `<button class="delete-comment-btn" data-post-id="${postId}" data-id="${c.id}">削除</button>` : ''}
       </div>
       <div class="comment-content">${escapeHtml(c.content)}</div>
     </div>`).join('');
@@ -328,7 +326,9 @@ document.getElementById('post-btn').addEventListener('click', async () => {
     const tag = document.getElementById('post-tag-select')?.value || null;
     await api('/posts/', { method: 'POST', body: JSON.stringify({ content, image: selectedImage, tag }) });
     textarea.value = ''; charCount.textContent = '0 / 500';
-    selectedImage = null; document.getElementById('image-preview').innerHTML = ''; msg.textContent = '';
+    selectedImage = null;
+    document.getElementById('image-preview').innerHTML = '';
+    msg.textContent = '';
     fetchPosts();
   } catch(e) {
     msg.style.color = '#f0476c';
