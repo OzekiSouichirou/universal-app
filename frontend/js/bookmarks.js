@@ -1,24 +1,29 @@
-document.getElementById('logout-btn').addEventListener('click', logout);
+let _bmAvatars = {};
 
-let avatars = {};
-
-async function init() {
-  const user = await checkAuth(false);
-  if (!user) return;
-  document.getElementById('current-user').textContent = user.username;
-  avatars = await api('/users/avatars').catch(() => ({}));
-  await load();
+// board.htmlと共存するためlogout-btnの重複登録を防ぐ
+if (!document.getElementById('post-content')) {
+  document.getElementById('logout-btn').addEventListener('click', logout);
 }
 
-async function load() {
+async function bmInit() {
+  const user = await checkAuth(false);
+  if (!user) return;
+  const el = document.getElementById('current-user');
+  if (el) el.textContent = user.username;
+  _bmAvatars = await api('/users/avatars').catch(() => ({}));
+  await bmLoad();
+}
+
+async function bmLoad() {
   const items = await api('/bookmarks/').catch(() => []);
   const el    = document.getElementById('bookmark-list');
+  if (!el) return;
   if (!items.length) {
     el.innerHTML = '<p class="db-empty" style="text-align:center;padding:40px;">ブックマークした投稿はありません<br><a href="board.html" style="color:var(--accent);">掲示板へ</a></p>';
     return;
   }
   el.innerHTML = items.map(b => {
-    const av      = avatars[b.username];
+    const av      = _bmAvatars[b.username];
     const initial = b.username.charAt(0).toUpperCase();
     const avHtml  = av
       ? `<div class="post-avatar"><img src="${av}" alt="${initial}"></div>`
@@ -35,7 +40,7 @@ async function load() {
           <button class="bookmark-btn bookmarked" data-post-id="${b.post_id}" title="ブックマーク解除">🔖</button>
         </div>
       </div>
-      <div class="post-content">${escapeHtml(b.content)}</div>
+      <div class="post-content">${bmEscapeHtml(b.content)}</div>
       ${b.image ? `<div class="post-image"><img src="${b.image}" alt="投稿画像" loading="lazy"></div>` : ''}
       <div style="font-size:11px;color:var(--text-3);margin-top:8px;">
         ブックマーク: ${new Date(b.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
@@ -49,17 +54,17 @@ async function load() {
       try {
         await api(`/bookmarks/${btn.dataset.postId}`, { method: 'DELETE' });
         toast('ブックマークを解除しました');
-        await load();
+        await bmLoad();
       } catch(e) { toast(e.message || '失敗しました', 'error'); }
     });
   });
 }
 
-// ✅ 改行→<br> 対応追加
-function escapeHtml(str) {
+function bmEscapeHtml(str) {
   return str
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/\n/g, '<br>');
 }
 
-init();
+// board.htmlでは呼ばれない（tab切り替え時にbmInitを呼ぶ）
+if (!document.getElementById('tab-bookmarks')) bmInit();
