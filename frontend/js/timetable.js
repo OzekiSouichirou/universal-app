@@ -9,9 +9,11 @@ let settings = {
 let timetableData = {};
 let editingCell   = null;
 
-document.getElementById('logout-btn').addEventListener('click', logout);
+if (!document.getElementById('tab-timetable')) {
+  document.getElementById('logout-btn').addEventListener('click', logout);
+}
 
-async function init() {
+async function ttInit() {
   const user = await checkAuth(false);
   if (!user) return;
   document.getElementById('current-user').textContent = user.username;
@@ -167,4 +169,4 @@ document.getElementById('tt-show-sun').addEventListener('change', e => {
   renderTodayBanner();
 });
 
-init();
+if (!document.getElementById("tab-timetable")) ttInit();

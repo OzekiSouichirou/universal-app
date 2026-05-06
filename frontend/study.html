@@ -284,5 +284,15 @@
   <script src="js/auth.js?v=18"></script>
   <script src="js/timetable.js?v=18"></script>
   <script src="js/study.js?v=18"></script>
+  <script>
+let _ttLoaded = false;
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.study-tab[data-tab="timetable"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!_ttLoaded) { _ttLoaded = true; if (typeof ttInit === 'function') ttInit(); }
+    });
+  });
+});
+  </script>
 </body>
 </html>
