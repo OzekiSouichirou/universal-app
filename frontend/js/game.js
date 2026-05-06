@@ -36,12 +36,12 @@ function showScreen(name) {
   }
 }
 
-document.getElementById('btn-about').addEventListener('click', () => showScreen('about'));
-document.getElementById('btn-enter').addEventListener('click', () => {
+document.getElementById('btn-about')?.addEventListener('click', () => showScreen('about'));
+document.getElementById('btn-enter')?.addEventListener('click', () => {
   showScreen('main');
   if (!_subLoaded.explore) { _subLoaded.explore = true; loadQuest(); }
 });
-document.getElementById('pq-back-btn').addEventListener('click', () => showScreen('landing'));
+document.getElementById('pq-back-btn')?.addEventListener('click', () => showScreen('landing'));
 
 // ============================================================
 // サブナビ切り替え
@@ -211,7 +211,7 @@ async function doScan(jan) {
   }
 }
 
-document.getElementById('scan-start-btn').addEventListener('click', async () => {
+document.getElementById('scan-start-btn')?.addEventListener('click', async () => {
   if (_scanning) return;
   _scanning = true;
   document.getElementById('scan-start-btn').style.display = 'none';
@@ -238,20 +238,20 @@ document.getElementById('scan-start-btn').addEventListener('click', async () => 
   }
 });
 
-document.getElementById('scan-stop-btn').addEventListener('click', async () => {
+document.getElementById('scan-stop-btn')?.addEventListener('click', async () => {
   if (_scanner) await _scanner.stop().catch(() => {});
   _scanning = false;
   document.getElementById('scan-start-btn').style.display = 'inline-block';
   document.getElementById('scan-stop-btn').style.display  = 'none';
 });
 
-document.getElementById('scan-manual-btn').addEventListener('click', () => {
+document.getElementById('scan-manual-btn')?.addEventListener('click', () => {
   const val = document.getElementById('scan-manual-input').value.trim();
   if (!/^\d{8,13}$/.test(val)) { toast('8〜13桁の数字を入力してください', 'error'); return; }
   doScan(val);
 });
 
-document.getElementById('scan-manual-input').addEventListener('keydown', e => {
+document.getElementById('scan-manual-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('scan-manual-btn').click();
 });
 
@@ -302,7 +302,7 @@ function checkQuestStatus() {
   }
 }
 
-document.getElementById('quest-start-btn').addEventListener('click', async () => {
+document.getElementById('quest-start-btn')?.addEventListener('click', async () => {
   if (!_party.length) { toast('パーティを編成してください', 'error'); return; }
   try {
     await api('/scan/quest/start', { method: 'POST', body: '{}' });
@@ -312,7 +312,7 @@ document.getElementById('quest-start-btn').addEventListener('click', async () =>
   } catch(e) { toast(e.message || '出発に失敗しました', 'error'); }
 });
 
-document.getElementById('quest-return-btn').addEventListener('click', async () => {
+document.getElementById('quest-return-btn')?.addEventListener('click', async () => {
   try {
     const res = await api('/scan/quest/result');
     localStorage.removeItem('quest_started_at');
@@ -425,8 +425,8 @@ function renderGachaInventory() {
     </div>`;
 }
 
-document.getElementById('gacha-1').addEventListener('click',  () => rollAndShow(1));
-document.getElementById('gacha-10').addEventListener('click', () => rollAndShow(10));
+document.getElementById('gacha-1')?.addEventListener('click',  () => rollAndShow(1));
+document.getElementById('gacha-10')?.addEventListener('click', () => rollAndShow(10));
 
 // ============================================================
 // 初期化
