@@ -211,47 +211,60 @@ async function doScan(jan) {
   }
 }
 
-document.getElementById('scan-start-btn')?.addEventListener('click', async () => {
+document.getElementById('scan-start-btn')?.addEventListener('click', () => {
   if (_scanning) return;
   _scanning = true;
   document.getElementById('scan-start-btn').style.display = 'none';
   document.getElementById('scan-stop-btn').style.display  = 'inline-block';
-  _scanner = new Html5Qrcode('scan-reader', {
-      formatsToSupport: [0, 1, 3, 4, 8, 9],
-      verbose: false,
-    });
-  try {
-    await _scanner.start(
-      { facingMode: 'environment' },
-      {
-          fps: 15,
-          qrbox: (w, h) => {
-            const size = Math.min(w, h);
-            return { width: Math.min(w - 32, 320), height: Math.floor(size * 0.25) };
-          },
-          aspectRatio: 1.5,
-        },
-      async (code) => {
-        await _scanner.stop();
-        _scanning = false;
-        document.getElementById('scan-start-btn').style.display = 'inline-block';
-        document.getElementById('scan-stop-btn').style.display  = 'none';
-        await doScan(code);
-      },
-      (err) => {
-          // スキャン失敗は毎フレーム呼ばれるため無視
-        }
-      );
-  } catch {
+  document.getElementById('scan-result').innerHTML =
+    '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください</p>';
+
+  const reader = document.getElementById('scan-reader');
+  reader.innerHTML = '';
+
+  Quagga.init({
+    inputStream: {
+      type: 'LiveStream',
+      target: reader,
+      constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+    },
+    locator: { patchSize: 'medium', halfSample: true },
+    numOfWorkers: 1,
+    frequency: 10,
+    decoder: {
+      readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'upc_e_reader', 'code_128_reader'],
+    },
+    locate: true,
+  }, err => {
+    if (err) {
+      _scanning = false;
+      document.getElementById('scan-start-btn').style.display = 'inline-block';
+      document.getElementById('scan-stop-btn').style.display  = 'none';
+      toast('カメラへのアクセスが拒否されました', 'error');
+      return;
+    }
+    Quagga.start();
+  });
+
+  let _lastCode = null;
+  let _hitCount = 0;
+  Quagga.onDetected(async result => {
+    const code = result?.codeResult?.code;
+    if (!code) return;
+    if (code === _lastCode) { _hitCount++; } else { _lastCode = code; _hitCount = 1; }
+    if (_hitCount < 2) return;
+    Quagga.stop();
     _scanning = false;
+    _lastCode = null;
+    _hitCount = 0;
     document.getElementById('scan-start-btn').style.display = 'inline-block';
     document.getElementById('scan-stop-btn').style.display  = 'none';
-    toast('カメラへのアクセスが拒否されました', 'error');
-  }
+    await doScan(code);
+  });
 });
 
-document.getElementById('scan-stop-btn')?.addEventListener('click', async () => {
-  if (_scanner) await _scanner.stop().catch(() => {});
+document.getElementById('scan-stop-btn')?.addEventListener('click', () => {
+  try { Quagga.stop(); } catch {}
   _scanning = false;
   document.getElementById('scan-start-btn').style.display = 'inline-block';
   document.getElementById('scan-stop-btn').style.display  = 'none';

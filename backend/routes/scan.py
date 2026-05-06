@@ -88,9 +88,25 @@ class PartyBody(BaseModel):
 
 @router.post('/')
 async def scan(body: ScanBody, user=Depends(get_current_user), db=Depends(get_db)):
-    jan = body.jan_code.strip()
-    if not jan.isdigit() or len(jan) not in (8, 13):
+    jan = body.jan_code.strip().replace(' ', '').replace('-', '')
+    if not jan.isdigit() or len(jan) not in (8, 12, 13):
         err(E.INVALID_INPUT, '無効なJANコードです')
+
+    # テーブルが存在しない場合は自動作成
+    try:
+        db.execute(text('''CREATE TABLE IF NOT EXISTS heroes (
+            id SERIAL PRIMARY KEY, username VARCHAR(30) NOT NULL,
+            jan_code VARCHAR(13) NOT NULL, hero_name VARCHAR(100) NOT NULL,
+            rarity VARCHAR(4) NOT NULL, attribute VARCHAR(4) NOT NULL,
+            hp INTEGER NOT NULL, attack INTEGER NOT NULL,
+            speed INTEGER NOT NULL, luck INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT now(), UNIQUE(username, jan_code))'''))
+        db.execute(text('''CREATE TABLE IF NOT EXISTS party (
+            username VARCHAR(30) PRIMARY KEY, hero_ids TEXT DEFAULT '[]',
+            quest_started_at TIMESTAMP DEFAULT NULL)'''))
+        db.commit()
+    except Exception:
+        db.rollback()
 
     dup = db.execute(
         text('SELECT id FROM heroes WHERE username=:u AND jan_code=:j'),
@@ -123,19 +139,27 @@ async def scan(body: ScanBody, user=Depends(get_current_user), db=Depends(get_db
 
 @router.get('/heroes')
 async def heroes(user=Depends(get_current_user), db=Depends(get_db)):
-    rows = db.execute(
-        text('SELECT * FROM heroes WHERE username=:u ORDER BY created_at DESC'),
-        {'u': user['username']}
-    ).fetchall()
-    return ok(rows_to_list(rows))
+    try:
+        rows = db.execute(
+            text('SELECT * FROM heroes WHERE username=:u ORDER BY created_at DESC'),
+            {'u': user['username']}
+        ).fetchall()
+        return ok(rows_to_list(rows))
+    except Exception:
+        db.rollback()
+        return ok([])
 
 
 @router.get('/party')
 async def get_party(user=Depends(get_current_user), db=Depends(get_db)):
-    row = db.execute(
-        text('SELECT hero_ids FROM party WHERE username=:u'),
-        {'u': user['username']}
-    ).fetchone()
+    try:
+        row = db.execute(
+            text('SELECT hero_ids FROM party WHERE username=:u'),
+            {'u': user['username']}
+        ).fetchone()
+    except Exception:
+        db.rollback()
+        return ok([])
     if not row:
         return ok([])
     ids = json.loads(row[0])
