@@ -2,9 +2,13 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#5b6ef5">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polonix - プロフィール</title>
   <link rel="stylesheet" href="css/style.css">
+  <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
+
   <link rel="icon" type="image/png" href="icons/favicon-32.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
@@ -15,13 +19,11 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-title"><a href="home.html">Polonix</a><span class="sidebar-version">v0.9.6-β</span></div>
       <nav>
-                <ul>
+        <ul>
           <li><a href="home.html">ホーム</a></li>
           <li><a href="board.html">掲示板</a></li>
-          <li><a href="bookmarks.html">ブックマーク</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
-          <li><a href="timetable.html">時間割</a></li>
-          <li><a href="study.html">学習管理</a></li>
+          <li><a href="study.html">学習</a></li>
           <li><a href="game.html">英雄録</a></li>
           <li class="active"><a href="profile.html">プロフィール</a></li>
           <li><a href="feedback.html">ご意見箱</a></li>
@@ -105,7 +107,14 @@
           <button id="change-password-btn" class="btn-primary">変更する</button>
           <p id="password-msg"></p>
         </div>
-        <div class="profile-box danger-box">
+        <div class="profile-box">
+          <h3>表示設定</h3>
+          <div class="profile-item">
+            <span class="profile-label">テーマ</span>
+            <button id="theme-toggle-btn" class="btn-secondary" style="padding:7px 16px;font-size:13px;min-width:160px;">ライトモードに切り替え</button>
+          </div>
+        </div>
+                <div class="profile-box danger-box">
           <h3>アカウント削除</h3>
           <p class="danger-text">この操作は取り消せません。アカウントと全データが削除されます。</p>
           <button id="delete-account-btn" class="btn-danger-lg">アカウントを削除する</button>
@@ -130,10 +139,10 @@
     </div>
   </div>
 
-  <script src="js/api.js?v=17"></script>
-  <script src="js/auth.js?v=17"></script>
-  <script src="js/gacha-data.js?v=17"></script>
-  <script src="js/profile.js?v=17"></script>
+  <script src="js/api.js?v=19"></script>
+  <script src="js/auth.js?v=19"></script>
+  <script src="js/gacha-data.js?v=19"></script>
+  <script src="js/profile.js?v=19"></script>
     <nav class="bottom-nav">
     <a href="home.html"><span>ホーム</span></a>
     <a href="board.html"><span>掲示板</span></a>

@@ -49,6 +49,40 @@ def wait_for_db(retries: int = 10, delay: int = 5) -> bool:
 # ============================================================
 # マイグレーション（Alembic移行前の暫定）
 # ============================================================
+def create_hero_tables():
+    HERO_SQLS = [
+        """CREATE TABLE IF NOT EXISTS heroes (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(30) NOT NULL,
+            jan_code VARCHAR(13) NOT NULL,
+            hero_name VARCHAR(100) NOT NULL,
+            rarity VARCHAR(4) NOT NULL,
+            attribute VARCHAR(4) NOT NULL,
+            hp INTEGER NOT NULL,
+            attack INTEGER NOT NULL,
+            speed INTEGER NOT NULL,
+            luck INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT now(),
+            UNIQUE(username, jan_code)
+        )""",
+        """CREATE TABLE IF NOT EXISTS party (
+            username VARCHAR(30) PRIMARY KEY,
+            hero_ids TEXT DEFAULT '[]',
+            quest_started_at TIMESTAMP DEFAULT NULL
+        )""",
+    ]
+    try:
+        with engine.connect() as conn:
+            for sql in HERO_SQLS:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                except Exception as e:
+                    logger.warning(f"Hero table creation: {e}")
+    except Exception as e:
+        logger.error(f"Hero table creation failed: {e}")
+
+
 def run_migrations():
     MIGRATIONS = [
         ("users",    "bio",              "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(200)"),
@@ -68,25 +102,7 @@ def run_migrations():
         ("idx", "tasks_username",    "CREATE INDEX IF NOT EXISTS idx_tasks_username ON tasks(username)"),
         ("idx", "grades_username",   "CREATE INDEX IF NOT EXISTS idx_grades_username ON grades(username)"),
         ("idx", "bookmarks_username","CREATE INDEX IF NOT EXISTS idx_bookmarks_username ON bookmarks(username)"),
-        ("heroes", "table", """CREATE TABLE IF NOT EXISTS heroes (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(30) NOT NULL,
-            jan_code VARCHAR(13) NOT NULL,
-            hero_name VARCHAR(100) NOT NULL,
-            rarity VARCHAR(4) NOT NULL,
-            attribute VARCHAR(4) NOT NULL,
-            hp INTEGER NOT NULL,
-            attack INTEGER NOT NULL,
-            speed INTEGER NOT NULL,
-            luck INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT now(),
-            UNIQUE(username, jan_code)
-        )"""),
-        ("party", "table", """CREATE TABLE IF NOT EXISTS party (
-            username VARCHAR(30) PRIMARY KEY,
-            hero_ids TEXT DEFAULT '[]',
-            quest_started_at TIMESTAMP DEFAULT NULL
-        )"""),
+
     ]
     try:
         with engine.connect() as conn:
@@ -128,6 +144,7 @@ def init_admin():
 # ============================================================
 wait_for_db()
 run_migrations()
+create_hero_tables()
 init_admin()
 
 # ============================================================

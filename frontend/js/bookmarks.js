@@ -1,15 +1,9 @@
 let _bmAvatars = {};
 
-// board.htmlと共存するためlogout-btnの重複登録を防ぐ
-if (!document.getElementById('post-content')) {
-  document.getElementById('logout-btn').addEventListener('click', logout);
-}
-
 async function bmInit() {
   const user = await checkAuth(false);
   if (!user) return;
-  const el = document.getElementById('current-user');
-  if (el) el.textContent = user.username;
+  document.getElementById('current-user').textContent = user.username;
   _bmAvatars = await api('/users/avatars').catch(() => ({}));
   await bmLoad();
 }
@@ -17,7 +11,6 @@ async function bmInit() {
 async function bmLoad() {
   const items = await api('/bookmarks/').catch(() => []);
   const el    = document.getElementById('bookmark-list');
-  if (!el) return;
   if (!items.length) {
     el.innerHTML = '<p class="db-empty" style="text-align:center;padding:40px;">ブックマークした投稿はありません<br><a href="board.html" style="color:var(--accent);">掲示板へ</a></p>';
     return;
@@ -40,7 +33,7 @@ async function bmLoad() {
           <button class="bookmark-btn bookmarked" data-post-id="${b.post_id}" title="ブックマーク解除">🔖</button>
         </div>
       </div>
-      <div class="post-content">${bmEscapeHtml(b.content)}</div>
+      <div class="post-content">${bmEscape(b.content)}</div>
       ${b.image ? `<div class="post-image"><img src="${b.image}" alt="投稿画像" loading="lazy"></div>` : ''}
       <div style="font-size:11px;color:var(--text-3);margin-top:8px;">
         ブックマーク: ${new Date(b.created_at + 'Z').toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
@@ -60,11 +53,8 @@ async function bmLoad() {
   });
 }
 
-function bmEscapeHtml(str) {
+function bmEscape(str) {
   return str
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/\n/g, '<br>');
 }
-
-// board.htmlでは呼ばれない（tab切り替え時にbmInitを呼ぶ）
-if (!document.getElementById('tab-bookmarks')) bmInit();
