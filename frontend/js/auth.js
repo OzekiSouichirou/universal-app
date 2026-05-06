@@ -100,10 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const installBtn = document.getElementById('pwa-install-btn');
   if (installBtn) installBtn.addEventListener('click', pwaInstall);
 
-  // nav group toggle
-  sidebar.querySelectorAll('.nav-group-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.nav-group').classList.toggle('open');
+  // nav group: has-active を付与 & toggle
+  sidebar.querySelectorAll('.nav-group').forEach(g => {
+    if (g.querySelector('.nav-sub li.active')) g.classList.add('has-active');
+    g.querySelector('.nav-group-btn').addEventListener('click', () => {
+      g.classList.toggle('open');
     });
   });
 });
