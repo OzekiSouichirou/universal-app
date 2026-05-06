@@ -85,14 +85,14 @@ class PartyBody(BaseModel):
 async def scan(body: ScanBody, user=Depends(get_current_user), db=Depends(get_db)):
     jan = body.jan_code.strip()
     if not jan.isdigit() or len(jan) not in (8, 13):
-        err(E.BAD_REQUEST, '無効なJANコードです')
+        err(E.INVALID_INPUT, '無効なJANコードです')
 
     dup = db.execute(
         text('SELECT id FROM heroes WHERE username=:u AND jan_code=:j'),
         {'u': user['username'], 'j': jan}
     ).fetchone()
     if dup:
-        err(E.CONFLICT, 'この勇者はすでに登録済みです')
+        err(E.DUPLICATE, 'この勇者はすでに登録済みです')
 
     stats  = _hero_stats(jan)
     pname  = await _fetch_product_name(jan)
@@ -147,7 +147,7 @@ async def get_party(user=Depends(get_current_user), db=Depends(get_db)):
 @router.post('/party')
 async def set_party(body: PartyBody, user=Depends(get_current_user), db=Depends(get_db)):
     if len(body.hero_ids) > 3:
-        err(E.BAD_REQUEST, 'パーティは最大3人です')
+        err(E.INVALID_INPUT, 'パーティは最大3人です')
 
     if body.hero_ids:
         placeholders = ','.join(f':id{i}' for i in range(len(body.hero_ids)))
@@ -156,7 +156,7 @@ async def set_party(body: PartyBody, user=Depends(get_current_user), db=Depends(
             {**{f'id{i}': v for i, v in enumerate(body.hero_ids)}, 'u': user['username']}
         ).fetchall()
         if len(rows) != len(body.hero_ids):
-            err(E.BAD_REQUEST, '所有していない勇者が含まれています')
+            err(E.INVALID_INPUT, '所有していない勇者が含まれています')
 
     db.execute(
         text('''
@@ -176,7 +176,7 @@ async def quest_start(user=Depends(get_current_user), db=Depends(get_db)):
         {'u': user['username']}
     ).fetchone()
     if not row or not json.loads(row[0]):
-        err(E.BAD_REQUEST, 'パーティに勇者がいません')
+        err(E.INVALID_INPUT, 'パーティに勇者がいません')
 
     db.execute(
         text('''
