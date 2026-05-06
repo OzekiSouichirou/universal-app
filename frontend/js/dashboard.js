@@ -36,6 +36,7 @@ function renderStatCards(cards) {
 }
 
 function renderTrendChart(data, label) {
+  const CHART = chartTheme();
   const ctx = document.getElementById('chart-trend').getContext('2d');
   if (chartTrend) chartTrend.destroy();
   chartTrend = new Chart(ctx, {
@@ -59,6 +60,7 @@ function renderTrendChart(data, label) {
 }
 
 function renderXPChart(ranking) {
+  const CHART = chartTheme();
   if (!ranking?.length) {
     const el = document.getElementById('xp-chart-card');
     if (el) el.innerHTML = '<p style="color:var(--text-3);text-align:center;padding:24px;">データなし</p>';
@@ -82,6 +84,7 @@ function renderXPChart(ranking) {
 }
 
 function renderHourlyChart(data) {
+  const CHART = chartTheme();
   const ctx = document.getElementById('chart-hourly').getContext('2d');
   if (chartHourly) chartHourly.destroy();
   chartHourly = new Chart(ctx, {
