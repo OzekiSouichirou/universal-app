@@ -214,10 +214,14 @@ app.include_router(timetable_router, prefix="/timetable", tags=["timetable"])
 
 from routes.grades    import router as grades_router
 from routes.tasks     import router as tasks_router
-from routes.bookmarks import router as bookmarks_router
+from routes.bookmarks  import router as bookmarks_router
+from routes.attendance import router as attendance_router
+from routes.badges     import router as badges_router
 app.include_router(grades_router,    prefix="/grades",    tags=["grades"])
 app.include_router(tasks_router,     prefix="/tasks",     tags=["tasks"])
-app.include_router(bookmarks_router, prefix="/bookmarks", tags=["bookmarks"])
+app.include_router(bookmarks_router,  prefix="/bookmarks",  tags=["bookmarks"])
+app.include_router(attendance_router, prefix="/attendance", tags=["attendance"])
+app.include_router(badges_router,     prefix="/badges",     tags=["badges"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
 app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
