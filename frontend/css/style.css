@@ -3759,3 +3759,117 @@ html[data-theme="light"] #page-spinner {
   color: #fff;
   border-color: var(--accent);
 }
+
+/* ============================================================
+   Pクエスト - ランディング・サブナビ
+   ============================================================ */
+.pq-landing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 480px;
+  margin: 40px auto 0;
+}
+@media (max-width: 480px) {
+  .pq-landing-grid { grid-template-columns: 1fr; max-width: 100%; }
+}
+.pq-landing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color var(--t), border-color var(--t), box-shadow var(--t);
+  text-align: center;
+}
+.pq-landing-card:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+}
+.pq-landing-card--primary {
+  border-color: var(--accent);
+  background: rgba(91,110,245,0.06);
+}
+.pq-landing-card--primary:hover {
+  background: rgba(91,110,245,0.12);
+  box-shadow: 0 0 20px rgba(91,110,245,0.15);
+}
+.pq-landing-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.pq-landing-card--primary .pq-landing-card-icon {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.pq-landing-card-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pq-landing-card-sub {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.pq-subnav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.pq-subnav-btn {
+  padding: 7px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--t), color var(--t), border-color var(--t);
+}
+.pq-subnav-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.pq-subnav-btn.active {
+  background: linear-gradient(135deg, var(--accent), #4557e8);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.pq-about-section {
+  margin-bottom: 20px;
+}
+.pq-about-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-2);
+  margin-bottom: 6px;
+  padding-left: 8px;
+  border-left: 3px solid var(--accent);
+}
+.pq-about-text {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.7;
+}

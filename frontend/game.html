@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polonix - 英雄録</title>
+  <title>Polonix - Pクエスト</title>
   <link rel="stylesheet" href="css/style.css">
   <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
   <link rel="icon" type="image/png" href="icons/favicon-32.png">
@@ -24,7 +24,7 @@
           <li><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
           <li><a href="study.html">学習</a></li>
-          <li class="active"><a href="game.html">英雄録</a></li>
+          <li class="active"><a href="game.html">Pクエスト</a></li>
           <li><a href="profile.html">プロフィール</a></li>
           <li><a href="feedback.html">ご意見箱</a></li>
         </ul>
@@ -34,118 +34,163 @@
         <button id="pwa-install-btn">アプリをインストール</button>
       </div>
     </aside>
+
     <main class="main-content">
       <header class="top-bar">
         <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
-        <h2>英雄録</h2>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button id="pq-back-btn" style="display:none;background:none;border:none;color:var(--text-2);cursor:pointer;font-size:20px;padding:0;line-height:1;" aria-label="戻る">‹</button>
+          <h2 id="pq-title">Pクエスト</h2>
+        </div>
         <span id="current-user"></span>
       </header>
+
       <section class="content-area">
 
-        <div class="game-tabs">
-          <button class="game-tab active" data-tab="scan">召喚</button>
-          <button class="game-tab" data-tab="heroes">勇者一覧</button>
-          <button class="game-tab" data-tab="party">パーティ</button>
-          <button class="game-tab" data-tab="quest">クエスト</button>
-          <button class="game-tab" data-tab="gacha">称号ガチャ</button>
-        </div>
-
-        <!-- 召喚タブ -->
-        <div class="game-panel active" id="tab-scan">
-          <div class="game-card">
-            <div class="game-card-title">バーコード召喚</div>
-            <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">商品のバーコードをスキャンして勇者を召喚します。同じバーコードからは同じ勇者が生まれます。</p>
-            <div id="scan-reader" style="width:100%;max-width:360px;margin:0 auto 16px;border-radius:var(--r);overflow:hidden;"></div>
-            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
-              <button class="btn-primary" id="scan-start-btn">スキャン開始</button>
-              <button class="btn-secondary" id="scan-stop-btn" style="display:none;">停止</button>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
-              <input id="scan-manual-input" type="text" placeholder="JANコードを直接入力（8〜13桁）" style="flex:1;">
-              <button class="btn-secondary" id="scan-manual-btn">召喚</button>
-            </div>
-            <div id="scan-result"></div>
+        <!-- ===== ランディング画面 ===== -->
+        <div id="pq-landing">
+          <div class="pq-landing-grid">
+            <button class="pq-landing-card" id="btn-about">
+              <div class="pq-landing-card-icon">?</div>
+              <div class="pq-landing-card-label">Pクエストとは</div>
+              <div class="pq-landing-card-sub">システムの説明</div>
+            </button>
+            <button class="pq-landing-card pq-landing-card--primary" id="btn-enter">
+              <div class="pq-landing-card-icon">▶</div>
+              <div class="pq-landing-card-label">Pクエスト</div>
+              <div class="pq-landing-card-sub">冒険をはじめる</div>
+            </button>
           </div>
         </div>
 
-        <!-- 勇者一覧タブ -->
-        <div class="game-panel" id="tab-heroes">
+        <!-- ===== Pクエストとは ===== -->
+        <div id="pq-about" style="display:none;">
           <div class="game-card">
-            <div class="game-card-title">所持勇者一覧</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
-              <button class="hero-filter-btn active" data-filter="all">すべて</button>
-              <button class="hero-filter-btn" data-filter="SSR">SSR</button>
-              <button class="hero-filter-btn" data-filter="SR">SR</button>
-              <button class="hero-filter-btn" data-filter="R">R</button>
-              <button class="hero-filter-btn" data-filter="N">N</button>
+            <div class="game-card-title">Pクエストとは</div>
+            <div class="pq-about-section">
+              <div class="pq-about-heading">概要</div>
+              <p class="pq-about-text">商品のバーコードをスキャンすることで勇者を召喚し、パーティを組んで自動クエストに派遣するゲームです。時間経過でXPを獲得できます。</p>
             </div>
-            <div id="hero-list"></div>
-          </div>
-        </div>
-
-        <!-- パーティタブ -->
-        <div class="game-panel" id="tab-party">
-          <div class="game-card">
-            <div class="game-card-title">パーティ編成（最大3人）</div>
-            <div id="party-slots" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;"></div>
-            <div class="game-card-title" style="margin-top:4px;">勇者を選択</div>
-            <div id="party-select-list"></div>
-          </div>
-        </div>
-
-        <!-- クエストタブ -->
-        <div class="game-panel" id="tab-quest">
-          <div class="game-card">
-            <div class="game-card-title">クエスト派遣</div>
-            <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">パーティを派遣して時間経過でXPを獲得します。最大8時間。帰還時にXPが付与されます。</p>
-            <div id="quest-party-preview" style="margin-bottom:16px;"></div>
-            <div id="quest-status"></div>
-            <div style="display:flex;gap:8px;margin-top:16px;">
-              <button class="btn-primary" id="quest-start-btn">クエスト開始</button>
-              <button class="btn-secondary" id="quest-return-btn" style="display:none;">帰還させる</button>
+            <div class="pq-about-section">
+              <div class="pq-about-heading">勇者召喚</div>
+              <p class="pq-about-text">JANコード（バーコード）をスキャンすると、そのコードから決定論的にステータスが生成された勇者が誕生します。同じバーコードからは常に同じ勇者が召喚されます。</p>
             </div>
-            <div id="quest-result" style="margin-top:16px;"></div>
-          </div>
-        </div>
-
-        <!-- 称号ガチャタブ -->
-        <div class="game-panel" id="tab-gacha">
-          <div class="game-card">
-            <div class="game-card-title">称号ガチャ</div>
-            <div class="gacha-xp-info">
-              <span>所持XP：</span>
-              <span id="gacha-xp" class="gacha-xp-val">---</span>
-              <span style="font-size:12px;color:var(--text-2);">（1回50XP消費）</span>
-            </div>
-            <div class="gacha-btns">
-              <button class="btn-primary gacha-roll-btn" id="gacha-1">1回引く（50XP）</button>
-              <button class="btn-primary gacha-roll-btn" id="gacha-10">10連（450XP）</button>
-            </div>
-            <div id="gacha-result" class="gacha-result-area"></div>
-            <div class="gacha-inventory-title">所持バッジ・称号</div>
-            <div id="gacha-inventory" class="gacha-inventory"></div>
-          </div>
-          <div class="game-card">
-            <div class="game-card-title">ガチャガイド</div>
-            <div class="guide-section">
-              <div class="guide-title">消費XP</div>
+            <div class="pq-about-section">
+              <div class="pq-about-heading">ステータス</div>
               <table class="guide-table">
-                <tr><th>回数</th><th>消費XP</th><th>備考</th></tr>
-                <tr><td>1回引く</td><td>50 XP</td><td>A・B各1枚ずつ排出</td></tr>
-                <tr><td>10連</td><td>450 XP</td><td>50XP分お得</td></tr>
+                <tr><th>項目</th><th>説明</th></tr>
+                <tr><td>HP</td><td>勇者の体力。50〜250</td></tr>
+                <tr><td>こうげき</td><td>クエスト獲得XPに影響。10〜100</td></tr>
+                <tr><td>すばやさ</td><td>将来のバトルに影響。1〜100</td></tr>
+                <tr><td>運</td><td>XP倍率に影響。1〜100</td></tr>
               </table>
             </div>
-            <div class="guide-section">
-              <div class="guide-title">レアリティと排出率</div>
+            <div class="pq-about-section">
+              <div class="pq-about-heading">レアリティ</div>
               <table class="guide-table">
-                <tr><th>レア</th><th>確率</th><th>特徴</th></tr>
-                <tr><td><span style="color:#9ea0a0;font-weight:700;">N</span></td><td>50%</td><td>ノーマル</td></tr>
-                <tr><td><span style="color:#3ecf8e;font-weight:700;">R</span></td><td>30%</td><td>レア</td></tr>
-                <tr><td><span style="color:#41b4f5;font-weight:700;">SR</span></td><td>15%</td><td>スーパーレア</td></tr>
-                <tr><td><span style="color:#f5a623;font-weight:700;">SSR</span></td><td>4%</td><td>ダブルスーパーレア</td></tr>
-                <tr><td><span style="color:#e87aaa;font-weight:700;">UR</span></td><td>0.9%</td><td>ウルトラレア</td></tr>
-                <tr><td><span style="color:#b06ef5;font-weight:700;">SECR</span></td><td>0.1%</td><td>シークレット</td></tr>
+                <tr><th>レア</th><th>割合</th></tr>
+                <tr><td><span style="color:#f5a623;font-weight:700;">SSR</span></td><td>約6%</td></tr>
+                <tr><td><span style="color:#41b4f5;font-weight:700;">SR</span></td><td>約20%</td></tr>
+                <tr><td><span style="color:#3ecf8e;font-weight:700;">R</span></td><td>約39%</td></tr>
+                <tr><td><span style="color:#8892b0;font-weight:700;">N</span></td><td>約35%</td></tr>
               </table>
+            </div>
+            <div class="pq-about-section">
+              <div class="pq-about-heading">属性</div>
+              <p class="pq-about-text">火 / 水 / 草 / 氷 / 毒 / 光 / 闇 の7属性があります。JANコードの桁の合計値から決定論的に決まります。</p>
+            </div>
+            <div class="pq-about-section">
+              <div class="pq-about-heading">開拓（クエスト）</div>
+              <p class="pq-about-text">パーティを最大3人編成して開拓に出発できます。最大8時間派遣でき、帰還時にパーティ戦力×経過時間に応じたXPを獲得できます。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Pクエスト メイン ===== -->
+        <div id="pq-main" style="display:none;">
+          <!-- サブナビ -->
+          <div class="pq-subnav">
+            <button class="pq-subnav-btn active" data-sub="explore">開拓</button>
+            <button class="pq-subnav-btn" data-sub="party">パーティ編成</button>
+            <button class="pq-subnav-btn" data-sub="detail">英雄詳細</button>
+            <button class="pq-subnav-btn" data-sub="scan">英雄召喚</button>
+            <button class="pq-subnav-btn" data-sub="rewards">報酬</button>
+          </div>
+
+          <!-- 開拓 -->
+          <div class="pq-sub-panel active" id="sub-explore">
+            <div class="game-card">
+              <div class="game-card-title">開拓</div>
+              <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">パーティを派遣して時間経過でXPを獲得します。最大8時間。帰還時にXPが付与されます。</p>
+              <div id="quest-party-preview" style="margin-bottom:16px;"></div>
+              <div id="quest-status"></div>
+              <div style="display:flex;gap:8px;margin-top:16px;">
+                <button class="btn-primary" id="quest-start-btn">開拓に出発</button>
+                <button class="btn-secondary" id="quest-return-btn" style="display:none;">帰還させる</button>
+              </div>
+              <div id="quest-result" style="margin-top:16px;"></div>
+            </div>
+          </div>
+
+          <!-- パーティ編成 -->
+          <div class="pq-sub-panel" id="sub-party" style="display:none;">
+            <div class="game-card">
+              <div class="game-card-title">パーティ編成（最大3人）</div>
+              <div id="party-slots" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;"></div>
+              <div class="game-card-title" style="margin-top:4px;">勇者を選択</div>
+              <div id="party-select-list"></div>
+            </div>
+          </div>
+
+          <!-- 英雄詳細 -->
+          <div class="pq-sub-panel" id="sub-detail" style="display:none;">
+            <div class="game-card">
+              <div class="game-card-title">英雄詳細</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+                <button class="hero-filter-btn active" data-filter="all">すべて</button>
+                <button class="hero-filter-btn" data-filter="SSR">SSR</button>
+                <button class="hero-filter-btn" data-filter="SR">SR</button>
+                <button class="hero-filter-btn" data-filter="R">R</button>
+                <button class="hero-filter-btn" data-filter="N">N</button>
+              </div>
+              <div id="hero-list"></div>
+            </div>
+          </div>
+
+          <!-- 英雄召喚 -->
+          <div class="pq-sub-panel" id="sub-scan" style="display:none;">
+            <div class="game-card">
+              <div class="game-card-title">英雄召喚</div>
+              <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">商品のバーコードをスキャンして勇者を召喚します。同じバーコードからは同じ勇者が生まれます。</p>
+              <div id="scan-reader" style="width:100%;max-width:360px;margin:0 auto 16px;border-radius:var(--r);overflow:hidden;"></div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+                <button class="btn-primary" id="scan-start-btn">スキャン開始</button>
+                <button class="btn-secondary" id="scan-stop-btn" style="display:none;">停止</button>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+                <input id="scan-manual-input" type="text" placeholder="JANコードを直接入力（8〜13桁）" style="flex:1;">
+                <button class="btn-secondary" id="scan-manual-btn">召喚</button>
+              </div>
+              <div id="scan-result"></div>
+            </div>
+          </div>
+
+          <!-- 報酬（称号ガチャ） -->
+          <div class="pq-sub-panel" id="sub-rewards" style="display:none;">
+            <div class="game-card">
+              <div class="game-card-title">報酬 - 称号ガチャ</div>
+              <div class="gacha-xp-info">
+                <span>所持XP：</span>
+                <span id="gacha-xp" class="gacha-xp-val">---</span>
+                <span style="font-size:12px;color:var(--text-2);">（1回50XP消費）</span>
+              </div>
+              <div class="gacha-btns">
+                <button class="btn-primary gacha-roll-btn" id="gacha-1">1回引く（50XP）</button>
+                <button class="btn-primary gacha-roll-btn" id="gacha-10">10連（450XP）</button>
+              </div>
+              <div id="gacha-result" class="gacha-result-area"></div>
+              <div class="gacha-inventory-title">所持バッジ・称号</div>
+              <div id="gacha-inventory" class="gacha-inventory"></div>
             </div>
           </div>
         </div>
@@ -153,6 +198,7 @@
       </section>
     </main>
   </div>
+
   <nav class="bottom-nav">
     <a href="home.html"><span>ホーム</span></a>
     <a href="board.html"><span>掲示板</span></a>
@@ -160,6 +206,7 @@
     <a href="study.html"><span>学習</span></a>
     <a href="profile.html"><span>プロフィール</span></a>
   </nav>
+
   <script src="js/api.js?v=19"></script>
   <script src="js/auth.js?v=19"></script>
   <script src="js/gacha-data.js?v=19"></script>
