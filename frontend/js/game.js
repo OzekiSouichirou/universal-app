@@ -3,11 +3,33 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 const RARITY_COLOR = { SSR: '#f5a623', SR: '#41b4f5', R: '#3ecf8e', N: '#8892b0' };
 const ATTR_COLOR   = { 火: '#f0476c', 水: '#41b4f5', 草: '#3ecf8e', 氷: '#a0d8ef', 毒: '#b06ef5', 光: '#f5e642', 闇: '#9999aa' };
 
-let _heroes  = [];
-let _party   = [];
-let _scanner = null;
-let _scanning = false;
+let _heroes    = [];
+let _party     = [];
+let _codeReader = null;
+let _scanning   = false;
+let _scanTimer  = null;
 const _subLoaded = {};
+
+const SCAN_TIMEOUT = 60000;
+
+function stopCamera() {
+  if (_scanTimer) { clearTimeout(_scanTimer); _scanTimer = null; }
+  if (_codeReader) { try { _codeReader.reset(); } catch {} _codeReader = null; }
+  _scanning = false;
+  const video = document.getElementById('scan-video');
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  const startBtn = document.getElementById('scan-start-btn');
+  const stopBtn  = document.getElementById('scan-stop-btn');
+  if (startBtn) startBtn.style.display = 'inline-block';
+  if (stopBtn)  stopBtn.style.display  = 'none';
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopCamera();
+});
 
 // ============================================================
 // 画面遷移管理
@@ -41,13 +63,17 @@ document.getElementById('btn-enter')?.addEventListener('click', () => {
   showScreen('main');
   if (!_subLoaded.explore) { _subLoaded.explore = true; loadQuest(); }
 });
-document.getElementById('pq-back-btn')?.addEventListener('click', () => showScreen('landing'));
+document.getElementById('pq-back-btn')?.addEventListener('click', () => { stopCamera(); showScreen('landing'); });
 
 // ============================================================
 // サブナビ切り替え
 // ============================================================
 document.querySelectorAll('.pq-subnav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    // 召喚タブから離れる場合はカメラを停止
+    const current = document.querySelector('.pq-subnav-btn.active')?.dataset.sub;
+    if (current === 'scan' && btn.dataset.sub !== 'scan') stopCamera();
+
     document.querySelectorAll('.pq-subnav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.pq-sub-panel').forEach(p => p.style.display = 'none');
     btn.classList.add('active');
@@ -211,63 +237,57 @@ async function doScan(jan) {
   }
 }
 
-document.getElementById('scan-start-btn')?.addEventListener('click', () => {
+document.getElementById('scan-start-btn')?.addEventListener('click', async () => {
   if (_scanning) return;
   _scanning = true;
   document.getElementById('scan-start-btn').style.display = 'none';
   document.getElementById('scan-stop-btn').style.display  = 'inline-block';
   document.getElementById('scan-result').innerHTML =
-    '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください</p>';
+    '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください（60秒で自動終了）</p>';
 
-  const reader = document.getElementById('scan-reader');
-  reader.innerHTML = '';
+  const video = document.getElementById('scan-video');
 
-  Quagga.init({
-    inputStream: {
-      type: 'LiveStream',
-      target: reader,
-      constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-    },
-    locator: { patchSize: 'medium', halfSample: true },
-    numOfWorkers: 1,
-    frequency: 10,
-    decoder: {
-      readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'upc_e_reader', 'code_128_reader'],
-    },
-    locate: true,
-  }, err => {
-    if (err) {
-      _scanning = false;
-      document.getElementById('scan-start-btn').style.display = 'inline-block';
-      document.getElementById('scan-stop-btn').style.display  = 'none';
-      toast('カメラへのアクセスが拒否されました', 'error');
-      return;
-    }
-    Quagga.start();
-  });
+  // EAN-13/8・UPC・Code128を対象、TRY_HARDERで精度向上
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    ZXing.BarcodeFormat.EAN_13,
+    ZXing.BarcodeFormat.EAN_8,
+    ZXing.BarcodeFormat.UPC_A,
+    ZXing.BarcodeFormat.UPC_E,
+    ZXing.BarcodeFormat.CODE_128,
+    ZXing.BarcodeFormat.CODE_39,
+  ]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-  let _lastCode = null;
-  let _hitCount = 0;
-  Quagga.onDetected(async result => {
-    const code = result?.codeResult?.code;
-    if (!code) return;
-    if (code === _lastCode) { _hitCount++; } else { _lastCode = code; _hitCount = 1; }
-    if (_hitCount < 2) return;
-    Quagga.stop();
-    _scanning = false;
-    _lastCode = null;
-    _hitCount = 0;
-    document.getElementById('scan-start-btn').style.display = 'inline-block';
-    document.getElementById('scan-stop-btn').style.display  = 'none';
-    await doScan(code);
-  });
+  _codeReader = new ZXing.BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 150 });
+
+  try {
+    await _codeReader.decodeFromConstraints(
+      { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+      video,
+      async (result, err) => {
+        if (!result) return;
+        const code = result.getText();
+        if (!code) return;
+        stopCamera();
+        await doScan(code);
+      }
+    );
+
+    // 60秒タイムアウト
+    _scanTimer = setTimeout(() => {
+      stopCamera();
+      toast('スキャンがタイムアウトしました。再度試してください。');
+    }, SCAN_TIMEOUT);
+
+  } catch {
+    stopCamera();
+    toast('カメラへのアクセスが拒否されました', 'error');
+  }
 });
 
 document.getElementById('scan-stop-btn')?.addEventListener('click', () => {
-  try { Quagga.stop(); } catch {}
-  _scanning = false;
-  document.getElementById('scan-start-btn').style.display = 'inline-block';
-  document.getElementById('scan-stop-btn').style.display  = 'none';
+  stopCamera();
 });
 
 document.getElementById('scan-manual-btn')?.addEventListener('click', () => {
