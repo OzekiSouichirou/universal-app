@@ -1,18 +1,22 @@
 let chartTrend = null, chartXP = null, chartHourly = null, chartActivity = null;
 
-const CHART = {
-  color:     '#e4e9f7',
-  gridColor: '#1e2640',
-  accent:    '#5b6ef5',
-  accent2:   '#7b8cf7',
-  green:     '#3ecf8e',
-  red:       '#f0476c',
-  blue:      '#41b4f5',
-};
+function chartTheme() {
+  const light = document.documentElement.dataset.theme === 'light';
+  return {
+    color:     light ? '#4a5580' : '#e4e9f7',
+    gridColor: light ? '#d5d9ec' : '#1e2640',
+    accent:    '#5b6ef5',
+    accent2:   '#7b8cf7',
+    green:     '#3ecf8e',
+    red:       '#f0476c',
+    blue:      '#41b4f5',
+  };
+}
 
 document.getElementById('logout-btn').addEventListener('click', logout);
 
 function chartOptions() {
+  const CHART = chartTheme();
   return {
     responsive: true,
     plugins: { legend: { labels: { color: CHART.color, font: { size: 12 } } } },
@@ -117,8 +121,8 @@ function renderActivityChart(data, label) {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        y: { min: 0, ticks: { color: '#8892b0' }, grid: { color: '#1e2640' } },
-        x: { ticks: { color: '#8892b0', maxTicksLimit: 10 }, grid: { display: false } },
+        y: { min: 0, ticks: { color: chartTheme().color }, grid: { color: chartTheme().gridColor } },
+        x: { ticks: { color: chartTheme().color, maxTicksLimit: 10 }, grid: { display: false } },
       },
     },
   });

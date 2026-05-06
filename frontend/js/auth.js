@@ -1,3 +1,9 @@
+
+// テーマの永続化（全ページ共通）
+(function() {
+  const t = localStorage.getItem('theme') || 'dark';
+  document.documentElement.dataset.theme = t;
+})();
 // ============================================================
 // ローディングスピナー
 // ============================================================
@@ -99,23 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const installBtn = document.getElementById('pwa-install-btn');
   if (installBtn) installBtn.addEventListener('click', pwaInstall);
-
-  // テーマ初期化
-  const saved = localStorage.getItem('theme') || 'dark';
-  document.documentElement.dataset.theme = saved;
-
-  const themeBtn = document.createElement('button');
-  themeBtn.id          = 'theme-toggle-btn';
-  themeBtn.textContent = saved === 'light' ? '🌙 ダークモード' : '☀️ ライトモード';
-  const footer = document.querySelector('.sidebar-footer');
-  if (footer) footer.insertBefore(themeBtn, footer.firstChild);
-
-  themeBtn.addEventListener('click', () => {
-    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('theme', next);
-    themeBtn.textContent = next === 'light' ? '🌙 ダークモード' : '☀️ ライトモード';
-  });
 });
 
 // ============================================================

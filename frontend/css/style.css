@@ -27,77 +27,6 @@
   --t:    0.18s ease;
 }
 
-[data-theme="light"] {
-  --bg:        #f4f6fb;
-  --bg-sub:    #eaecf4;
-  --surface:   #ffffff;
-  --surface-2: #eef0f8;
-  --border:    #d5d9ec;
-  --border-2:  #c0c6de;
-  --text:      #18213a;
-  --text-2:    #4a5580;
-  --text-3:    #8892b0;
-  --glow:      rgba(91,110,245,0.10);
-  --red-bg:    rgba(240,71,108,0.08);
-  --green-bg:  rgba(62,207,142,0.08);
-}
-
-[data-theme="light"] .sidebar {
-  background-color: #ffffff;
-  border-right: 1px solid var(--border);
-}
-
-[data-theme="light"] .sidebar-title a {
-  background: linear-gradient(90deg, #3a2fd4 0%, #c4386b 60%, #e8649a 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-[data-theme="light"] .sidebar-footer button:hover {
-  background-color: rgba(240,71,108,0.08);
-}
-
-[data-theme="light"] .top-bar {
-  background-color: var(--bg-sub);
-}
-
-[data-theme="light"] .top-bar span {
-  background-color: var(--surface);
-  border-color: var(--border);
-}
-
-[data-theme="light"] input,
-[data-theme="light"] textarea,
-[data-theme="light"] select {
-  background-color: var(--surface-2);
-  color: var(--text);
-  border-color: var(--border);
-}
-
-[data-theme="light"] .post-card,
-[data-theme="light"] .db-card,
-[data-theme="light"] .db-stat-card,
-[data-theme="light"] .modal-box,
-[data-theme="light"] .welcome-box,
-[data-theme="light"] .event-item,
-[data-theme="light"] .task-item,
-[data-theme="light"] .grade-item,
-[data-theme="light"] .bookmark-item,
-[data-theme="light"] .notif-panel,
-[data-theme="light"] .tt-cell.filled {
-  background-color: var(--surface);
-  border-color: var(--border);
-}
-
-[data-theme="light"] .bottom-nav {
-  background-color: var(--surface);
-  border-color: var(--border);
-}
-
-[data-theme="light"] #page-spinner {
-  background-color: rgba(244,246,251,0.92);
-}
-
 * {
   margin: 0;
   padding: 0;
@@ -3698,21 +3627,78 @@ body {
   transition: width 0.5s;
 }
 
-#theme-toggle-btn {
-  width: 100%;
-  background-color: transparent;
-  border: 1px solid var(--border-2);
-  color: var(--text-2);
-  border-radius: var(--r);
-  padding: 9px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background-color var(--t), color var(--t), border-color var(--t);
-  margin-bottom: 6px;
+/* ============================================================
+   ライトモード
+   ============================================================ */
+[data-theme="light"] {
+  --bg:        #f4f6fb;
+  --bg-sub:    #eaecf4;
+  --surface:   #ffffff;
+  --surface-2: #eef0f8;
+  --border:    #d5d9ec;
+  --border-2:  #c0c6de;
+  --text:      #18213a;
+  --text-2:    #4a5580;
+  --text-3:    #8892b0;
+  --glow:      rgba(91,110,245,0.10);
+  --red-bg:    rgba(240,71,108,0.08);
+  --green-bg:  rgba(62,207,142,0.08);
 }
-#theme-toggle-btn:hover {
-  background-color: var(--surface-2);
+
+[data-theme="light"] body {
+  background-color: var(--bg);
   color: var(--text);
-  border-color: var(--accent);
+}
+
+[data-theme="light"] .sidebar-title a {
+  background: linear-gradient(90deg, #3a2fd4 0%, #c4386b 55%, #e8649a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+[data-theme="light"] .modal-box {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+}
+
+[data-theme="light"] .sidebar-overlay.active {
+  background-color: rgba(0,0,0,0.3);
+}
+
+[data-theme="light"] .post-card {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .db-stat-card {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .btn-primary {
+  box-shadow: 0 2px 8px rgba(91,110,245,0.25);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--text-3);
+}
+
+[data-theme="light"] .login-wrapper {
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 25%, rgba(91,110,245,0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 55% at 85% 75%, rgba(65,180,245,0.05) 0%, transparent 65%);
+}
+
+[data-theme="light"] .login-box {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] #page-spinner {
+  background: var(--bg);
 }
