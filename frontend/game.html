@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polonix - 発掘</title>
+  <title>Polonix - 英雄録</title>
   <link rel="stylesheet" href="css/style.css">
   <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
-
   <link rel="icon" type="image/png" href="icons/favicon-32.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.json">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#5b6ef5">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
   <div id="page-spinner"><div class="spinner-ring"></div><p class="spinner-text">読み込み中...</p></div>
@@ -25,59 +24,109 @@
           <li><a href="board.html">掲示板</a></li>
           <li><a href="calendar.html">カレンダー</a></li>
           <li><a href="study.html">学習</a></li>
-          <li class="active"><a href="game.html">発掘</a></li>
+          <li class="active"><a href="game.html">英雄録</a></li>
           <li><a href="profile.html">プロフィール</a></li>
           <li><a href="feedback.html">ご意見箱</a></li>
         </ul>
       </nav>
       <div class="sidebar-footer">
         <button id="logout-btn">ログアウト</button>
-        <button id="pwa-install-btn">📲 アプリをインストール</button>
+        <button id="pwa-install-btn">アプリをインストール</button>
       </div>
     </aside>
     <main class="main-content">
       <header class="top-bar">
         <button class="hamburger" id="hamburger-btn" aria-label="メニュー">☰</button>
-        <h2>発掘</h2>
+        <h2>英雄録</h2>
         <span id="current-user"></span>
       </header>
       <section class="content-area">
 
-        <!-- タブ -->
         <div class="game-tabs">
-          <button class="game-tab active" data-tab="gacha">ガチャ</button>
-          <button class="game-tab" data-tab="gacha-guide">ガチャガイド</button>
+          <button class="game-tab active" data-tab="scan">召喚</button>
+          <button class="game-tab" data-tab="heroes">勇者一覧</button>
+          <button class="game-tab" data-tab="party">パーティ</button>
+          <button class="game-tab" data-tab="quest">クエスト</button>
+          <button class="game-tab" data-tab="gacha">称号ガチャ</button>
         </div>
 
-        <!-- ガチャ -->
-        <div class="game-panel active" id="tab-gacha">
+        <!-- 召喚タブ -->
+        <div class="game-panel active" id="tab-scan">
           <div class="game-card">
-            <div class="game-card-title">ガチャ</div>
+            <div class="game-card-title">バーコード召喚</div>
+            <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">商品のバーコードをスキャンして勇者を召喚します。同じバーコードからは同じ勇者が生まれます。</p>
+            <div id="scan-reader" style="width:100%;max-width:360px;margin:0 auto 16px;border-radius:var(--r);overflow:hidden;"></div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+              <button class="btn-primary" id="scan-start-btn">スキャン開始</button>
+              <button class="btn-secondary" id="scan-stop-btn" style="display:none;">停止</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+              <input id="scan-manual-input" type="text" placeholder="JANコードを直接入力（8〜13桁）" style="flex:1;">
+              <button class="btn-secondary" id="scan-manual-btn">召喚</button>
+            </div>
+            <div id="scan-result"></div>
+          </div>
+        </div>
+
+        <!-- 勇者一覧タブ -->
+        <div class="game-panel" id="tab-heroes">
+          <div class="game-card">
+            <div class="game-card-title">所持勇者一覧</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+              <button class="hero-filter-btn active" data-filter="all">すべて</button>
+              <button class="hero-filter-btn" data-filter="SSR">SSR</button>
+              <button class="hero-filter-btn" data-filter="SR">SR</button>
+              <button class="hero-filter-btn" data-filter="R">R</button>
+              <button class="hero-filter-btn" data-filter="N">N</button>
+            </div>
+            <div id="hero-list"></div>
+          </div>
+        </div>
+
+        <!-- パーティタブ -->
+        <div class="game-panel" id="tab-party">
+          <div class="game-card">
+            <div class="game-card-title">パーティ編成（最大3人）</div>
+            <div id="party-slots" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;"></div>
+            <div class="game-card-title" style="margin-top:4px;">勇者を選択</div>
+            <div id="party-select-list"></div>
+          </div>
+        </div>
+
+        <!-- クエストタブ -->
+        <div class="game-panel" id="tab-quest">
+          <div class="game-card">
+            <div class="game-card-title">クエスト派遣</div>
+            <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">パーティを派遣して時間経過でXPを獲得します。最大8時間。帰還時にXPが付与されます。</p>
+            <div id="quest-party-preview" style="margin-bottom:16px;"></div>
+            <div id="quest-status"></div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+              <button class="btn-primary" id="quest-start-btn">クエスト開始</button>
+              <button class="btn-secondary" id="quest-return-btn" style="display:none;">帰還させる</button>
+            </div>
+            <div id="quest-result" style="margin-top:16px;"></div>
+          </div>
+        </div>
+
+        <!-- 称号ガチャタブ -->
+        <div class="game-panel" id="tab-gacha">
+          <div class="game-card">
+            <div class="game-card-title">称号ガチャ</div>
             <div class="gacha-xp-info">
               <span>所持XP：</span>
               <span id="gacha-xp" class="gacha-xp-val">---</span>
               <span style="font-size:12px;color:var(--text-2);">（1回50XP消費）</span>
             </div>
             <div class="gacha-btns">
-              <button class="btn-primary gacha-roll-btn" id="gacha-1">🎲 1回引く（50XP）</button>
-              <button class="btn-primary gacha-roll-btn" id="gacha-10">🎲🎲 10連（450XP）</button>
+              <button class="btn-primary gacha-roll-btn" id="gacha-1">1回引く（50XP）</button>
+              <button class="btn-primary gacha-roll-btn" id="gacha-10">10連（450XP）</button>
             </div>
             <div id="gacha-result" class="gacha-result-area"></div>
-            <div class="gacha-inventory-title">🎒 所持バッジ・称号</div>
+            <div class="gacha-inventory-title">所持バッジ・称号</div>
             <div id="gacha-inventory" class="gacha-inventory"></div>
           </div>
-        </div>
-
-        <!-- ガチャガイド -->
-        <div class="game-panel" id="tab-gacha-guide">
           <div class="game-card">
             <div class="game-card-title">ガチャガイド</div>
-
-            <div class="guide-section">
-              <div class="guide-title">ガチャとは</div>
-              <p class="guide-text">XPを消費して称号のパーツ（A・B）を入手できるシステムです。AとBを組み合わせてプロフィールに二つ名として表示できます。</p>
-            </div>
-
             <div class="guide-section">
               <div class="guide-title">消費XP</div>
               <table class="guide-table">
@@ -86,76 +135,24 @@
                 <tr><td>10連</td><td>450 XP</td><td>50XP分お得</td></tr>
               </table>
             </div>
-
             <div class="guide-section">
               <div class="guide-title">レアリティと排出率</div>
               <table class="guide-table">
                 <tr><th>レア</th><th>確率</th><th>特徴</th></tr>
-                <tr><td><span style="color:#9ea0a0;font-weight:700;">N</span></td><td>50%</td><td>ノーマル。よくある日常系のワード</td></tr>
-                <tr><td><span style="color:#3ecf8e;font-weight:700;">R</span></td><td>30%</td><td>レア。学校あるあるなワード</td></tr>
-                <tr><td><span style="color:#41b4f5;font-weight:700;">SR</span></td><td>15%</td><td>スーパーレア。限界学生感あるワード</td></tr>
-                <tr><td><span style="color:#f5a623;font-weight:700;">SSR</span></td><td>4%</td><td>ダブルスーパーレア。伝説・神話系の強いワード</td></tr>
-                <tr><td><span style="color:#e87aaa;font-weight:700;">UR</span></td><td>0.9%</td><td>ウルトラレア。システム・バグ系の謎ワード</td></tr>
-                <tr><td><span style="color:#b06ef5;font-weight:700;">SECR</span></td><td>0.1%</td><td>シークレット。極レア。特別なワード。パルス発光</td></tr>
-              </table>
-              <p class="guide-note">A・Bそれぞれ独立してレアリティが決定されます。1回の排出でA・B各1枚ずつ入手できます。</p>
-            </div>
-
-            <div class="guide-section">
-              <div class="guide-title">かぶりについて</div>
-              <p class="guide-text">既に所持しているワードが出た場合、インベントリには追加されません。その代わり <span style="color:var(--accent-2);font-weight:700;">+1XP</span> のボーナスが付与されます。</p>
-            </div>
-
-            <div class="guide-section">
-              <div class="guide-title">XPの貯め方</div>
-              <table class="guide-table">
-                <tr><th>アクション</th><th>獲得XP</th></tr>
-                <tr><td>ログインボーナス（1日1回）</td><td>+5 XP</td></tr>
-                <tr><td>カレンダーにイベントを追加</td><td>+10 XP</td></tr>
-                <tr><td>予定・メモを完了にする</td><td>+30 XP</td></tr>
-                <tr><td>試験イベントを完了にする</td><td>+50 XP</td></tr>
-                <tr><td>ガチャのかぶり</td><td>+1 XP</td></tr>
-                <tr><td>管理者からの配布</td><td>任意</td></tr>
+                <tr><td><span style="color:#9ea0a0;font-weight:700;">N</span></td><td>50%</td><td>ノーマル</td></tr>
+                <tr><td><span style="color:#3ecf8e;font-weight:700;">R</span></td><td>30%</td><td>レア</td></tr>
+                <tr><td><span style="color:#41b4f5;font-weight:700;">SR</span></td><td>15%</td><td>スーパーレア</td></tr>
+                <tr><td><span style="color:#f5a623;font-weight:700;">SSR</span></td><td>4%</td><td>ダブルスーパーレア</td></tr>
+                <tr><td><span style="color:#e87aaa;font-weight:700;">UR</span></td><td>0.9%</td><td>ウルトラレア</td></tr>
+                <tr><td><span style="color:#b06ef5;font-weight:700;">SECR</span></td><td>0.1%</td><td>シークレット</td></tr>
               </table>
             </div>
-
-            <div class="guide-section">
-              <div class="guide-title">レベル閾値</div>
-              <table class="guide-table">
-                <tr><th>レベル</th><th>必要累計XP</th><th>10連ガチャ可能回数目安</th></tr>
-                <tr><td>Lv.1</td><td>0</td><td>0回</td></tr>
-                <tr><td>Lv.2</td><td>100 XP</td><td>2回</td></tr>
-                <tr><td>Lv.3</td><td>250 XP</td><td>5回</td></tr>
-                <tr><td>Lv.4</td><td>450 XP</td><td>10回</td></tr>
-                <tr><td>Lv.5</td><td>700 XP</td><td>15回</td></tr>
-                <tr><td>Lv.6</td><td>1,000 XP</td><td>22回</td></tr>
-                <tr><td>Lv.7</td><td>1,400 XP</td><td>31回</td></tr>
-                <tr><td>Lv.8</td><td>1,900 XP</td><td>42回</td></tr>
-                <tr><td>Lv.9</td><td>2,500 XP</td><td>55回</td></tr>
-                <tr><td>Lv.10</td><td>3,200 XP</td><td>71回</td></tr>
-                <tr><td>Lv.11</td><td>4,000 XP</td><td>88回</td></tr>
-              </table>
-            </div>
-
-            <div class="guide-section">
-              <div class="guide-title">称号の使い方</div>
-              <p class="guide-text">ガチャで獲得したA・Bのワードは <a href="profile.html" style="color:var(--accent-2);">プロフィールページ</a> で組み合わせて二つ名として装備できます。装備した称号は掲示板の投稿やユーザープロフィールに表示されます。</p>
-              <div class="guide-example">
-                <span style="color:var(--text-2);font-size:12px;">例：</span>
-                <span class="profile-title-badge" style="background:var(--accent)22;border-color:var(--accent);color:var(--accent-2)">徹夜明けの 揚げパン神</span>
-              </div>
-            </div>
-
           </div>
         </div>
 
       </section>
     </main>
   </div>
-  <script src="js/api.js?v=18"></script>
-  <script src="js/auth.js?v=18"></script>
-  <script src="js/gacha-data.js?v=18"></script>
-  <script src="js/game.js?v=18"></script>
   <nav class="bottom-nav">
     <a href="home.html"><span>ホーム</span></a>
     <a href="board.html"><span>掲示板</span></a>
@@ -163,5 +160,9 @@
     <a href="study.html"><span>学習</span></a>
     <a href="profile.html"><span>プロフィール</span></a>
   </nav>
+  <script src="js/api.js?v=19"></script>
+  <script src="js/auth.js?v=19"></script>
+  <script src="js/gacha-data.js?v=19"></script>
+  <script src="js/game.js?v=19"></script>
 </body>
 </html>

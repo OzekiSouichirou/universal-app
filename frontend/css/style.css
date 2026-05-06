@@ -160,7 +160,6 @@ body {
 }
 
 .sidebar {
-  will-change: transform;
   width: 220px;
   background-color: var(--surface);
   border-right: 1px solid var(--border);
@@ -506,7 +505,6 @@ body {
 }
 
 .modal-box {
-  will-change: transform, opacity;
   background-color: var(--surface);
   border: 1px solid var(--border-2);
   border-radius: var(--r-lg);
@@ -897,7 +895,7 @@ body {
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
-  transition: background-color var(--t), color var(--t), border-color var(--t), opacity var(--t);
+  transition: all var(--t);
 }
 
 .like-btn:hover {
@@ -1103,7 +1101,7 @@ body {
   font-size: 12.5px;
   font-family: inherit;
   cursor: pointer;
-  transition: background-color var(--t), color var(--t), border-color var(--t), opacity var(--t);
+  transition: all var(--t);
 }
 
 .comment-toggle-btn:hover {
@@ -1881,7 +1879,6 @@ body {
   overflow: hidden;
 }
 .xp-bar {
-  will-change: width;
   height: 100%;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: 99px;
@@ -2530,7 +2527,7 @@ body {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background-color var(--t), color var(--t), border-color var(--t), opacity var(--t);
+  transition: all var(--t);
 }
 .game-tab:hover { background: var(--surface-2); color: var(--text); }
 .game-tab.active {
@@ -2678,7 +2675,7 @@ body {
   border: 2px solid var(--border-2);
   background: var(--surface-2);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+  transition: all 0.15s;
   position: relative;
   min-width: 80px;
 }
@@ -3411,7 +3408,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--t), color var(--t), border-color var(--t);
+  transition: all var(--t);
 }
 .task-filter-btn.active, .task-filter-btn:hover {
   background: var(--accent);
@@ -3549,7 +3546,7 @@ body {
   font-weight: 600;
   color: var(--text-2);
   cursor: pointer;
-  transition: color var(--t), background-color var(--t), border-bottom-color var(--t);
+  transition: all var(--t);
   margin-bottom: -1px;
 }
 .study-tab.active {
@@ -3704,4 +3701,61 @@ html[data-theme="light"] .login-box {
 
 html[data-theme="light"] #page-spinner {
   background: var(--bg);
+}
+
+/* ============================================================
+   英雄録 - 勇者カード
+   ============================================================ */
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--hero-color, var(--border));
+  border-radius: var(--r);
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: box-shadow var(--t);
+}
+.hero-card.in-party {
+  border-color: var(--accent);
+  background: rgba(91,110,245,0.06);
+}
+.hero-rarity {
+  font-size: 13px;
+  font-weight: 700;
+}
+.hero-attr {
+  font-size: 12px;
+  font-weight: 600;
+}
+.hero-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 6px 0;
+}
+.hero-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-2);
+  flex-wrap: wrap;
+}
+.hero-stats b { color: var(--text); }
+
+.hero-filter-btn {
+  padding: 5px 14px;
+  border-radius: 99px;
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--t), color var(--t), border-color var(--t);
+}
+.hero-filter-btn.active,
+.hero-filter-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }

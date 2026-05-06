@@ -68,6 +68,25 @@ def run_migrations():
         ("idx", "tasks_username",    "CREATE INDEX IF NOT EXISTS idx_tasks_username ON tasks(username)"),
         ("idx", "grades_username",   "CREATE INDEX IF NOT EXISTS idx_grades_username ON grades(username)"),
         ("idx", "bookmarks_username","CREATE INDEX IF NOT EXISTS idx_bookmarks_username ON bookmarks(username)"),
+        ("heroes", "table", """CREATE TABLE IF NOT EXISTS heroes (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(30) NOT NULL,
+            jan_code VARCHAR(13) NOT NULL,
+            hero_name VARCHAR(100) NOT NULL,
+            rarity VARCHAR(4) NOT NULL,
+            attribute VARCHAR(4) NOT NULL,
+            hp INTEGER NOT NULL,
+            attack INTEGER NOT NULL,
+            speed INTEGER NOT NULL,
+            luck INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT now(),
+            UNIQUE(username, jan_code)
+        )"""),
+        ("party", "table", """CREATE TABLE IF NOT EXISTS party (
+            username VARCHAR(30) PRIMARY KEY,
+            hero_ids TEXT DEFAULT '[]',
+            quest_started_at TIMESTAMP DEFAULT NULL
+        )"""),
     ]
     try:
         with engine.connect() as conn:
@@ -217,11 +236,13 @@ from routes.tasks     import router as tasks_router
 from routes.bookmarks  import router as bookmarks_router
 from routes.attendance import router as attendance_router
 from routes.badges     import router as badges_router
+from routes.scan       import router as scan_router
 app.include_router(grades_router,    prefix="/grades",    tags=["grades"])
 app.include_router(tasks_router,     prefix="/tasks",     tags=["tasks"])
 app.include_router(bookmarks_router,  prefix="/bookmarks",  tags=["bookmarks"])
 app.include_router(attendance_router, prefix="/attendance", tags=["attendance"])
 app.include_router(badges_router,     prefix="/badges",     tags=["badges"])
+app.include_router(scan_router,       prefix="/scan",       tags=["scan"])
 app.include_router(stats_router,     prefix="/stats",     tags=["stats"])
 app.include_router(feedback_router,  prefix="/feedback",  tags=["feedback"])
 
