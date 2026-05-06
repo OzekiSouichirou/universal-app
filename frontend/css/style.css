@@ -27,6 +27,77 @@
   --t:    0.18s ease;
 }
 
+[data-theme="light"] {
+  --bg:        #f4f6fb;
+  --bg-sub:    #eaecf4;
+  --surface:   #ffffff;
+  --surface-2: #eef0f8;
+  --border:    #d5d9ec;
+  --border-2:  #c0c6de;
+  --text:      #18213a;
+  --text-2:    #4a5580;
+  --text-3:    #8892b0;
+  --glow:      rgba(91,110,245,0.10);
+  --red-bg:    rgba(240,71,108,0.08);
+  --green-bg:  rgba(62,207,142,0.08);
+}
+
+[data-theme="light"] .sidebar {
+  background-color: #ffffff;
+  border-right: 1px solid var(--border);
+}
+
+[data-theme="light"] .sidebar-title a {
+  background: linear-gradient(90deg, #3a2fd4 0%, #c4386b 60%, #e8649a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+[data-theme="light"] .sidebar-footer button:hover {
+  background-color: rgba(240,71,108,0.08);
+}
+
+[data-theme="light"] .top-bar {
+  background-color: var(--bg-sub);
+}
+
+[data-theme="light"] .top-bar span {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background-color: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+[data-theme="light"] .post-card,
+[data-theme="light"] .db-card,
+[data-theme="light"] .db-stat-card,
+[data-theme="light"] .modal-box,
+[data-theme="light"] .welcome-box,
+[data-theme="light"] .event-item,
+[data-theme="light"] .task-item,
+[data-theme="light"] .grade-item,
+[data-theme="light"] .bookmark-item,
+[data-theme="light"] .notif-panel,
+[data-theme="light"] .tt-cell.filled {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="light"] .bottom-nav {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="light"] #page-spinner {
+  background-color: rgba(244,246,251,0.92);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -250,73 +321,6 @@ body {
 
 .sidebar-footer {
   padding: 16px 10px 0;
-}
-
-.nav-group-btn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 9px 12px;
-  background: transparent;
-  border: none;
-  color: var(--text-2);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: background-color var(--t), color var(--t);
-  text-align: left;
-}
-.nav-group-btn::after {
-  content: '›';
-  font-size: 16px;
-  line-height: 1;
-  color: var(--text-3);
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-.nav-group-btn:hover {
-  background-color: var(--surface-2);
-  color: var(--text);
-}
-.nav-group.has-active > .nav-group-btn {
-  color: var(--accent-2);
-}
-.nav-group.open > .nav-group-btn::after {
-  transform: rotate(90deg);
-}
-.nav-sub {
-  list-style: none;
-  overflow: hidden;
-  max-height: 0;
-  transition: max-height 0.22s ease;
-  padding: 0;
-  margin: 0;
-}
-.nav-group.open > .nav-sub {
-  max-height: 200px;
-}
-.nav-sub li a {
-  display: flex;
-  align-items: center;
-  padding: 7px 12px 7px 22px;
-  color: var(--text-2);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--r);
-  transition: background-color var(--t), color var(--t);
-}
-.nav-sub li a:hover {
-  background-color: var(--surface-2);
-  color: var(--text);
-}
-.nav-sub li.active a {
-  background: linear-gradient(135deg, rgba(91,110,245,0.18), rgba(91,110,245,0.07));
-  color: var(--accent-2);
-  border: 1px solid rgba(91,110,245,0.22);
 }
 
 .sidebar-footer button {
@@ -3619,6 +3623,8 @@ body {
 .study-tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
+  background: rgba(91,110,245,0.10);
+  border-radius: 6px 6px 0 0;
 }
 .study-tab:hover { color: var(--text); }
 
@@ -3690,4 +3696,23 @@ body {
   height: 100%;
   border-radius: 99px;
   transition: width 0.5s;
+}
+
+#theme-toggle-btn {
+  width: 100%;
+  background-color: transparent;
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  border-radius: var(--r);
+  padding: 9px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--t), color var(--t), border-color var(--t);
+  margin-bottom: 6px;
+}
+#theme-toggle-btn:hover {
+  background-color: var(--surface-2);
+  color: var(--text);
+  border-color: var(--accent);
 }
