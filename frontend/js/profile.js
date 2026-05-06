@@ -230,21 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) { alert(e.message || '削除に失敗しました'); }
   });
 
-  const themeBtn = document.getElementById('theme-toggle-btn');
-  if (themeBtn) {
-    const syncLabel = () => {
-      themeBtn.textContent = document.documentElement.dataset.theme === 'light'
-        ? 'ダークモードに切り替え' : 'ライトモードに切り替え';
-    };
-    syncLabel();
-    themeBtn.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-      document.documentElement.dataset.theme = next;
-      localStorage.setItem('theme', next);
-      syncLabel();
-    });
-  }
-
   const saveBtn = document.getElementById('save-profile-btn');
   const saveMsg = document.getElementById('profile-save-msg');
   if (saveBtn) {

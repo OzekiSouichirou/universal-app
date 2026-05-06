@@ -100,6 +100,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const installBtn = document.getElementById('pwa-install-btn');
   if (installBtn) installBtn.addEventListener('click', pwaInstall);
+
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  if (themeBtn) {
+    const syncLabel = () => {
+      themeBtn.textContent = document.documentElement.dataset.theme === 'light'
+        ? 'ダークモードに切り替え' : 'ライトモードに切り替え';
+    };
+    syncLabel();
+    themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('theme', next);
+      syncLabel();
+    });
+  }
 });
 
 // ============================================================
