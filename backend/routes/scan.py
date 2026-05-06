@@ -6,7 +6,6 @@ import json
 import math
 from datetime import datetime, timezone
 
-import httpx
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -52,21 +51,27 @@ def _hero_stats(jan_code: str) -> dict:
     }
 
 
-async def _fetch_product_name(jan_code: str) -> str | None:
+def _fetch_product_name_sync(jan_code: str) -> str | None:
+    import urllib.request
+    import json as _json
     url = f'https://world.openfoodfacts.org/api/v0/product/{jan_code}.json'
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            res = await client.get(url)
-        if res.status_code == 200:
-            data = res.json()
-            if data.get('status') == 1:
-                p = data.get('product', {})
-                name = p.get('product_name_ja') or p.get('product_name')
-                if name and name.strip():
-                    return name.strip()[:40]
+        req = urllib.request.Request(url, headers={'User-Agent': 'Polonix/1.0'})
+        with urllib.request.urlopen(req, timeout=3) as res:
+            data = _json.loads(res.read().decode())
+        if data.get('status') == 1:
+            p    = data.get('product', {})
+            name = p.get('product_name_ja') or p.get('product_name')
+            if name and name.strip():
+                return name.strip()[:40]
     except Exception:
         pass
     return None
+
+
+async def _fetch_product_name(jan_code: str) -> str | None:
+    import asyncio
+    return await asyncio.to_thread(_fetch_product_name_sync, jan_code)
 
 
 def _fallback_name(stats: dict) -> str:
