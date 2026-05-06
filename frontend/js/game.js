@@ -216,11 +216,21 @@ document.getElementById('scan-start-btn')?.addEventListener('click', async () =>
   _scanning = true;
   document.getElementById('scan-start-btn').style.display = 'none';
   document.getElementById('scan-stop-btn').style.display  = 'inline-block';
-  _scanner = new Html5Qrcode('scan-reader');
+  _scanner = new Html5Qrcode('scan-reader', {
+      formatsToSupport: [0, 1, 3, 4, 8, 9],
+      verbose: false,
+    });
   try {
     await _scanner.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 240, height: 120 } },
+      {
+          fps: 15,
+          qrbox: (w, h) => {
+            const size = Math.min(w, h);
+            return { width: Math.min(w - 32, 320), height: Math.floor(size * 0.25) };
+          },
+          aspectRatio: 1.5,
+        },
       async (code) => {
         await _scanner.stop();
         _scanning = false;
@@ -228,8 +238,10 @@ document.getElementById('scan-start-btn')?.addEventListener('click', async () =>
         document.getElementById('scan-stop-btn').style.display  = 'none';
         await doScan(code);
       },
-      () => {}
-    );
+      (err) => {
+          // スキャン失敗は毎フレーム呼ばれるため無視
+        }
+      );
   } catch {
     _scanning = false;
     document.getElementById('scan-start-btn').style.display = 'inline-block';
