@@ -252,6 +252,52 @@ body {
   padding: 16px 10px 0;
 }
 
+.nav-group-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background-color var(--t), color var(--t);
+}
+.nav-group-btn::after {
+  content: '›';
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-3);
+  transition: transform 0.2s ease;
+}
+.nav-group-btn:hover {
+  background-color: var(--surface-2);
+  color: var(--text);
+}
+.nav-group.open > .nav-group-btn {
+  color: var(--text);
+}
+.nav-group.open > .nav-group-btn::after {
+  transform: rotate(90deg);
+}
+.nav-sub {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.22s ease;
+}
+.nav-group.open > .nav-sub {
+  max-height: 160px;
+}
+.nav-sub li a {
+  padding-left: 26px;
+  font-size: 13px;
+}
+
 .sidebar-footer button {
   width: 100%;
   background-color: transparent;
