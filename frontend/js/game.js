@@ -3,24 +3,25 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 const RARITY_COLOR = { SSR: '#f5a623', SR: '#41b4f5', R: '#3ecf8e', N: '#8892b0' };
 const ATTR_COLOR   = { 火: '#f0476c', 水: '#41b4f5', 草: '#3ecf8e', 氷: '#a0d8ef', 毒: '#b06ef5', 光: '#f5e642', 闇: '#9999aa' };
 
-let _heroes    = [];
-let _party     = [];
-let _codeReader = null;
-let _scanning   = false;
-let _scanTimer  = null;
-const _subLoaded = {};
+// ============================================================
+// 英雄召喚 - スキャン実装
+// html5-qrcode 2.3.8 を使用
+// ライブスキャン + 写真読み取り（iOS Safari対応）
+// ============================================================
 
+let _qr       = null;
+let _scanning = false;
+let _scanTimer = null;
 const SCAN_TIMEOUT = 60000;
 
 function stopCamera() {
   if (_scanTimer) { clearTimeout(_scanTimer); _scanTimer = null; }
-  if (_codeReader) { try { _codeReader.reset(); } catch {} _codeReader = null; }
-  _scanning = false;
-  const video = document.getElementById('scan-video');
-  if (video && video.srcObject) {
-    video.srcObject.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
+  if (_qr) {
+    _qr.stop().catch(() => {});
+    _qr.clear();
+    _qr = null;
   }
+  _scanning = false;
   const startBtn = document.getElementById('scan-start-btn');
   const stopBtn  = document.getElementById('scan-stop-btn');
   if (startBtn) startBtn.style.display = 'inline-block';
@@ -31,337 +32,73 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopCamera();
 });
 
-// ============================================================
-// 画面遷移管理
-// ============================================================
-const screens = {
-  landing: document.getElementById('pq-landing'),
-  about:   document.getElementById('pq-about'),
-  main:    document.getElementById('pq-main'),
-};
-
-function showScreen(name) {
-  Object.values(screens).forEach(el => { if (el) el.style.display = 'none'; });
-  if (screens[name]) screens[name].style.display = 'block';
-
-  const backBtn = document.getElementById('pq-back-btn');
-  const title   = document.getElementById('pq-title');
-  if (name === 'landing') {
-    backBtn.style.display = 'none';
-    title.textContent = 'Pクエスト';
-  } else if (name === 'about') {
-    backBtn.style.display = 'inline-block';
-    title.textContent = 'Pクエストとは';
-  } else if (name === 'main') {
-    backBtn.style.display = 'inline-block';
-    title.textContent = 'Pクエスト';
-  }
-}
-
-document.getElementById('btn-about')?.addEventListener('click', () => showScreen('about'));
-document.getElementById('btn-enter')?.addEventListener('click', () => {
-  showScreen('main');
-  if (!_subLoaded.explore) { _subLoaded.explore = true; loadQuest(); }
-});
-document.getElementById('pq-back-btn')?.addEventListener('click', () => { stopCamera(); showScreen('landing'); });
-
-// ============================================================
-// サブナビ切り替え
-// ============================================================
-document.querySelectorAll('.pq-subnav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    // 召喚タブから離れる場合はカメラを停止
-    const current = document.querySelector('.pq-subnav-btn.active')?.dataset.sub;
-    if (current === 'scan' && btn.dataset.sub !== 'scan') stopCamera();
-
-    document.querySelectorAll('.pq-subnav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.pq-sub-panel').forEach(p => p.style.display = 'none');
-    btn.classList.add('active');
-    const key = btn.dataset.sub;
-    const panel = document.getElementById('sub-' + key);
-    if (panel) panel.style.display = 'block';
-
-    if (!_subLoaded[key]) {
-      _subLoaded[key] = true;
-      if (key === 'party')   loadParty();
-      if (key === 'detail')  loadHeroes();
-      if (key === 'rewards') loadGachaXP().then(() => fetchInventoryFromDB()).then(() => renderGachaInventory());
-    }
-  });
-});
-
-// ============================================================
-// 勇者カード
-// ============================================================
-function heroCard(h, mode = 'list') {
-  const rc = RARITY_COLOR[h.rarity] || '#888';
-  const ac = ATTR_COLOR[h.attribute] || '#888';
-  const inParty = _party.some(p => p.id === h.id);
-
-  if (mode === 'slot') {
-    return `<div class="hero-card" style="--hero-color:${rc};min-width:120px;text-align:center;">
-      <div class="hero-rarity" style="color:${rc}">${h.rarity}</div>
-      <div class="hero-attr" style="color:${ac}">${h.attribute}</div>
-      <div class="hero-name" style="font-size:13px;">${h.hero_name}</div>
-      <button class="btn-secondary hero-remove-btn" data-id="${h.id}" style="font-size:11px;padding:4px 8px;margin-top:6px;width:100%;">外す</button>
-    </div>`;
-  }
-  if (mode === 'select') {
-    return `<div class="hero-card${inParty ? ' in-party' : ''}" style="--hero-color:${rc}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div><span class="hero-rarity" style="color:${rc}">${h.rarity}</span>
-        <span class="hero-attr" style="color:${ac};margin-left:6px;">${h.attribute}</span></div>
-      </div>
-      <div class="hero-name">${h.hero_name}</div>
-      <div class="hero-stats">
-        <span>HP <b>${h.hp}</b></span><span>攻 <b>${h.attack}</b></span>
-        <span>速 <b>${h.speed}</b></span><span>運 <b>${h.luck}</b></span>
-      </div>
-      <button class="btn-secondary hero-party-btn" data-id="${h.id}"
-        style="font-size:11px;padding:4px 8px;margin-top:6px;width:100%;"
-        ${inParty ? 'disabled' : ''}>${inParty ? 'パーティ中' : 'パーティに追加'}</button>
-    </div>`;
-  }
-  return `<div class="hero-card" style="--hero-color:${rc}">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <div><span class="hero-rarity" style="color:${rc}">${h.rarity}</span>
-      <span class="hero-attr" style="color:${ac};margin-left:6px;">${h.attribute}</span></div>
-      <span style="font-size:11px;color:var(--text-3);">${new Date(h.created_at+'Z').toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}</span>
-    </div>
-    <div class="hero-name">${h.hero_name}</div>
-    <div class="hero-stats">
-      <span>HP <b>${h.hp}</b></span><span>攻 <b>${h.attack}</b></span>
-      <span>速 <b>${h.speed}</b></span><span>運 <b>${h.luck}</b></span>
-    </div>
-    <div style="font-size:11px;color:var(--text-3);margin-top:4px;">JAN: ${h.jan_code}</div>
-  </div>`;
-}
-
-// ============================================================
-// 英雄詳細
-// ============================================================
-let _heroFilter = 'all';
-
-async function loadHeroes() {
-  if (!_heroes.length) _heroes = await api('/scan/heroes').catch(() => []);
-  renderHeroes();
-}
-
-function renderHeroes() {
-  const list     = document.getElementById('hero-list');
-  const filtered = _heroFilter === 'all' ? _heroes : _heroes.filter(h => h.rarity === _heroFilter);
-  list.innerHTML = filtered.length
-    ? filtered.map(h => heroCard(h)).join('')
-    : '<p style="color:var(--text-3);text-align:center;padding:24px;">勇者がいません</p>';
-}
-
-document.querySelectorAll('.hero-filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.hero-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    _heroFilter = btn.dataset.filter;
-    renderHeroes();
-  });
-});
-
-// ============================================================
-// パーティ編成
-// ============================================================
-async function loadParty() {
-  if (!_heroes.length) _heroes = await api('/scan/heroes').catch(() => []);
-  _party = await api('/scan/party').catch(() => []);
-  renderParty();
-}
-
-function renderParty() {
-  const slots = document.getElementById('party-slots');
-  const sel   = document.getElementById('party-select-list');
-
-  slots.innerHTML = _party.length
-    ? _party.map(h => heroCard(h, 'slot')).join('')
-    : '<p style="color:var(--text-3);font-size:13px;">パーティは空です</p>';
-
-  slots.querySelectorAll('.hero-remove-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      _party = _party.filter(h => h.id !== parseInt(btn.dataset.id));
-      await saveParty();
-    });
-  });
-
-  sel.innerHTML = _heroes.length
-    ? _heroes.map(h => heroCard(h, 'select')).join('')
-    : '<p style="color:var(--text-3);font-size:13px;padding:16px;">勇者を召喚してください</p>';
-
-  sel.querySelectorAll('.hero-party-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (_party.length >= 3) { toast('パーティは最大3人です', 'error'); return; }
-      const hero = _heroes.find(h => h.id === parseInt(btn.dataset.id));
-      if (hero) { _party.push(hero); await saveParty(); }
-    });
-  });
-}
-
-async function saveParty() {
-  try {
-    await api('/scan/party', { method: 'POST', body: JSON.stringify({ hero_ids: _party.map(h => h.id) }) });
-    renderParty();
-  } catch(e) { toast(e.message || '保存に失敗しました', 'error'); }
-}
-
-// ============================================================
-// 英雄召喚
-// ============================================================
-async function doScan(jan) {
-  const el = document.getElementById('scan-result');
-  el.innerHTML = '<p style="color:var(--text-2);text-align:center;">召喚中...</p>';
-  try {
-    const hero = await api('/scan/', { method: 'POST', body: JSON.stringify({ jan_code: jan }) });
-    _heroes.unshift(hero);
-    const rc = RARITY_COLOR[hero.rarity] || '#888';
-    const ac = ATTR_COLOR[hero.attribute] || '#888';
-    el.innerHTML = `<div class="hero-card" style="--hero-color:${rc};border-color:${rc};">
-      <div style="text-align:center;font-size:12px;color:var(--text-2);margin-bottom:8px;">召喚成功</div>
-      <div style="text-align:center;">
-        <span class="hero-rarity" style="color:${rc};font-size:18px;">${hero.rarity}</span>
-        <span class="hero-attr" style="color:${ac};margin-left:8px;">${hero.attribute}属性</span>
-      </div>
-      <div class="hero-name" style="text-align:center;font-size:18px;margin:8px 0;">${hero.hero_name}</div>
-      <div class="hero-stats" style="justify-content:center;">
-        <span>HP <b>${hero.hp}</b></span><span>攻 <b>${hero.attack}</b></span>
-        <span>速 <b>${hero.speed}</b></span><span>運 <b>${hero.luck}</b></span>
-      </div>
-      <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:8px;">JAN: ${hero.jan_code}</div>
-    </div>`;
-  } catch(e) {
-    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:12px;">${e.message || '召喚に失敗しました'}</p>`;
-  }
-}
-
-
-// ライブスキャン（手動フレームキャプチャ方式）
-document.getElementById('scan-start-btn')?.addEventListener('click', async () => {
+// ライブスキャン
+document.getElementById('scan-start-btn')?.addEventListener('click', () => {
   if (_scanning) return;
   _scanning = true;
   document.getElementById('scan-start-btn').style.display = 'none';
   document.getElementById('scan-stop-btn').style.display  = 'inline-block';
   document.getElementById('scan-result').innerHTML =
-    '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください（60秒で自動終了）</p>';
+    '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください</p>';
 
-  const video = document.getElementById('scan-video');
-  if (!video) { stopCamera(); return; }
+  // html5-qrcode: EAN-13/8専用設定
+  _qr = new Html5Qrcode('scan-reader', {
+    formatsToSupport: [0, 1, 3, 4, 8],  // EAN-13, EAN-8, UPC-A, UPC-E, CODE-128
+    verbose: false,
+  });
 
-  try {
-    // カメラストリームを直接取得（iOSで最も安定）
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
-    video.srcObject = stream;
-    await video.play();
-  } catch {
+  _qr.start(
+    { facingMode: 'environment' },
+    {
+      fps: 10,
+      qrbox: { width: 280, height: 100 },
+      aspectRatio: 1.5,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: false },
+    },
+    (code) => {
+      stopCamera();
+      doScan(code);
+    },
+    () => {}
+  ).catch(() => {
     stopCamera();
     toast('カメラへのアクセスが拒否されました', 'error');
-    return;
-  }
-
-  // ヒントなしで全フォーマット対応（ヒントが未定義だと逆に壊れるため）
-  _codeReader = new ZXing.BrowserMultiFormatReader();
-  const canvas = document.createElement('canvas');
-  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
-
-  const tick = () => {
-    if (!_scanning) return;
-    if (video.readyState < 2 || video.videoWidth === 0) {
-      setTimeout(tick, 100);
-      return;
-    }
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    try {
-      // ZXing公式API: decodeFromCanvas
-      const r = _codeReader.decodeFromCanvas(canvas);
-      if (r) {
-        const code = r.getText();
-        if (code) {
-          stopCamera();
-          doScan(code);
-          return;
-        }
-      }
-    } catch (e) {
-      // NotFoundException は毎フレーム発生するため無視
-      const name = e?.name || e?.constructor?.name || '';
-      if (name !== 'NotFoundException' && !String(e).includes('NotFound')) {
-        console.warn('decode error:', name, String(e).slice(0, 80));
-      }
-    }
-    setTimeout(tick, 150);
-  };
-
-  video.addEventListener('playing', tick, { once: true });
+  });
 
   _scanTimer = setTimeout(() => {
     stopCamera();
-    toast('タイムアウトしました。「写真で読む」もお試しください。');
+    toast('タイムアウトしました。「写真で読む」をお試しください。');
   }, SCAN_TIMEOUT);
 });
 
-document.getElementById('scan-stop-btn')?.addEventListener('click', () => { stopCamera(); });
+document.getElementById('scan-stop-btn')?.addEventListener('click', () => stopCamera());
 
-// ============================================================
-// 写真で読む（iOS最推奨: ネイティブカメラ → 静止画解析）
-// ============================================================
+// 写真で読む（iOS Safari で最も確実）
+// static input要素をHTMLに配置済み → iOSのセキュリティ制限を回避
 document.getElementById('scan-photo-btn')?.addEventListener('click', () => {
-  const input = document.createElement('input');
-  input.type    = 'file';
-  input.accept  = 'image/*';
-  input.capture = 'environment';
-  input.style.display = 'none';
-  document.body.appendChild(input);
-
-  input.addEventListener('change', async () => {
-    const file = input.files?.[0];
-    input.remove();
-    if (!file) return;
-
-    const el = document.getElementById('scan-result');
-    el.innerHTML = '<p style="color:var(--text-2);text-align:center;font-size:13px;">解析中...</p>';
-
-    const url = URL.createObjectURL(file);
-    try {
-      const img = new Image();
-      await new Promise((res, rej) => {
-        img.onload = res;
-        img.onerror = rej;
-        img.src = url;
-      });
-
-      // 静止画を canvas に描画して ZXing に渡す
-      const c = document.createElement('canvas');
-      c.width  = img.naturalWidth;
-      c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
-
-      const reader = new ZXing.BrowserMultiFormatReader();
-      const result = reader.decodeFromCanvas(c);
-      URL.revokeObjectURL(url);
-
-      if (result) {
-        await doScan(result.getText());
-      } else {
-        el.innerHTML = '<p style="color:var(--red);text-align:center;padding:12px;">バーコードを検出できませんでした。明るい場所でもう一度試してください。</p>';
-      }
-    } catch (e) {
-      URL.revokeObjectURL(url);
-      const msg = String(e).includes('NotFound')
-        ? 'バーコードを検出できませんでした。明るい場所でもう一度試してください。'
-        : '解析に失敗しました。';
-      el.innerHTML = `<p style="color:var(--red);text-align:center;padding:12px;">${msg}</p>`;
-    }
-  });
-
-  input.click();
+  document.getElementById('scan-file-input').click();
 });
+
+document.getElementById('scan-file-input')?.addEventListener('change', async function() {
+  const file = this.files?.[0];
+  this.value = '';
+  if (!file) return;
+
+  const el = document.getElementById('scan-result');
+  el.innerHTML = '<p style="color:var(--text-2);text-align:center;font-size:13px;">解析中...</p>';
+
+  try {
+    const tmpQr = new Html5Qrcode('_hidden_scan_target', { verbose: false });
+    const code  = await tmpQr.scanFile(file, false);
+    tmpQr.clear();
+    await doScan(code);
+  } catch {
+    el.innerHTML = '<p style="color:var(--red);text-align:center;padding:12px;">'
+      + 'バーコードを検出できませんでした。<br>'
+      + 'バーコード部分をまっすぐ、明るい場所で撮影してください。</p>';
+  }
+});
+
 
 document.getElementById('scan-manual-btn')?.addEventListener('click', () => {
   const val = document.getElementById('scan-manual-input').value.trim();
