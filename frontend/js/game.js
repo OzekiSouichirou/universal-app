@@ -237,6 +237,8 @@ async function doScan(jan) {
   }
 }
 
+
+// ライブスキャン（手動フレームキャプチャ方式）
 document.getElementById('scan-start-btn')?.addEventListener('click', async () => {
   if (_scanning) return;
   _scanning = true;
@@ -246,48 +248,119 @@ document.getElementById('scan-start-btn')?.addEventListener('click', async () =>
     '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください（60秒で自動終了）</p>';
 
   const video = document.getElementById('scan-video');
-
-  // EAN-13/8・UPC・Code128を対象、TRY_HARDERで精度向上
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-    ZXing.BarcodeFormat.EAN_13,
-    ZXing.BarcodeFormat.EAN_8,
-    ZXing.BarcodeFormat.UPC_A,
-    ZXing.BarcodeFormat.UPC_E,
-    ZXing.BarcodeFormat.CODE_128,
-    ZXing.BarcodeFormat.CODE_39,
-  ]);
-  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-  _codeReader = new ZXing.BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 150 });
+  if (!video) { stopCamera(); return; }
 
   try {
-    await _codeReader.decodeFromConstraints(
-      { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
-      video,
-      async (result, err) => {
-        if (!result) return;
-        const code = result.getText();
-        if (!code) return;
-        stopCamera();
-        await doScan(code);
-      }
-    );
-
-    // 60秒タイムアウト
-    _scanTimer = setTimeout(() => {
-      stopCamera();
-      toast('スキャンがタイムアウトしました。再度試してください。');
-    }, SCAN_TIMEOUT);
-
+    // カメラストリームを直接取得（iOSで最も安定）
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = stream;
+    await video.play();
   } catch {
     stopCamera();
     toast('カメラへのアクセスが拒否されました', 'error');
+    return;
   }
+
+  // ヒントなしで全フォーマット対応（ヒントが未定義だと逆に壊れるため）
+  _codeReader = new ZXing.BrowserMultiFormatReader();
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+
+  const tick = () => {
+    if (!_scanning) return;
+    if (video.readyState < 2 || video.videoWidth === 0) {
+      setTimeout(tick, 100);
+      return;
+    }
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    try {
+      // ZXing公式API: decodeFromCanvas
+      const r = _codeReader.decodeFromCanvas(canvas);
+      if (r) {
+        const code = r.getText();
+        if (code) {
+          stopCamera();
+          doScan(code);
+          return;
+        }
+      }
+    } catch (e) {
+      // NotFoundException は毎フレーム発生するため無視
+      const name = e?.name || e?.constructor?.name || '';
+      if (name !== 'NotFoundException' && !String(e).includes('NotFound')) {
+        console.warn('decode error:', name, String(e).slice(0, 80));
+      }
+    }
+    setTimeout(tick, 150);
+  };
+
+  video.addEventListener('playing', tick, { once: true });
+
+  _scanTimer = setTimeout(() => {
+    stopCamera();
+    toast('タイムアウトしました。「写真で読む」もお試しください。');
+  }, SCAN_TIMEOUT);
 });
 
-document.getElementById('scan-stop-btn')?.addEventListener('click', () => {
-  stopCamera();
+document.getElementById('scan-stop-btn')?.addEventListener('click', () => { stopCamera(); });
+
+// ============================================================
+// 写真で読む（iOS最推奨: ネイティブカメラ → 静止画解析）
+// ============================================================
+document.getElementById('scan-photo-btn')?.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type    = 'file';
+  input.accept  = 'image/*';
+  input.capture = 'environment';
+  input.style.display = 'none';
+  document.body.appendChild(input);
+
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file) return;
+
+    const el = document.getElementById('scan-result');
+    el.innerHTML = '<p style="color:var(--text-2);text-align:center;font-size:13px;">解析中...</p>';
+
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = rej;
+        img.src = url;
+      });
+
+      // 静止画を canvas に描画して ZXing に渡す
+      const c = document.createElement('canvas');
+      c.width  = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+
+      const reader = new ZXing.BrowserMultiFormatReader();
+      const result = reader.decodeFromCanvas(c);
+      URL.revokeObjectURL(url);
+
+      if (result) {
+        await doScan(result.getText());
+      } else {
+        el.innerHTML = '<p style="color:var(--red);text-align:center;padding:12px;">バーコードを検出できませんでした。明るい場所でもう一度試してください。</p>';
+      }
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      const msg = String(e).includes('NotFound')
+        ? 'バーコードを検出できませんでした。明るい場所でもう一度試してください。'
+        : '解析に失敗しました。';
+      el.innerHTML = `<p style="color:var(--red);text-align:center;padding:12px;">${msg}</p>`;
+    }
+  });
+
+  input.click();
 });
 
 document.getElementById('scan-manual-btn')?.addEventListener('click', () => {

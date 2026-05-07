@@ -161,16 +161,22 @@
           <div class="pq-sub-panel" id="sub-scan" style="display:none;">
             <div class="game-card">
               <div class="game-card-title">英雄召喚</div>
-              <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">商品のバーコードをスキャンして勇者を召喚します。同じバーコードからは同じ勇者が生まれます。</p>
-              <div id="scan-reader" style="width:100%;max-width:420px;margin:0 auto 16px;border-radius:var(--r);overflow:hidden;background:#000;">
-                <video id="scan-video" playsinline style="width:100%;display:block;"></video>
+              <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">バーコードをスキャン、または写真を撮って勇者を召喚します。</p>
+
+              <!-- ライブスキャン -->
+              <div id="scan-reader" style="width:100%;max-width:420px;margin:0 auto 8px;border-radius:var(--r);overflow:hidden;background:#000;position:relative;">
+                <video id="scan-video" playsinline muted style="width:100%;display:block;"></video>
+                <div id="scan-box" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:70%;padding-top:28%;border:2px solid #3ecf8e;border-radius:4px;pointer-events:none;"></div>
               </div>
-              <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
-                <button class="btn-primary" id="scan-start-btn">スキャン開始</button>
+              <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">
+                <button class="btn-primary" id="scan-start-btn">ライブスキャン</button>
                 <button class="btn-secondary" id="scan-stop-btn" style="display:none;">停止</button>
+                <button class="btn-secondary" id="scan-photo-btn">写真で読む</button>
               </div>
+
+              <!-- 手入力 -->
               <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
-                <input id="scan-manual-input" type="text" placeholder="JANコードを直接入力（8〜13桁）" style="flex:1;">
+                <input id="scan-manual-input" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="JANコードを直接入力（8〜13桁）" style="flex:1;">
                 <button class="btn-secondary" id="scan-manual-btn">召喚</button>
               </div>
               <div id="scan-result"></div>
