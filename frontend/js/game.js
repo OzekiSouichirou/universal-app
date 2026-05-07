@@ -42,8 +42,9 @@ document.getElementById('scan-start-btn')?.addEventListener('click', () => {
     '<p style="color:var(--text-2);text-align:center;font-size:13px;">バーコードをフレームに合わせてください</p>';
 
   // html5-qrcode: EAN-13/8専用設定
+  // EAN_13=9, EAN_8=10, UPC_A=14, UPC_E=15, CODE_128=5 (html5-qrcode enum)
   _qr = new Html5Qrcode('scan-reader', {
-    formatsToSupport: [0, 1, 3, 4, 8],  // EAN-13, EAN-8, UPC-A, UPC-E, CODE-128
+    formatsToSupport: [9, 10, 14, 15, 5],
     verbose: false,
   });
 
@@ -51,7 +52,7 @@ document.getElementById('scan-start-btn')?.addEventListener('click', () => {
     { facingMode: 'environment' },
     {
       fps: 10,
-      qrbox: { width: 280, height: 100 },
+      qrbox: { width: 300, height: 80 },   // EAN-13は横長
       aspectRatio: 1.5,
       experimentalFeatures: { useBarCodeDetectorIfSupported: false },
     },
@@ -88,7 +89,11 @@ document.getElementById('scan-file-input')?.addEventListener('change', async fun
   el.innerHTML = '<p style="color:var(--text-2);text-align:center;font-size:13px;">解析中...</p>';
 
   try {
-    const tmpQr = new Html5Qrcode('_hidden_scan_target', { verbose: false });
+    // EAN_13=9, EAN_8=10, UPC_A=14, UPC_E=15, CODE_128=5
+    const tmpQr = new Html5Qrcode('_hidden_scan_target', {
+      formatsToSupport: [9, 10, 14, 15, 5],
+      verbose: false,
+    });
     const code  = await tmpQr.scanFile(file, false);
     tmpQr.clear();
     await doScan(code);
